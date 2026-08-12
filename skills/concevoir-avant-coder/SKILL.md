@@ -100,6 +100,53 @@ se relit en une minute ; vingt lignes réparties sur cinq sous-systèmes, non. C
 **surface de relecture**, ce qui interdit au passage la fausse victoire du « je n'ai touché que trois
 lignes, en passant par une variable globale ».
 
+### L'échelle de décision, forme opérationnelle des deux axes
+
+Les deux axes ci-dessus sont des principes, donc ils demandent un jugement. Une **échelle ordonnée**
+est actionnable : on la descend, on s'arrête au premier barreau qui répond, on écrit.
+
+```mermaid
+flowchart TD
+  Q0["est-ce que ça doit exister ?"]
+  Q1["est-ce déjà dans le code du projet ?"]
+  Q2["est-ce dans la bibliothèque standard ?"]
+  Q3["la plateforme le fait-elle nativement ?"]
+  Q4["une dépendance DÉJÀ installée le fait-elle ?"]
+  Q5["est-ce que ça tient en une ligne ?"]
+  Q6["implémentation minimale viable"]
+  Q0 -->|non| S0["ne rien écrire"]
+  Q0 -->|oui| Q1
+  Q1 -->|oui| S1["réutiliser, ne pas réécrire"]
+  Q1 -->|non| Q2
+  Q2 -->|oui| S2["l'utiliser"]
+  Q2 -->|non| Q3
+  Q3 -->|oui| S3["l'utiliser"]
+  Q3 -->|non| Q4
+  Q4 -->|oui| S4["l'utiliser, n'en ajoute pas une"]
+  Q4 -->|non| Q5
+  Q5 -->|oui| S5["écrire cette ligne"]
+  Q5 -->|non| Q6
+```
+
+Cette échelle est empruntée à **Ponytail** (`github.com/DietrichGebert/ponytail`), un greffon qui
+l'impose aux agents de codage. Deux de ses barreaux manquaient à ce document : *une dépendance déjà
+installée* et *une fonctionnalité native de la plateforme*. Ils comptent double avec un agent, dont
+le réflexe est d'installer un paquet et d'écrire une enveloppe autour.
+
+**La condition qui la rend valide, et elle est dans sa source** : l'échelle se descend **après** avoir
+compris le problème, jamais à la place. Une échelle parcourue trop tôt produit une réutilisation qui
+ne répond pas au besoin, ce qui coûte plus cher que du code neuf.
+
+Et **deux gardes à ajouter**, qui viennent du reste de ce document :
+
+- **le barreau 1 ne dispense pas des trois exceptions** du tableau ci-dessus. « Ça ne doit pas
+  exister » est faux quand la frontière est publique ou persistée : sous-construire là où on ne pourra
+  plus changer coûte une migration, pas un remaniement ;
+- **réutiliser n'est pas se contorsionner.** Le barreau 2 devient nuisible quand on plie un existant
+  qui ne colle pas, en lui ajoutant un drapeau et un cas particulier. Le test qui tranche : *est-ce que
+  l'existant devient plus difficile à nommer après ma modification ?* Si oui, ce n'est plus de la
+  réutilisation, c'est du diff minimal payé en conception (voir le mode d'échec ci-dessus).
+
 ## 3. L'ossature en stubs : écrire l'architecture avant l'implémentation
 
 Un *stub* est une fonction déclarée avec son nom, ses types et sa doc, mais dont le corps ne fait rien

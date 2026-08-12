@@ -129,7 +129,7 @@ mecanisme. Ce qui est interdit, c'est de l'ajouter **a la place** de l'enquete.
 
 ## Phase 4 : le test qui empeche le retour
 
-Un correctif sans test de non-regression sera defait par le prochain remaniement, et personne ne
+Un correctif sans test de non-regression sera defait par le prochain refactor, et personne ne
 saura que la garantie a disparu. Le test s'ecrit **avant** le correctif quand c'est possible, et il
 doit avoir ete vu rouge pour la bonne raison (voir `tests-first`).
 

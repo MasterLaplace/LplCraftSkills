@@ -171,7 +171,7 @@ recette le 2026-03-04.
 Refs: ITEM-207
 ```
 
-Ordonner les commits pour qu'ils se lisent : d'abord le remaniement qui prépare, ensuite le
+Ordonner les commits pour qu'ils se lisent : d'abord le refactor qui prépare, ensuite le
 comportement, enfin la doc. Un relecteur qui lit commit par commit doit voir une démonstration.
 
 ## 4. Le versionnement : deux écoles, et la question qui décide
@@ -271,7 +271,7 @@ savoir ce qui va lui arriver.**
 ```
 
 Trois règles : **une entrée par changement observable**, aucune pour les changements internes, un
-remaniement sans effet observable n'a rien à y faire ; le dérivé des commits est un **brouillon**, pas
+refactor sans effet observable n'a rien à y faire ; le dérivé des commits est un **brouillon**, pas
 le résultat, parce qu'un message de commit s'adresse à un développeur et une entrée de changelog à un
 utilisateur ; et **toute cassure est dite en clair**, avec ce qu'il faut faire.
 
@@ -311,7 +311,7 @@ l'effet sans exécuter le code. Détails dans `rendre-l-etat-visible`.
 
 **Une PR trop grosse n'est pas relue, elle est approuvée.** Signature reconnaissable : tous les
 commentaires portent sur le nommage et aucun sur le fond. Si elle dépasse ce qu'on peut tenir en tête,
-la découper, quitte à livrer d'abord un remaniement sans changement de comportement, qui se relit en
+la découper, quitte à livrer d'abord un refactor sans changement de comportement, qui se relit en
 cinq minutes.
 
 ## 7. La revue : ce qu'on regarde, et comment on répond

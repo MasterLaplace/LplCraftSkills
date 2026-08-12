@@ -89,8 +89,8 @@ de la découper, précisément **parce que le découpage montrerait un plus gros
 conception dictée par le diff, et sa dette est la plus difficile à voir : chaque changement est
 localement minimal et l'ensemble devient ingérable.
 
-La résolution est celle que le reste du pack emploie partout : **séparer le remaniement du changement
-de comportement**, en deux commits ou deux PR. Le remaniement ne change rien d'observable, donc il se
+La résolution est celle que le reste du pack emploie partout : **séparer le refactor du changement
+de comportement**, en deux commits ou deux PR. Le refactor ne change rien d'observable, donc il se
 relit vite ; le changement de comportement devient alors minuscule. On obtient les deux, un petit diff
 **et** une conception intacte, au lieu de choisir.
 
@@ -141,7 +141,7 @@ Et **deux gardes à ajouter**, qui viennent du reste de ce document :
 
 - **le barreau 1 ne dispense pas des trois exceptions** du tableau ci-dessus. « Ça ne doit pas
   exister » est faux quand la frontière est publique ou persistée : sous-construire là où on ne pourra
-  plus changer coûte une migration, pas un remaniement ;
+  plus changer coûte une migration, pas un refactor ;
 - **réutiliser n'est pas se contorsionner.** Le barreau 2 devient nuisible quand on plie un existant
   qui ne colle pas, en lui ajoutant un drapeau et un cas particulier. Le test qui tranche : *est-ce que
   l'existant devient plus difficile à nommer après ma modification ?* Si oui, ce n'est plus de la
@@ -192,7 +192,7 @@ fois que quelqu'un l'atteint.
 **Deux règles qui empêchent le stub de pourrir** :
 
 - **tout stub porte une référence d'item**, dans le message de l'erreur plutôt que dans un commentaire :
-  le message survit au remaniement et apparaît dans les journaux ;
+  le message survit au refactor et apparaît dans les journaux ;
 - **un stub sans item ne s'écrit pas.** Un stub sans propriétaire devient un piège dans six mois, quand
   plus personne ne sait s'il est une dette ou un mort.
 

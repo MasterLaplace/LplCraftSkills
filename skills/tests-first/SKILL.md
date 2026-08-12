@@ -2,7 +2,7 @@
 name: tests-first
 description: >-
   Ecrit les criteres d'acceptation puis les tests AVANT le code : rouge d'abord, vert ensuite,
-  refacto a vert. Couvre la formulation de criteres falsifiables, le choix du niveau de test,
+  refactor a vert. Couvre la formulation de criteres falsifiables, le choix du niveau de test,
   les doubles (fake/stub/mock), la reproduction d'un bug par un test rouge, le determinisme
   (horloge, aleatoire, IO) et la detection des tests qui mentent (faux verts). A utiliser des
   qu'il faut ecrire ou corriger un test, definir ce que « fini » veut dire, verifier une
@@ -33,18 +33,18 @@ ce qui, concrètement, le rendrait faux.
 Deux pièges de formulation qui coûtent cher plus tard :
 
 - **le critère qui décrit l'implémentation** (« la méthode appelle le cache ») : il interdit tout
-  remaniement et ne dit rien de ce que l'utilisateur obtient ;
+  refactor et ne dit rien de ce que l'utilisateur obtient ;
 - **le critère sans cas négatif.** Ce qui doit **échouer** est au moins aussi important que ce qui
   doit réussir, et c'est presque toujours la moitié oubliée. Une règle d'accès sans son cas de refus
   n'est pas testée, elle est illustrée.
 
-## 2. Rouge, vert, refacto, et le rouge est l'étape qu'on saute
+## 2. Rouge, vert, refactor, et le rouge est l'étape qu'on saute
 
 ```mermaid
 flowchart LR
   R["ROUGE<br/>un test minimal qui exprime UN critere<br/><i>et on LIT son echec</i>"]
   V["VERT<br/>le chemin le plus court<br/>qui rend le test vert"]
-  F["REFACTO<br/>nommer, extraire, deduire<br/><i>a vert uniquement</i>"]
+  F["REFACTOR<br/>nommer, extraire, deduire<br/><i>a vert uniquement</i>"]
   R --> V --> F
   F -.->|"critere suivant"| R
 ```
@@ -62,7 +62,7 @@ Trois règles pour tenir le cycle :
   signal de chacun ;
 - **le chemin le plus court** en phase verte. Généraliser « tant qu'on y est » produit du code que
   rien ne demandait, donc que rien ne teste ;
-- **on ne remanie qu'à vert, et un seul axe à la fois.** Remanier au rouge, c'est deux causes
+- **on ne refactore qu'à vert, et un seul axe à la fois.** Refactorer au rouge, c'est deux causes
   possibles pour un même échec et un débogage qui double de longueur.
 
 ## 3. Quel niveau de test, arbitré par le coût de diagnostic
@@ -85,7 +85,7 @@ pas testé du tout.
 Un *double* est un faux objet qu'on met à la place d'une vraie dépendance pour tester sans elle.
 
 - **fake** : une vraie implémentation, simplifiée (un dépôt en mémoire). Il se comporte comme le vrai,
-  donc le test reste vrai après un remaniement. **À préférer presque toujours ;**
+  donc le test reste vrai après un refactor. **À préférer presque toujours ;**
 - **stub** : il rend une réponse fixe. Utile pour poser un état de départ ;
 - **mock** : il vérifie qu'un appel a bien eu lieu. **À réserver** aux cas où l'appel *est* le
   comportement attendu, on a bien publié l'événement, on a bien envoyé la notification.
@@ -96,7 +96,7 @@ Deux règles qui évitent les suites qui cassent sans raison :
   compréhension* de son comportement ; le jour où elle change, ton double reste vert et la production
   casse. Envelopper la bibliothèque dans une interface à toi, et simuler celle-là ;
 - **un test plein de mocks teste le câblage, pas le comportement.** Signature : il casse à chaque
-  remaniement sans qu'aucun comportement n'ait changé. C'est un test de structure, il coûte plus qu'il
+  refactor sans qu'aucun comportement n'ait changé. C'est un test de structure, il coûte plus qu'il
   ne rapporte.
 
 ## 5. Les tests qui mentent, le seul mode d'échec pire que pas de test

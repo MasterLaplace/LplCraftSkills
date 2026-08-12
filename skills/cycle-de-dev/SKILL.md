@@ -3,7 +3,7 @@ name: cycle-de-dev
 description: >-
   Pilote un travail de developpement de bout en bout selon le cycle
   backlog -> branche -> test -> code -> doc -> PR -> revue, avec une porte de sortie
-  falsifiable a chaque etape. A utiliser des qu'on attaque une feature, un bug, une refacto
+  falsifiable a chaque etape. A utiliser des qu'on attaque une feature, un bug, un refactor
   ou une tache non triviale (« on ajoute X », « il faut corriger Y », « par ou je commence »,
   « prepare la PR »), et pour arbitrer quand une etape veut etre sautee. Porte deux regles
   transversales : « aucun avertissement ne franchit un merge » et « on ne declare pas une porte

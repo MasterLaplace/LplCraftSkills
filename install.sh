@@ -15,12 +15,14 @@ DEST="${HOME}/.claude/skills"
 
 SKILLS=(
   cycle-de-dev
+  cadrer-et-planifier
   concevoir-avant-coder
   tests-first
   code-comme-poesie
   commencer-ferme
   doc-derivee
   journal-et-debogueur
+  trouver-la-cause
   mesure-et-telemetrie
   rendre-l-etat-visible
   tracer-le-travail

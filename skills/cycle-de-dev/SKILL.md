@@ -5,10 +5,12 @@ description: >-
   backlog -> branche -> test -> code -> doc -> PR -> revue, avec une porte de sortie
   falsifiable a chaque etape. A utiliser des qu'on attaque une feature, un bug, une refacto
   ou une tache non triviale (« on ajoute X », « il faut corriger Y », « par ou je commence »,
-  « prepare la PR »), et pour arbitrer quand une etape veut etre sautee. Porte la regle
-  « aucun avertissement ne franchit un merge ». Delegue aux skills concevoir-avant-coder,
-  tests-first, code-comme-poesie, commencer-ferme, doc-derivee, journal-et-debogueur,
-  mesure-et-telemetrie, rendre-l-etat-visible et tracer-le-travail.
+  « prepare la PR »), et pour arbitrer quand une etape veut etre sautee. Porte deux regles
+  transversales : « aucun avertissement ne franchit un merge » et « on ne declare pas une porte
+  franchie sans avoir lance a l'instant la commande qui le prouve ». Delegue aux skills
+  cadrer-et-planifier, concevoir-avant-coder, tests-first, code-comme-poesie, commencer-ferme,
+  doc-derivee, journal-et-debogueur, trouver-la-cause, mesure-et-telemetrie, rendre-l-etat-visible
+  et tracer-le-travail.
 ---
 
 # Le cycle de développement, et la seule faute qui compte
@@ -20,7 +22,14 @@ pouvoir répondre par oui ou non.*
 flowchart LR
   BL[backlog] --> BR[branche] --> TE[test] --> CO[code] --> DO[doc] --> PR[pull request] --> RE[revue]
   RE -.-> BL
+  BL -.->|"si se tromper coute cher"| CA["cadrer + plan"]
+  CA -.-> TE
 ```
+
+La porte en pointille est **conditionnelle**, et son critere n'est pas la taille du travail mais sa
+**reversibilite** : une modification locale et annulable va directement au test, une modification qui
+touche une frontiere qu'on ne pourra plus changer passe par une conception approuvee et un plan, meme
+si elle fait deux lignes. C'est le skill `cadrer-et-planifier`.
 
 L'ordre n'est pas une cérémonie, c'est une contrainte d'information : **chaque étape produit ce que
 la suivante consomme.** Un test écrit après le code épouse le code au lieu de le contraindre. Une
@@ -48,6 +57,26 @@ plus rien en aval ne la revérifie.
 
 Une porte sans réponse **arrête le travail** ; elle ne se remet pas à plus tard. Et si la réponse
 manque parce qu'une information manque, **demander est la réponse.**
+
+### La règle qui vaut pour les sept : on ne déclare pas, on prouve
+
+**Tu ne peux pas dire qu'une porte est franchie si tu n'as pas lancé, à l'instant, la commande qui le
+prouve.** Une exécution d'il y a vingt minutes ne compte pas, une extrapolation encore moins.
+
+| L'affirmation | Ce qu'elle exige | Ce qui ne suffit PAS |
+|---|---|---|
+| les tests passent | la sortie de la commande complète, zéro échec | un tour précédent, « ça devrait passer » |
+| l'analyse est propre | la sortie de l'outil, zéro erreur | une vérification partielle, une extrapolation |
+| le build réussit | le code de sortie de la commande | « les logs ont l'air bons » |
+| le bug est corrigé | le **symptôme d'origine** rejoué, et disparu | le code a changé, donc c'est réglé |
+| le test de non-régression est valide | le cycle rouge puis vert **vu** | il passe une fois |
+| le besoin est couvert | une relecture **ligne à ligne** des critères | les tests passent |
+
+Les mots qui trahissent une affirmation non vérifiée : « ça devrait », « probablement », « a priori »,
+« normalement ». Et la satisfaction exprimée **avant** la vérification est le signal le plus fiable
+qu'elle n'a pas eu lieu.
+
+*Règle reprise de superpowers (`github.com/obra/superpowers`, skill `verification-before-completion`).*
 
 **Une seule porte est absolue : aucun avertissement ne franchit un merge.** Pas « on nettoiera »,
 pas « ce n'est que du style ». Un avertissement toléré en devient mille en six mois, et le millième
@@ -86,6 +115,17 @@ L'exploration est le raccourci le plus utile et le plus mal utilisé : sa valeur
 question. Un code d'exploration promu en production sans repasser par le cycle est la dette la plus
 chère qui existe, **parce qu'elle a l'air terminée.**
 
+> **Une objection sérieuse à ce tableau, et elle n'est pas tranchée ici.** D'autres méthodologies
+> tiennent qu'**aucun travail n'est trop simple pour une conception écrite**, au motif que c'est
+> justement sur les changements « évidents » que les hypothèses non examinées coûtent le plus, et
+> qu'une conception peut tenir en trois phrases.
+>
+> Ce qui départage n'est pas la taille, c'est **la réversibilité**. La question à se poser avant de
+> prendre un raccourci : *combien coûte de se tromper ici ?* Une modification locale et annulable ne
+> mérite pas de cérémonie. Une modification qui touche un contrat public, des données persistées ou un
+> format sur le fil mérite trois phrases écrites, **même si elle fait deux lignes**, parce qu'on ne
+> pourra pas la reprendre.
+
 ## Ce que chaque étape délègue
 
 | Sujet | Skill |
@@ -99,6 +139,8 @@ chère qui existe, **parce qu'elle a l'air terminée.**
 | journal, débogueur en une touche, assertions, modes de build | `journal-et-debogueur` |
 | bancs de mesure, profilage, télémétrie, artefact de production | `mesure-et-telemetrie` |
 | voir un état interne : chronologie, grille, graphe, distribution | `rendre-l-etat-visible` |
+| spec, plan d'implémentation, critères d'acceptation, découpage en tâches | `cadrer-et-planifier` |
+| un bug, un test rouge, un comportement inattendu : l'enquête avant le correctif | `trouver-la-cause` |
 
 **Invoque-les. Ne re-dérive pas leur contenu de mémoire** : c'est exactement le mécanisme par lequel
 une règle se met à diverger de sa propre définition.

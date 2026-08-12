@@ -131,6 +131,18 @@ relire, et **en annuler une moitié**.
 Partir de la branche d'intégration du projet, jamais d'une autre branche de fonctionnalité, sinon on
 hérite de code non relu et on ne peut plus livrer indépendamment.
 
+**Et pour travailler sur deux choses à la fois, un plan de travail lié bat un remisage.**
+`git worktree add ../projet-item-142 -b feat/ITEM-142-...` donne un second répertoire sur le même
+dépôt, avec sa propre branche : on garde son travail en cours intact, on ne remise rien, et les deux
+états coexistent sur le disque. C'est aussi ce qui rend une comparaison A/B honnête, puisque les deux
+bras vivent côte à côte au lieu de se succéder dans le même répertoire (voir `mesure-et-telemetrie`).
+
+Deux pièges : le répertoire lié occupe la place d'une copie de travail complète, et **la détection
+« suis-je déjà dans un plan de travail lié ? » se trompe dans un sous-module.** Le test usuel compare
+le répertoire git au répertoire git commun, or ils diffèrent aussi dans un sous-module ;
+`git rev-parse --show-superproject-working-tree` répond, et une réponse non vide veut dire sous-module,
+pas plan de travail lié.
+
 ## 3. Les commits : thématiques, ordonnés, annulables seuls
 
 Forme conventionnelle, sujet à l'impératif, sans point final :
@@ -319,8 +331,30 @@ Trois règles de conduite :
   ne clôt rien : la même remarque reviendra à la PR suivante, et personne ne saura qu'elle avait déjà
   été tranchée.
 
-Côté auteur : **répondre à un désaccord par un fait**, pas par une intention. « J'ai vérifié, X est
-appelé aussi depuis Y » clôt une discussion ; « je pense que ça ira » l'ouvre.
+### Recevoir une revue, ce qui est un exercice technique et non social
+
+Côté auteur, le réflexe coûteux est l'accord empressé. Le motif qui marche :
+
+1. **lire tout le retour** avant de réagir à quoi que ce soit ;
+2. **reformuler l'exigence dans ses propres mots**, ou demander. Si tu ne peux pas la reformuler, tu ne
+   l'as pas comprise, et tu vas implémenter autre chose ;
+3. **vérifier contre le code réel.** Un relecteur se trompe aussi, et il n'a pas toujours le contexte
+   que tu as ;
+4. **évaluer pour CE projet**, et non dans l'absolu. Une bonne pratique ailleurs peut être fausse ici ;
+5. **répondre par un fait, ou par un désaccord argumenté.** « J'ai vérifié, X est appelé aussi depuis
+   Y » clôt une discussion ; « je pense que ça ira » l'ouvre ;
+6. **traiter un point à la fois, et tester chacun.**
+
+**La règle non évidente, et c'est la plus utile : si un point sur six est flou, on n'implémente aucun
+des cinq autres avant d'avoir demandé.** Les points d'une revue sont souvent liés, donc une
+compréhension partielle produit une implémentation fausse, qu'il faudra défaire, et le relecteur devra
+relire deux fois.
+
+**L'accord performatif est un coût, pas une politesse.** « Tu as tout à fait raison » avant
+vérification n'informe personne et masque un désaccord qui ressortira à la PR suivante. Reformuler,
+demander, ou simplement se mettre au travail vaut mieux.
+
+*Motif repris de superpowers (`github.com/obra/superpowers`, skill `receiving-code-review`).*
 
 ## 8. La porte de merge : zéro avertissement, et ce qu'il faut pour que ça tienne
 

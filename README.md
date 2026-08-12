@@ -1,6 +1,6 @@
 # craft-skills
 
-Dix skills [Claude Code](https://claude.com/claude-code) indépendantes du langage, qui encodent une façon
+Douze skills [Claude Code](https://claude.com/claude-code) indépendantes du langage, qui encodent une façon
 de travailler : décider avant de coder, prouver avant de livrer, et faire porter par le code tout ce qui
 pourrait mentir ailleurs.
 
@@ -25,17 +25,19 @@ Les autres modes (`--copy`, `--uninstall`) et les codes de sortie : `./install.s
 listés ici, parce qu'une liste d'options recopiée dans un README finit toujours par mentir, c'est
 précisément ce que dit le skill `doc-derivee`.
 
-## Les dix skills
+## Les douze skills
 
 | Skill | En une phrase |
 |---|---|
 | [`cycle-de-dev`](skills/cycle-de-dev/SKILL.md) | backlog, branche, test, code, doc, PR, revue, chaque étape fermée par une question falsifiable |
-| [`concevoir-avant-coder`](skills/concevoir-avant-coder/SKILL.md) | besoin avant solution, YAGNI, ossature en stubs, SOLID, injection, modules et paliers de build |
+| [`cadrer-et-planifier`](skills/cadrer-et-planifier/SKILL.md) | une spec approuvée section par section, des critères d'acceptation, puis un plan aux tâches calibrées |
+| [`concevoir-avant-coder`](skills/concevoir-avant-coder/SKILL.md) | besoin avant solution, YAGNI sur ses deux axes, ossature en stubs, SOLID, injection, modules et paliers de build |
 | [`tests-first`](skills/tests-first/SKILL.md) | critères d'acceptation puis tests rouges, et la liste des tests qui mentent |
 | [`code-comme-poesie`](skills/code-comme-poesie/SKILL.md) | noms exacts, clauses de garde, aucun commentaire qui paraphrase, doc de contrat |
 | [`commencer-ferme`](skills/commencer-ferme/SKILL.md) | déclarer au maximum de contraintes, relâcher sur preuve, avertissements au maximum |
 | [`doc-derivee`](skills/doc-derivee/SKILL.md) | un `--help` complet plutôt qu'un README qui mentira, sortie machine pure, erreurs auto-descriptives |
 | [`journal-et-debogueur`](skills/journal-et-debogueur/SKILL.md) | journal structuré et débogueur en une touche, installés au jour 1 ; assertions et modes de build |
+| [`trouver-la-cause`](skills/trouver-la-cause/SKILL.md) | pas de correctif sans cause racine, et les correctifs qui masquent au lieu de corriger |
 | [`mesure-et-telemetrie`](skills/mesure-et-telemetrie/SKILL.md) | un banc est un test de non-régression sur une grandeur continue ; télémétrie et artefact de production |
 | [`rendre-l-etat-visible`](skills/rendre-l-etat-visible/SKILL.md) | quand l'information est dans la forme, on la rend visible, et le même artefact habille la doc |
 | [`tracer-le-travail`](skills/tracer-le-travail/SKILL.md) | backlog, commits, versionnement, changelog, PR, revue, porte de merge |
@@ -44,8 +46,10 @@ précisément ce que dit le skill `doc-derivee`.
 
 Tout le reste en découle.
 
-1. **Une affirmation doit être falsifiable.** « Le code est propre » ne l'est pas ; « la suite passe deux
-   fois de suite sans nettoyage manuel » l'est. C'est ce qui transforme une intention en porte.
+1. **Une affirmation doit être falsifiable, et elle se prouve avant de se dire.** « Le code est propre »
+   ne l'est pas ; « la suite passe deux fois de suite sans nettoyage manuel » l'est. Et on ne déclare pas
+   un état sans avoir lancé, à l'instant, la commande qui le prouve : « ça devrait marcher » n'est pas un
+   résultat.
 2. **Ce qui peut être dérivé ne doit pas être écrit à la main.** Un texte écrit à côté d'un code finit
    toujours par mentir, et rien ne casse. Donc : générer, ou apparier par un test, ou écrire où ça peut
    mentir.
@@ -61,12 +65,15 @@ Tout le reste en découle.
 3. **`code-comme-poesie`**, applicable à la ligne suivante que tu écris ;
 4. **`journal-et-debogueur`, partie 2 d'abord**, le débogueur en une touche. C'est là qu'un débutant perd
    le plus de temps, à chercher au `printf` ce qu'un point d'arrêt montre en dix secondes ;
-5. **`tracer-le-travail`, sections 1 à 3**, backlog, branche, commits. Ce que tu rencontres dès la
+5. **`trouver-la-cause`**, dans la foulée : l'outil sans la méthode ne suffit pas, et « corriger un
+   symptôme est un échec » est la leçon qui coûte le plus cher à apprendre seul ;
+6. **`tracer-le-travail`, sections 1 à 3**, backlog, branche, commits. Ce que tu rencontres dès la
    première contribution à un projet partagé ;
-6. **`concevoir-avant-coder`**, quand tu auras assez de code pour que les abstractions te mordent.
+7. **`concevoir-avant-coder`**, quand tu auras assez de code pour que les abstractions te mordent.
 
-Les quatre autres (`commencer-ferme`, `doc-derivee`, `mesure-et-telemetrie`, `rendre-l-etat-visible`)
-répondent à des problèmes qu'il faut avoir rencontrés pour que la réponse ait du sens. Elles attendront.
+Les cinq autres (`cadrer-et-planifier`, `commencer-ferme`, `doc-derivee`, `mesure-et-telemetrie`,
+`rendre-l-etat-visible`) répondent à des problèmes qu'il faut avoir rencontrés pour que la réponse ait du
+sens. Elles attendront.
 
 **Si tu es déjà développeur** : lis `cycle-de-dev` pour la carte, puis va directement au skill du
 problème que tu as. Chacune se lit seule.

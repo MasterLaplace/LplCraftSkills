@@ -1,13 +1,14 @@
 ---
 name: concevoir-avant-coder
 description: >-
-  Concoit avant d'implementer : besoin avant solution, YAGNI, ossature en stubs qui levent
-  NotImplemented, SOLID, injection de dependances, composition plutot qu'heritage, architecture
-  modulaire ou a plugins, paliers de build (prod / dev / debug), pipeline adaptatif par
-  option/mode/telemetrie, et choix de design pattern. A utiliser des qu'il faut poser une
-  architecture, ajouter un point d'extension, decider d'une abstraction, arbitrer « est-ce que
-  j'en fais une interface ? », decouper un artefact en paliers, ou quand du code existant part en
-  heritage profond, en god class ou en couplage dur.
+  Concoit avant d'implementer : besoin avant solution, YAGNI sur ses DEUX axes (ne rien construire
+  d'avance, et toucher le minimum de code existant), ossature en stubs qui levent NotImplemented,
+  SOLID, injection de dependances, composition plutot qu'heritage, architecture modulaire ou a
+  plugins, paliers de build (prod / dev / debug), pipeline adaptatif par option/mode/telemetrie, et
+  choix de design pattern. A utiliser des qu'il faut poser une architecture, ajouter un point
+  d'extension, decider d'une abstraction, arbitrer « est-ce que j'en fais une interface ? »,
+  reduire l'etendue d'un changement ou la taille d'une PR, decouper un artefact en paliers, ou quand
+  du code existant part en heritage profond, en god class ou en couplage dur.
 ---
 
 # Concevoir avant de coder
@@ -57,6 +58,47 @@ Les trois exceptions où anticiper est justifié, et elles se **prouvent** :
 
 **Le corollaire qu'on oublie** : YAGNI s'applique aussi aux options, aux drapeaux et aux modes. Un mode
 que personne n'active est du code non testé en production.
+
+### Le deuxième axe : le diff minimal
+
+Ce qui précède porte sur **ce qu'on construit**. Il existe une seconde lecture, qui porte sur
+**l'étendue du changement** : *toucher le moins de code possible pour obtenir le résultat demandé.*
+Les deux ne s'opposent pas, elles s'appliquent à des moments différents.
+
+| Axe | La question | Quand elle se pose |
+|---|---|---|
+| ce qu'on construit | *ce point d'extension a-t-il un deuxième cas réel ?* | à la conception |
+| l'étendue du changement | *quelle est la plus petite modification qui obtient ce résultat ?* | à l'écriture, et à la revue |
+
+Le second axe est la discipline la plus visible en contribution externe, et il rapporte trois choses :
+
+- **une PR qu'on peut réellement relire.** Une grosse PR n'est pas relue, elle est approuvée (voir
+  `tracer-le-travail`) ;
+- **il force à connaître l'existant.** On ne peut pas écrire le diff minimal sans savoir ce que le
+  projet sait déjà faire, donc cette discipline attrape les doublons et les abstractions inutiles
+  avant qu'ils n'existent. C'est la règle du § 1 (« énumérer ce qui existe déjà ») appliquée non plus
+  à une capacité, mais à un changement ;
+- **en projet ouvert, c'est aussi une politesse mesurable.** Tu es invité dans le code de quelqu'un
+  d'autre : chaque ligne au-delà du nécessaire demande au mainteneur de refaire un jugement qu'il
+  avait déjà rendu. Le bon critère n'est pas « combien de lignes » mais **« combien de mes préférences
+  ce diff lui impose-t-il de revoir »**.
+
+**Et il a un mode d'échec, qu'il faut nommer, parce qu'il est sournois.** Minimiser le diff peut
+produire le pire code : on greffe un drapeau sur une fonction qui faisait déjà deux choses plutôt que
+de la découper, précisément **parce que le découpage montrerait un plus gros diff**. C'est de la
+conception dictée par le diff, et sa dette est la plus difficile à voir : chaque changement est
+localement minimal et l'ensemble devient ingérable.
+
+La résolution est celle que le reste du pack emploie partout : **séparer le remaniement du changement
+de comportement**, en deux commits ou deux PR. Le remaniement ne change rien d'observable, donc il se
+relit vite ; le changement de comportement devient alors minuscule. On obtient les deux, un petit diff
+**et** une conception intacte, au lieu de choisir.
+
+Dernière précision, parce que « minimal » se mesure mal : **l'unité n'est pas la ligne, c'est le
+nombre de concepts que le relecteur doit tenir en tête.** Un renommage mécanique de deux cents lignes
+se relit en une minute ; vingt lignes réparties sur cinq sous-systèmes, non. Ce qu'on minimise est la
+**surface de relecture**, ce qui interdit au passage la fausse victoire du « je n'ai touché que trois
+lignes, en passant par une variable globale ».
 
 ## 3. L'ossature en stubs : écrire l'architecture avant l'implémentation
 

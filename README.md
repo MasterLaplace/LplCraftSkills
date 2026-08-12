@@ -1,0 +1,97 @@
+# craft-skills
+
+Dix skills [Claude Code](https://claude.com/claude-code) indépendantes du langage, qui encodent une façon
+de travailler : décider avant de coder, prouver avant de livrer, et faire porter par le code tout ce qui
+pourrait mentir ailleurs.
+
+Elles fonctionnent de deux façons. **Automatiquement** : chaque skill porte une description de
+déclenchement, et l'agent la charge quand la tâche y correspond. **À la demande** : taper
+`/nom-de-la-skill`.
+
+## Installer
+
+```bash
+git clone <ce-depot> craft-skills
+cd craft-skills
+./install.sh          # pose un lien par skill dans ~/.claude/skills
+./install.sh --status # verifier
+```
+
+Puis redémarrer la session Claude Code. Le mode par défaut pose des **liens**, jonctions sous Windows,
+liens symboliques ailleurs, donc il n'y a **qu'une source de vérité** : éditer dans le dépôt ou dans
+`~/.claude/skills` est équivalent. Aucun droit administrateur requis.
+
+Les autres modes (`--copy`, `--uninstall`) et les codes de sortie : `./install.sh --help`. Ils ne sont pas
+listés ici, parce qu'une liste d'options recopiée dans un README finit toujours par mentir, c'est
+précisément ce que dit le skill `doc-derivee`.
+
+## Les dix skills
+
+| Skill | En une phrase |
+|---|---|
+| [`cycle-de-dev`](skills/cycle-de-dev/SKILL.md) | backlog, branche, test, code, doc, PR, revue, chaque étape fermée par une question falsifiable |
+| [`concevoir-avant-coder`](skills/concevoir-avant-coder/SKILL.md) | besoin avant solution, YAGNI, ossature en stubs, SOLID, injection, modules et paliers de build |
+| [`tests-first`](skills/tests-first/SKILL.md) | critères d'acceptation puis tests rouges, et la liste des tests qui mentent |
+| [`code-comme-poesie`](skills/code-comme-poesie/SKILL.md) | noms exacts, clauses de garde, aucun commentaire qui paraphrase, doc de contrat |
+| [`commencer-ferme`](skills/commencer-ferme/SKILL.md) | déclarer au maximum de contraintes, relâcher sur preuve, avertissements au maximum |
+| [`doc-derivee`](skills/doc-derivee/SKILL.md) | un `--help` complet plutôt qu'un README qui mentira, sortie machine pure, erreurs auto-descriptives |
+| [`journal-et-debogueur`](skills/journal-et-debogueur/SKILL.md) | journal structuré et débogueur en une touche, installés au jour 1 ; assertions et modes de build |
+| [`mesure-et-telemetrie`](skills/mesure-et-telemetrie/SKILL.md) | un banc est un test de non-régression sur une grandeur continue ; télémétrie et artefact de production |
+| [`rendre-l-etat-visible`](skills/rendre-l-etat-visible/SKILL.md) | quand l'information est dans la forme, on la rend visible, et le même artefact habille la doc |
+| [`tracer-le-travail`](skills/tracer-le-travail/SKILL.md) | backlog, commits, versionnement, changelog, PR, revue, porte de merge |
+
+## Le fil rouge, en trois idées
+
+Tout le reste en découle.
+
+1. **Une affirmation doit être falsifiable.** « Le code est propre » ne l'est pas ; « la suite passe deux
+   fois de suite sans nettoyage manuel » l'est. C'est ce qui transforme une intention en porte.
+2. **Ce qui peut être dérivé ne doit pas être écrit à la main.** Un texte écrit à côté d'un code finit
+   toujours par mentir, et rien ne casse. Donc : générer, ou apparier par un test, ou écrire où ça peut
+   mentir.
+3. **Élargir est gratuit, resserrer casse tout le monde.** D'où le réflexe de commencer fermé, sur une
+   visibilité, un qualifieur, un point d'extension, et de relâcher comme un acte volontaire.
+
+## Ordre de lecture
+
+**Si tu débutes en programmation**, dans cet ordre, un skill à la fois :
+
+1. **`cycle-de-dev`**, la carte. Elle situe tout le reste ;
+2. **`tests-first`**, le geste le plus contre-intuitif et le plus payant : écrire le test avant le code ;
+3. **`code-comme-poesie`**, applicable à la ligne suivante que tu écris ;
+4. **`journal-et-debogueur`, partie 2 d'abord**, le débogueur en une touche. C'est là qu'un débutant perd
+   le plus de temps, à chercher au `printf` ce qu'un point d'arrêt montre en dix secondes ;
+5. **`tracer-le-travail`, sections 1 à 3**, backlog, branche, commits. Ce que tu rencontres dès la
+   première contribution à un projet partagé ;
+6. **`concevoir-avant-coder`**, quand tu auras assez de code pour que les abstractions te mordent.
+
+Les quatre autres (`commencer-ferme`, `doc-derivee`, `mesure-et-telemetrie`, `rendre-l-etat-visible`)
+répondent à des problèmes qu'il faut avoir rencontrés pour que la réponse ait du sens. Elles attendront.
+
+**Si tu es déjà développeur** : lis `cycle-de-dev` pour la carte, puis va directement au skill du
+problème que tu as. Chacune se lit seule.
+
+## Conventions
+
+- **chaque skill se termine par une « porte de sortie »** : la liste des réponses qui doivent exister avant
+  de passer à la suite. C'est la partie à relire ;
+- **les dossiers `references/`** contiennent le détail copiable, configurations, commandes, catalogues. Ils
+  ne se lisent pas d'affilée : on y va quand le skill y renvoie ;
+- **les schémas sont en Mermaid**, jamais en art ASCII. Les rares blocs de texte qui ressemblent à des
+  schémas sont des **exemples de sortie**, c'est le sujet, pas de la décoration ;
+- **la prose est accentuée, les commentaires dans les blocs de code ne le sont pas** : ces blocs sont
+  destinés à être copiés dans des sources et des configurations, où un problème d'encodage coûterait plus
+  que le confort de lecture.
+
+## Ce que ce pack ne fait pas
+
+- **il n'apprend aucun langage.** Il suppose que tu sais écrire une fonction ; il parle de ce qu'on fait
+  autour ;
+- **il ne prescrit pas d'outillage.** Les outils cités sont des exemples d'un principe, jamais une
+  recommandation. Le principe survit à l'outil ;
+- **il ne tranche pas ce qui dépend du contexte : il donne le critère.** Deux sujets y sont explicitement à
+  deux réponses, le backlog en fichiers ou en issues de forge, et le versionnement par contrat ou par
+  cadence. Dans les deux cas, le skill donne la question qui décide plutôt qu'un verdict ;
+- **il n'est pas une étude.** C'est de l'expérience condensée : des règles qui ont chacune été payées par
+  une panne, pas un résultat mesuré sur une population de projets. À lire comme un avis argumenté, et à
+  contredire par une mesure si tu en as une. C'est d'ailleurs ce que le pack demande partout ailleurs.

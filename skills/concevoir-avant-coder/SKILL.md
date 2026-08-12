@@ -1,0 +1,314 @@
+---
+name: concevoir-avant-coder
+description: >-
+  Concoit avant d'implementer : besoin avant solution, YAGNI, ossature en stubs qui levent
+  NotImplemented, SOLID, injection de dependances, composition plutot qu'heritage, architecture
+  modulaire ou a plugins, paliers de build (prod / dev / debug), pipeline adaptatif par
+  option/mode/telemetrie, et choix de design pattern. A utiliser des qu'il faut poser une
+  architecture, ajouter un point d'extension, decider d'une abstraction, arbitrer « est-ce que
+  j'en fais une interface ? », decouper un artefact en paliers, ou quand du code existant part en
+  heritage profond, en god class ou en couplage dur.
+---
+
+# Concevoir avant de coder
+
+*En une phrase : répondre aux questions dont la réponse coûte cher à découvrir dans le code, et
+laisser toutes les autres au code, qui les répond mieux.*
+
+Concevoir n'est pas dessiner des boîtes.
+
+## 1. Le besoin avant la solution
+
+Une demande arrive presque toujours déjà habillée en solution : « il faut un cache », « fais une
+fabrique », « ajoute un drapeau ». La solution proposée est une information utile, elle dit ce que le
+demandeur a en tête, mais ce n'est pas le besoin.
+
+Trois questions qui déshabillent une demande :
+
+1. **Quel comportement observable change ?** Pas « quel code j'écris », mais qu'est-ce qu'on pourra
+   constater de l'extérieur qu'on ne pouvait pas constater avant.
+2. **Qu'est-ce qui est vrai aujourd'hui et ne le sera plus ?** C'est la question qui trouve les
+   cassures : appelants, données persistées, contrat publié, hypothèses d'autres équipes.
+3. **Combien de cas RÉELS existent aujourd'hui ?** Un, c'est un cas. Deux, c'est une variation. Trois,
+   c'est une famille, et seule une famille justifie une abstraction.
+
+> **Avant de construire une capacité, énumérer celles qui existent déjà.** Chercher dehors ce que le
+> projet porte déjà est l'erreur la plus coûteuse de la conception, parce qu'elle ne produit aucun
+> symptôme : on livre quelque chose qui marche, en double.
+
+## 2. YAGNI, et sa frontière exacte
+
+YAGNI (*you aren't gonna need it*, « tu n'en auras pas besoin ») ne dit pas « ne prévois rien ». Il
+dit : **le coût d'un point d'extension se paie maintenant, son bénéfice arrive peut-être.** La
+frontière est mesurable, pas philosophique.
+
+**La règle du deuxième appelant** : une abstraction se crée quand le **deuxième cas réel** existe, pas
+quand on l'imagine. Un cas imaginé se trompe presque toujours d'axe de variation, et une abstraction
+posée sur le mauvais axe coûte plus cher que pas d'abstraction du tout, parce qu'il faut la démonter
+avant de pouvoir faire ce qu'on voulait.
+
+Les trois exceptions où anticiper est justifié, et elles se **prouvent** :
+
+| Exception | Le test qui la prouve |
+|---|---|
+| la frontière est publique ou persistée | *puis-je changer ça plus tard sans casser un appelant que je ne contrôle pas ?* Si non, concevoir maintenant |
+| le coût de rattrapage est prohibitif et connu | une migration de données, un format sur le fil, une API versionnée |
+| la réversibilité est asymétrique | *combien coûte de le retirer si je me trompe ?* Peu cher à retirer, essayer ; cher à retirer, concevoir |
+
+**Le corollaire qu'on oublie** : YAGNI s'applique aussi aux options, aux drapeaux et aux modes. Un mode
+que personne n'active est du code non testé en production.
+
+## 3. L'ossature en stubs : écrire l'architecture avant l'implémentation
+
+Un *stub* est une fonction déclarée avec son nom, ses types et sa doc, mais dont le corps ne fait rien
+d'autre que signaler qu'il n'est pas écrit.
+
+Le geste : écrire **toutes les signatures** du périmètre, avec leurs noms définitifs et leur doc de
+contrat, chaque corps levant une erreur « non implémenté ». Faire compiler. Faire relire. **Puis
+seulement** implémenter, un stub à la fois.
+
+Ce que ce geste achète, et c'est énorme pour son coût :
+
+- la conception devient **relisible et critiquable** avant qu'une ligne d'implémentation ne la rende
+  chère à changer ;
+- le compilateur vérifie déjà la cohérence des types, donc l'ossature est **vérifiée**, pas dessinée ;
+- l'ordre d'implémentation devient un choix, et non une conséquence de l'ordre où on a tapé ;
+- chaque stub restant est une **unité de travail visible**.
+
+```csharp
+// C# -- l'erreur porte ce qui manque, pas juste "todo"
+public decimal ComputeProratedAmount(Contract contract, DateRange period)
+    => throw new NotImplementedException("proration au jour ouvre -- cf. ITEM-142");
+```
+
+```cpp
+// C++ -- meme intention ; le stub doit LEVER, pas retourner une valeur neutre
+double ComputeProratedAmount(const Contract& contract, const DateRange& period) {
+    throw std::logic_error("proration au jour ouvre -- cf. ITEM-142");
+}
+```
+
+```ts
+// TypeScript
+export function computeProratedAmount(contract: Contract, period: DateRange): Money {
+  throw new Error('proration au jour ouvre -- cf. ITEM-142');
+}
+```
+
+**Pourquoi lever et non retourner `0`, `null` ou un objet vide** : un stub muet est indiscernable d'une
+implémentation correcte qui rend cette valeur. Il passera les tests, franchira la revue, et le défaut
+apparaîtra loin de sa cause. Un stub qui lève est une dette **qui se signale toute seule**, la première
+fois que quelqu'un l'atteint.
+
+**Deux règles qui empêchent le stub de pourrir** :
+
+- **tout stub porte une référence d'item**, dans le message de l'erreur plutôt que dans un commentaire :
+  le message survit au remaniement et apparaît dans les journaux ;
+- **un stub sans item ne s'écrit pas.** Un stub sans propriétaire devient un piège dans six mois, quand
+  plus personne ne sait s'il est une dette ou un mort.
+
+## 4. SOLID, relu par ce que chaque lettre coûte quand elle est violée
+
+Réciter SOLID ne sert à rien ; savoir **quel symptôme** chaque lettre prévient, si :
+
+| | Le symptôme que ça prévient | Le signal qu'on est en train de la violer |
+|---|---|---|
+| **S**, responsabilité unique | deux raisons de changer dans un fichier, donc deux équipes qui se marchent dessus | tu ne peux pas nommer la classe sans « et », ou sans un mot vague (`Manager`, `Helper`, `Service`) |
+| **O**, ouvert/fermé | rouvrir un aiguillage à chaque nouveau cas, et en oublier un | tu ajoutes un cas et le compilateur ne t'aide pas à trouver les autres endroits à mettre à jour |
+| **L**, substitution | un sous-type qui casse un appelant qui ne le connaît pas | tu redéfinis une méthode **pour ne PAS faire** ce que la classe de base promet : lever, ignorer, ne rien faire |
+| **I**, ségrégation d'interface | recompiler ou re-simuler le monde à cause d'une méthode qu'on n'appelle pas | tes tests implémentent des méthodes vides pour satisfaire une interface |
+| **D**, inversion de dépendance | un métier qui ne peut pas être testé sans base de données | pour tester une règle, il faut un réseau, une horloge ou un disque |
+
+**S est la plus rentable et la moins bien appliquée.** « Une seule responsabilité » ne veut pas dire
+« une seule méthode » : ça veut dire **un seul axe de changement**. La question qui tranche : *qui
+demande une modification de ce fichier ?* Deux commanditaires différents, deux fichiers.
+
+**O a un piège**, exactement inverse de sa réputation : appliquer l'ouvert/fermé avant d'avoir le
+deuxième cas produit un point d'extension sur le mauvais axe. C'est une **réponse à une variation
+constatée**, pas une posture de départ.
+
+## 5. Composition plutôt qu'héritage
+
+L'héritage couple un enfant à l'**implémentation** de son parent, et ce couplage est le seul qu'on ne
+peut pas défaire sans réécrire. Il se justifie quand la relation est *« est un, et le restera, et le
+sous-type honore intégralement le contrat »*. Trois conditions, pas une.
+
+Signaux qu'une hiérarchie doit devenir une composition :
+
+- une redéfinition qui **neutralise** le comportement parent, lever, ne rien faire, ignorer un
+  paramètre. C'est la substitution violée, et ça cassera chez un appelant qui ne connaît que la base ;
+- un niveau 3 ou plus. Chaque niveau multiplie le nombre d'états à tenir en tête ;
+- un parent qui gagne des tests sur le type de son enfant : la hiérarchie sait ce qu'elle ne devrait pas
+  savoir ;
+- **la réutilisation comme motif.** Hériter pour récupérer du code est le mauvais usage canonique : la
+  composition donne la même réutilisation sans le couplage.
+
+En composition, ce qui varie devient une **dépendance nommée**, ce qui la rend testable, remplaçable, et
+surtout **lisible depuis le site d'appel** : on voit ce qui varie.
+
+## 6. Injection de dépendances : quoi injecter, et surtout quoi ne pas injecter
+
+*Injecter* une dépendance veut dire : la recevoir de l'extérieur (le plus souvent en paramètre de
+constructeur) au lieu de la fabriquer soi-même.
+
+**Injecter ce qui varie ou ce qui touche le monde.** Rien d'autre.
+
+| Injecter | Ne pas injecter |
+|---|---|
+| l'horloge, l'aléatoire, les identifiants générés | les fonctions pures et stables |
+| le réseau, le disque, la base | les structures de données du domaine |
+| ce dont il existe **déjà** deux implémentations | ce dont on imagine une deuxième un jour |
+| la configuration qui change par environnement | une constante qui n'a jamais bougé |
+
+Les trois raisons d'injecter, par valeur réelle décroissante : **rendre testable sans le monde** (le
+temps et l'aléatoire cassent le déterminisme), **rendre substituable ce qui varie vraiment**, **rendre
+visible le couplage**, une dépendance dans un constructeur est un aveu lisible, la même dépendance
+instanciée au fond d'une méthode est cachée.
+
+**L'injection n'exige pas de conteneur.** Un paramètre de constructeur *est* de l'injection. Un
+conteneur devient utile quand le graphe est profond et partagé, et il coûte une indirection que personne
+ne peut suivre au débogueur. Ne pas commencer par lui.
+
+**L'anti-pattern à nommer** : le localisateur de service, un objet global d'où l'on tire ses dépendances.
+Il a l'air d'être de l'injection et il en est l'inverse : la dépendance redevient invisible depuis la
+signature, donc plus rien ne dit ce dont ce code a besoin.
+
+## 7. Modules et plugins : un contrat, pas un dossier
+
+Un module se définit par **ce qu'il exporte et ce qu'il refuse**, jamais par son arborescence. Un dossier
+n'est pas une frontière : tant que n'importe qui peut importer n'importe quoi dedans, il n'y a qu'un seul
+module qui a des sous-dossiers.
+
+Ce qui fait qu'une frontière existe vraiment :
+
+- une **surface publique explicite** : un point d'entrée unique, le reste inaccessible ;
+- une **direction**, et **quelque chose qui la vérifie**, un test, une règle de vérification
+  automatique, une contrainte de build. Une règle d'architecture que rien ne vérifie est une intention ;
+- le **sens de la dépendance suit la stabilité** : ce qui change souvent dépend de ce qui change
+  rarement, jamais l'inverse.
+
+```mermaid
+flowchart RL
+  CT["contrats<br/><i>zero dependance</i>"]
+  CORE["moteur<br/><i>tout ce qu'un run FAIT</i>"]
+  CLI["point d'entree<br/><i>surface, zero politique</i>"]
+  DEV["outillage<br/><i>verbes de lecture, diagnostics</i>"]
+  CORE --> CT
+  CLI --> CORE
+  DEV --> CORE
+  CLI -.->|"arete a supprimer<br/>ou a rendre conditionnelle"| DEV
+```
+
+**Le graphe ne va que dans un sens, et un test le verrouille.** C'est ce qui rend la **porte à double
+sens** bon marché : si promouvoir un morceau d'outillage vers le produit se résume à déplacer un fichier
+et retirer une référence, l'architecture est bonne. Si ça demande une réécriture, la frontière n'était
+pas au bon endroit.
+
+**Une architecture à plugins se paie**, et le prix est rarement compté : un registre, une découverte, un
+cycle de vie, une **version de contrat**, un mode dégradé quand un plugin est absent ou cassé, et une
+histoire d'erreur qui traverse la frontière. Ne la construire qu'au **deuxième implémenteur réel**, et
+jusque-là, une interface plus une implémentation suffisent, et elles se transforment en plugins le jour
+venu pour presque rien.
+
+### Les paliers de build (prod / dev / debug) : modules OUI, plugins NON
+
+Un découpage en paliers additifs, **prod** égale le moteur et son point d'entrée ; **dev** ajoute
+l'outillage ; **debug** ajoute l'instrumentation lourde, est un excellent paradigme. Mais il ne demande
+pas une architecture à plugins, et confondre les deux fait payer cher pour rien :
+
+| Ce dont un PALIER a besoin | Ce qu'un PLUGIN ajoute en plus |
+|---|---|
+| composition à la **liaison** : ce qui n'est pas référencé n'entre pas | résolution à l'**exécution** |
+| des frontières à **sens unique**, vérifiées | une **découverte**, un registre, un cycle de vie |
+| des **unités entières** retirables | un **contrat versionné** entre l'hôte et le greffon |
+| un **point d'entrée unique** où le retrait se décide | un **mode dégradé** quand un greffon manque ou casse |
+
+Un palier a besoin de la colonne de gauche. La colonne de droite achète le **liage tardif**, charger
+sans recompiler, accepter un outil livré par un tiers, et **un palier n'en a jamais besoin.** C'est la
+règle du deuxième implémenteur : le plugin devient justifié le jour où quelqu'un d'autre livre un outil
+que tu ne compiles pas.
+
+**Ce qui rend un palier bon marché, ce sont trois conditions, et aucune n'est un plugin :**
+
+1. **le graphe ne va que dans un sens, et quelque chose le VÉRIFIE.** C'est la condition maîtresse : si
+   l'outillage dépend du moteur et jamais l'inverse, le retirer est une référence en moins ;
+2. **ce qu'on retire est une unité ENTIÈRE**, assemblage, bibliothèque, module. Si le code d'outillage
+   est entrelacé dans les fichiers du moteur, aucun modèle d'architecture ne te sauvera : tu feras de la
+   chirurgie à coups de compilation conditionnelle ;
+3. **le retrait se décide en UN endroit**, au point d'entrée. Des conditions de compilation dispersées
+   sont la version coûteuse du même résultat.
+
+Quand ces trois tiennent, un palier coûte une **configuration de build**, une **référence
+conditionnelle** et deux ou trois conditions au point d'entrée, et on peut vérifier que l'unité
+d'outillage est absente de l'artefact.
+
+**Les quatre pièges, et le premier se paie sans bruit :**
+
+1. **N paliers égale N programmes, et celui que personne ne construit POURRIT.** Le mode de défaillance
+   est silencieux : la suite reste verte parce que la commande documentée ne touche pas le palier mort.
+   **Chaque palier est construit en intégration continue**, et la suite tourne au moins en prod et en
+   dev. « On sait comment le construire » ne dit pas qu'il compile encore ;
+2. **un palier est ADDITIF, jamais DIVERGENT.** Il ajoute de la surface, outils, observabilité,
+   vérifications, il ne change **aucune décision** du moteur. Si le mode dev se comporte différemment,
+   alors dev ne prouve rien sur prod, et c'est prod qu'on livre ;
+3. **le palier prod est celui que personne n'exerce à la main**, puisque tout le monde travaille en dev.
+   Il lui faut donc son propre test de fumée, automatique ;
+4. **ce qui ne se retire JAMAIS d'un palier de production** : la télémétrie, les journaux
+   d'avertissement et d'erreur, les vérifications de contrat bon marché, les symboles conservés hors
+   bande. Le détail est dans `mesure-et-telemetrie` ; la mécanique des modes de build et de leur élision
+   est dans `journal-et-debogueur`.
+
+**Et un palier de plus n'est pas gratuit** : c'est un programme de plus à garder vivant. Un troisième
+palier ne se justifie que si l'instrumentation est **trop chère pour rester derrière un interrupteur à
+l'exécution**. Si un drapeau suffit, il bat un troisième build, une branche compilée et atteignable
+vaut mieux qu'un programme qu'on oublie de construire.
+
+## 8. Pipeline adaptatif : option, mode, télémétrie
+
+Un pipeline qui change de comportement selon une option, un mode ou une mesure est puissant et
+**dangereux pour une seule raison** : les chemins non pris ne sont pas observés, donc ils pourrissent
+sans que rien ne le dise.
+
+Quatre règles, chacune corrige un mode de panne mesuré :
+
+1. **Un mode sans compteur est une devinette avec un drapeau.** Chaque branche doit être observable :
+   qui l'a prise, combien de fois. Sans ça, on ne peut pas répondre à *« ce chemin sert-il encore ? »*,
+   donc on ne peut ni le retirer ni le défendre.
+2. **Un repli est BRUYANT, jamais silencieux.** Un repli qui se déclenche sans le dire transforme une
+   panne en dégradation invisible : le pire état, parce que tout a l'air normal.
+3. **Un chemin qui ne s'est jamais déclenché n'est pas du code mort.** Distinguer **injoignable**, sa
+   condition ne *peut pas* être atteinte, plus aucun appelant, un champ que rien ne remplit ; c'est un
+   défaut, on répare l'accessibilité, de **rare** : la condition est atteignable, le cas est peu
+   fréquent ; c'est un filet en bon état, on le garde, avec un test qui lui fabrique son cas. Et
+   **avant de conclure quoi que ce soit d'un zéro, vérifier le compteur** : un zéro dit souvent que le
+   lecteur ne voit pas la branche, pas qu'elle ne tire pas.
+4. **Le défaut décrit ce qui arrive à qui ne choisit pas.** Si tout ce qui compte passe déjà une option
+   explicite, le défaut est faux et il ne mord que les distraits.
+
+Comment rendre ces branches réellement observables, compteurs, métriques, cardinalité, et ce qui reste
+dans un artefact de production, est dans `mesure-et-telemetrie` ; le journal corrélé qui permet de
+reconstituer le chemin pris est dans `journal-et-debogueur`.
+
+## 9. Design patterns : les nommer après, jamais avant
+
+Un pattern est le **nom d'une forme qu'on constate**, pas un plan qu'on suit. Partir de *« je vais faire
+une fabrique »* produit une fabrique ; partir du problème produit la solution, qui **s'appelle
+peut-être** une fabrique, et si elle porte un autre nom, tant mieux, ça veut dire que le problème était
+plus précis que le catalogue.
+
+Ce que le vocabulaire des patterns achète vraiment : **la communication**. « C'est un adaptateur »
+économise trois paragraphes en revue. C'est sa valeur, et elle est réelle.
+
+Le catalogue court (problème, signal, coût) est dans `references/patterns.md`. **Le lire quand on
+hésite entre deux formes**, pas pour choisir un pattern à l'avance.
+
+## La porte de sortie
+
+Avant d'implémenter, ces cinq réponses doivent exister :
+
+1. le **comportement observable** qui change, et qui le constate ;
+2. l'**ossature** compile, en stubs qui lèvent, avec des noms définitifs ;
+3. ce qui est **injecté**, et pourquoi, ça varie, ou ça touche le monde ;
+4. les **points d'extension** existants sont justifiés par un deuxième cas **réel**, ou n'existent pas ;
+5. ce qu'on a **décidé de ne pas faire**, écrit. C'est ce qui empêche la question de revenir tous les
+   quinze jours, et c'est la partie qu'on oublie toujours d'écrire.

@@ -46,7 +46,7 @@ MODES
   --copy        copie les fichiers au lieu de lier. A utiliser quand les liens sont
                 impossibles, ou pour installer sur une machine sans ce depot. ATTENTION :
                 deux copies divergeront.
-  --status      n'ecrit rien ; dit pour chaque skill si elle est liee, copiee ou absente,
+  --status      n'ecrit rien ; dit pour chaque skill s.il est lie, copie ou absent,
                 et signale un lien dont la cible a disparu.
   --uninstall   retire du dossier de destination les seules entrees de ce pack.
 
@@ -139,12 +139,9 @@ case "$ACTION" in
   uninstall)
     for s in "${SKILLS[@]}"; do
       d="$DEST/$s"
-      [[ -e "$d" ]] || continue
-      if is_link "$d" && is_windows; then
-        MSYS_NO_PATHCONV=1 cmd //c rmdir "$(to_win "$d")" >/dev/null
-      else
-        rm -rf "$d"
-      fi
+      [[ -e "$d" || -L "$d" ]] || continue
+      # Meme regle que a l'installation : sur un lien, rm -f retire le lien, jamais sa cible.
+      if is_link "$d"; then rm -f "$d"; else rm -rf "$d"; fi
       echo "[retire] $s"
     done
     echo

@@ -4,11 +4,13 @@ description: >-
   Concoit avant d'implementer : besoin avant solution, YAGNI sur ses DEUX axes (ne rien construire
   d'avance, et toucher le minimum de code existant), ossature en stubs qui levent NotImplemented,
   SOLID, injection de dependances, composition plutot qu'heritage, architecture modulaire ou a
-  plugins, paliers de build (prod / dev / debug), pipeline adaptatif par option/mode/telemetrie, et
-  choix de design pattern. A utiliser des qu'il faut poser une architecture, ajouter un point
-  d'extension, decider d'une abstraction, arbitrer « est-ce que j'en fais une interface ? »,
-  reduire l'etendue d'un changement ou la taille d'une PR, decouper un artefact en paliers, ou quand
-  du code existant part en heritage profond, en god class ou en couplage dur.
+  plugins, paliers de build (prod / dev / debug), pipeline adaptatif par option/mode/telemetrie,
+  echelle d'escalade (des couches ordonnees par certitude decroissante jusqu'a un humain avec un
+  rapport, ou un barreau baisse la PRETENTION du resultat et jamais la BARRE), et choix de design
+  pattern. A utiliser des qu'il faut poser une architecture, ajouter un point d'extension,
+  decider d'une abstraction, arbitrer « est-ce que j'en fais une interface ? »,
+  reduire l'etendue d'un changement ou la taille d'une PR, decouper un artefact en paliers, concevoir un
+  mode degrade ou un repli, ou quand du code existant part en heritage profond, en god class ou en couplage dur.
 ---
 
 # Concevoir avant de coder
@@ -377,6 +379,69 @@ Quatre règles, chacune corrige un mode de panne mesuré :
 Comment rendre ces branches réellement observables, compteurs, métriques, cardinalité, et ce qui reste
 dans un artefact de production, est dans `mesure-et-telemetrie` ; le journal corrélé qui permet de
 reconstituer le chemin pris est dans `journal-et-debogueur`.
+
+### L'échelle d'escalade : dégrader sans mentir
+
+Ce qui précède gouverne un pipeline qui **choisit** un mode selon une option. Une **échelle
+d'escalade** fait autre chose : elle essaie des couches **ordonnées par certitude décroissante**
+jusqu'à ce que l'une réponde. Les deux se ressemblent et ne se gouvernent pas pareil.
+
+```mermaid
+flowchart TD
+  N["noyau déterministe<br/><i>toujours juste quand il s'applique</i>"]
+  R["couches de rattrapage<br/><i>comblent les trous connus du noyau</i>"]
+  I["couche intelligente<br/><i>heuristique, ou modèle</i>"]
+  A["couche autonome<br/><i>fait tout le travail</i>"]
+  H["un humain, avec un RAPPORT<br/><i>cause nommée, essais, ce qu'il faudrait</i>"]
+  N -->|"ne s'applique pas"| R
+  R -->|"ne suffit pas"| I
+  I -->|"ne suffit pas"| A
+  A -->|"échec"| H
+```
+
+**L'invariant qui décide de tout, et sans lui l'échelle est une machine à mentir :**
+
+> **Un barreau a le droit de baisser la PRÉTENTION du résultat, jamais de baisser la BARRE, et jamais
+> en silence.**
+
+Le noyau rend « vrai ». Un barreau plus haut rend « probablement vrai, obtenu par tel moyen ». Le
+dernier rend « je ne sais pas, voilà ce que j'ai vu ». Ce qui est interdit est de rendre **« vrai »
+quand on a obtenu « probablement »**, parce qu'alors plus personne en aval ne peut distinguer les deux.
+
+Quatre règles en découlent :
+
+1. **chaque barreau nomme sa confiance et son moyen.** Un résultat sans provenance ne s'audite pas, et
+   c'est le premier endroit où une échelle devient dangereuse ;
+2. **chaque barreau est compté** (règle 1 de cette section). Sans compteur, on ne sait pas si le noyau
+   couvre 95 % des cas ou 40 %, donc on ne sait pas où investir. C'est aussi la seule mesure qui dit si
+   l'échelle est saine : **un noyau qui recule est un problème, pas une réussite des couches
+   supérieures** ;
+3. **une couche intelligente se pose AU-DESSUS des gardes, jamais à leur place.** Elle propose, les
+   gardes déterministes valident. Inversé, on obtient un résultat plausible que rien ne réfute, ce qui
+   est le pire état possible : la confiance sans la garantie ;
+4. **le dernier barreau est un humain, et il reçoit un rapport.** La cause nommée, ce qui a été essayé,
+   et ce qu'il faudrait pour débloquer. « Je n'ai pas réussi » n'est pas un livrable ; « voilà où ça
+   bloque, voilà pourquoi, voilà ce qui manque » en est un.
+
+Le patron n'a rien de particulier à un domaine :
+
+| Domaine | noyau | rattrapage | intelligent | terminal |
+|---|---|---|---|---|
+| analyseur syntaxique | la grammaire | récupération d'erreur | suggestion de correction | erreur qui nomme la position exacte |
+| build | le cache | incrémental | reconstruction complète | échec qui nomme l'entrée manquante |
+| validation de données | le schéma | règles de coercion | classement heuristique | quarantaine plus rapport |
+| réseau | l'appel primaire | réessai borné | mode dégradé | disjoncteur ouvert plus alerte |
+| recherche, appariement | la correspondance exacte | normalisation | approximation | demander à l'utilisateur |
+
+**Le mode d'échec unique, et il casse l'échelle entière** : le barreau qui répond `0`, `null` ou
+« aucun résultat » au lieu de « je n'ai pas pu ». À partir de là, l'appelant ne peut plus escalader,
+puisqu'il croit avoir une réponse. C'est la même règle que partout dans ce pack, et c'est ici qu'elle
+coûte le plus cher.
+
+**Et l'échelle se construit un barreau à la fois, sur mesure** (règle du deuxième appelant, section 2).
+Un barreau se justifie quand un compteur montre ce que le barreau du dessous laisse passer. Construits
+d'avance, on obtient cinq couches dont trois ne servent jamais et qu'on ne peut plus retirer, faute de
+savoir laquelle répondait.
 
 ## 9. Design patterns : les nommer après, jamais avant
 

@@ -180,3 +180,24 @@ revue révèle que le découpage était mauvais.
 Ce qu'il ne faut pas faire : **plier l'étape amont pour sauver l'aval.** Affaiblir un test pour
 faire passer le code en est la version la plus courante et la plus destructrice, le test reste
 vert, donc plus rien ne signale que la garantie a disparu.
+
+## La porte de sortie
+
+C'est le skill qui porte des portes, donc la sienne est celle du cycle entier. Ces cinq réponses
+doivent exister avant de considérer le travail terminé :
+
+1. les **sept portes** ont chacune une réponse. Celle qui manque n'a pas été reportée : elle a arrêté
+   le travail là où elle était ;
+2. chaque réponse a été **prouvée par une commande lancée à l'instant**, et non déduite d'un tour
+   précédent. « Ça devrait passer » n'est pas une réponse, c'est l'absence de réponse ;
+3. **aucun avertissement n'a franchi le merge**, et aucun test n'a été affaibli, ignoré ou commenté
+   pour atteindre le vert ;
+4. tout raccourci pris est **l'un des trois autorisés**, et son prix a été payé : la revue même
+   rapide, le code d'exploration jeté, le backlog décalé et non annulé ;
+5. quand une étape a révélé qu'une précédente était fausse, on est **remonté**, plutôt que d'avoir
+   plié l'amont pour sauver l'aval.
+
+Et la faute que ce skill existe pour empêcher, rappelée ici parce que c'est le dernier endroit où elle
+peut encore être attrapée : **franchir une porte sans avoir répondu à sa question.** Se tromper de
+conception se rattrape ; avancer en croyant qu'une porte est franchie ne se rattrape pas, parce que
+plus rien en aval ne la revérifie.

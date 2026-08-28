@@ -5,7 +5,8 @@ description: >-
   (fichiers dans le depot OU issues de la forge, avec la question qui decide et l'hybride qui evite
   deux backlogs), nommage de branche, commits conventionnels, versionnement
   (SemVer par contrat OU par cadence item/sprint/jalon, avec la question qui decide), CHANGELOG,
-  description de pull request, conduite de revue et porte de merge zero avertissement. A utiliser
+  description de pull request, conduite de revue, porte de merge zero avertissement, strategie de
+  fermeture (squash / rebase / merge commit) et mise a jour d'une branche quand sa base bouge. A utiliser
   pour creer ou mettre a jour un item de backlog, nommer une branche, rediger un message de commit,
   decider d'un numero de version, ecrire une entree de changelog, ouvrir une PR ou relire celle
   d'un autre.
@@ -226,7 +227,7 @@ merge doit être livrable.**
 | oui, bibliothèque, paquet, API publiée | **A, SemVer** | l'école B laisse un changement cassant atterrir dans un **correctif**, en milieu de sprint, et casser quelqu'un en silence. C'est disqualifiant |
 | non, application, service, binaire interne | **B, cadence** | SemVer y dégénère : tout devient « mineur » à vie, ou le majeur se décide arbitrairement. L'école B porte une information réelle |
 
-**Attention au piège du « non » trop rapide, surtout pour une CLI : une CLI a des consommateurs, ce
+**Attention au piège du « non » trop rapide, surtout pour un CLI : un CLI a des consommateurs, ce
 sont les scripts.** Dès que quelque chose analyse ta sortie machine ou teste tes codes de sortie, tu as
 un contrat sans être une bibliothèque (voir `doc-derivee`). La question n'est pas « suis-je une
 bibliothèque » mais « qu'est-ce qui casse chez quelqu'un si je change ça ».
@@ -398,3 +399,156 @@ sera pire que l'absence de règle :
 > des milliers, la porte se pose **sur le delta** : zéro avertissement *nouveau*, et un compteur global
 > qui ne peut que descendre. Une politique qu'on ne peut pas appliquer aujourd'hui n'est pas une
 > politique, c'est un vœu, et le vœu se fera contourner dès la première urgence.
+
+---
+
+## 9. Fermer une pull request, et tenir une branche à jour
+
+Deux décisions que presque personne ne prend explicitement, et qui se paient toutes les deux plus
+tard : **comment le travail atterrit sur la branche d'intégration**, et **ce qu'on fait d'une branche
+quand cette base bouge sous elle**.
+
+### 9.1 Les trois façons de fermer, et ce que chacune coûte vraiment
+
+| | ce qui atterrit | ce que tu perds | ce que ça coûte plus tard |
+|---|---|---|---|
+| **squash + merge** | **un** commit par PR | l'historique interne de la branche | **les branches empilées cassent**, voir 9.3 |
+| **rebase + merge** | tes commits, **réécrits** | les identifiants d'origine | tes commits sont sur la base sans jamais y avoir été testés ensemble |
+| **merge commit** | tes commits **et** un commit de fusion | rien | un graphe non linéaire, et `revert` demande `-m 1` |
+
+**L'argument le plus répandu des deux côtés est faux, et c'est celui du `bisect`.**
+
+On choisit souvent le merge commit « pour garder beaucoup de commits, c'est mieux pour `git bisect` ».
+L'intuition est retournée : `bisect` explore **tout le graphe**, donc il atterrit sur les commits
+intermédiaires d'une branche de fonctionnalité, ceux qui n'ont **jamais** été verts individuellement.
+On passe alors son temps à marquer `skip`. Une histoire de commits squashés, eux tous verts par
+construction puisque chacun est passé par la porte de merge, se bissecte plus vite et ne ment jamais.
+
+Sauf que **`git bisect --first-parent` existe depuis Git 2.29**, et il ne suit que la ligne
+principale : avec lui, une histoire à commits de fusion se bissecte **exactement** comme une histoire
+squashée. Le même drapeau existe pour `git log --first-parent`, qui donne la lecture « un item par
+ligne » qu'on croyait réservée au squash.
+
+```bash
+git bisect start --first-parent HEAD v1.2.0
+git log --first-parent --oneline
+```
+
+Donc `bisect` **ne tranche rien**. Il faut la vraie question.
+
+#### La question qui décide
+
+> **Est-ce que quelqu'un aura besoin de lire l'historique INTERNE d'une branche, après qu'elle a
+> atterri ?**
+
+| réponse | stratégie | pourquoi |
+|---|---|---|
+| oui : les commits sont thématiques, ordonnés, annulables seuls (section 3) | **merge commit** | ils portent une information qu'on détruirait. Un `revert` d'une moitié reste possible, et `--first-parent` rend la lecture linéaire quand on la veut |
+| non : les commits sont « wip », « fix », « oups, typo » | **squash** | les garder, ce n'est pas garder l'histoire, c'est garder du bruit en l'appelant histoire |
+
+Autrement dit : **la stratégie de merge est une conséquence de la discipline de commit, pas un choix
+indépendant.** Une équipe qui ne tient pas la section 3 et qui choisit le merge commit ne conserve
+rien d'utile ; une équipe qui la tient et qui squashe jette ce qu'elle a payé.
+
+Et quelle que soit la réponse : **choisis-en UNE et désactive les autres dans les réglages du dépôt.**
+Un dépôt qui mélange les trois produit une histoire qu'aucun outil ne sait lire — ni `bisect
+--first-parent`, qui suppose que la ligne principale a un sens, ni `log --first-parent`, ni un humain.
+
+### 9.2 Tenir une branche à jour : la question n'est pas rebase ou merge
+
+C'est **qui l'a déjà lue**.
+
+Un rebase réécrit l'historique. La plateforme perd alors la base sur laquelle elle calculait « ce qui a
+changé depuis ta dernière relecture » : un relecteur qui a laissé dix commentaires hier revient sur une
+pull request qui a oublié ce qu'il avait déjà lu, et il doit tout relire. **Ce coût est payé par un
+humain**, ce qui le met au-dessus de la propreté de l'historique.
+
+> **Rebase tant que la branche est encore à toi, fusionne dès qu'elle est à eux.**
+
+| état de la branche | mise à jour | raison |
+|---|---|---|
+| poussée, personne ne l'a relue | **rebase** | rien à perdre, et l'historique reste linéaire |
+| une revue a été soumise dessus | **merge de la base dans la branche** | préserve le diff incrémental du relecteur |
+| approuvée, en attente de fusion | rebase **puis** fusionner tout de suite | la fenêtre est courte, et le relecteur a fini |
+
+Deux règles qui ne se négocient pas :
+
+- **`--force-with-lease`, jamais `--force`.** Le bail refuse si la référence distante a bougé depuis ta
+  dernière récupération : une poussée faite entre-temps par quelqu'un d'autre **arrête** la tienne au
+  lieu de disparaître. Avec `--force`, elle disparaît sans un mot, et rien en aval ne montrera jamais
+  qu'elle a existé ;
+- **on ne rebase jamais une branche sur laquelle quelqu'un d'autre a construit.** Ses commits
+  référencent des identifiants que tu viens de faire disparaître. Le symptôme, chez lui, est un conflit
+  incompréhensible sur du code qu'il n'a pas touché.
+
+**Et chacun rebase la sienne.** Un rebaseur central qui met à jour les branches de tout le monde résout
+des conflits **à la place de gens qui ont écrit le code** : il choisit, sans le savoir, laquelle de deux
+intentions survit. C'est une décision de conception déguisée en opération de plomberie. La bonne forme
+est que chaque propriétaire — humain ou automate — soit responsable de la sienne, et que la convention
+soit partagée plutôt que l'outil.
+
+#### Résoudre un conflit, ce n'est pas choisir un côté
+
+`git checkout --ours` et `--theirs` ne résolvent rien : ils jettent la moitié du travail de quelqu'un.
+Le résultat compile, donc personne ne le voit — jusqu'à ce que la fonctionnalité perdue manque à
+quelqu'un, des semaines plus tard, sans que rien ne relie les deux.
+
+Un conflit se résout en lisant **les deux intentions** : ce que ton changement voulait faire, et ce que
+l'autre voulait faire (`git log -p` sur les commits de la base qui touchent ce fichier). Si elles sont
+réellement incompatibles, ce n'est plus un conflit de texte mais **une décision de conception**, et elle
+se remonte au lieu de se trancher seul dans un `git rebase --continue`.
+
+⚠ **Et une résolution de conflit n'a été relue par personne.** Elle produit du code qui n'existait ni
+d'un côté ni de l'autre. Sur une pull request déjà approuvée, elle **invalide l'approbation** : c'est un
+des rares cas où redemander une revue n'est pas une politesse.
+
+### 9.3 Le piège des branches empilées, et il est réel
+
+Branche B construite sur branche A, A fusionnée en **squash**. Le commit unique sur la base ne
+ressemble à aucun des commits de A. Quand B se rebase, git rejoue les commits de A **qui sont déjà
+dedans**, et B se retrouve en conflit avec elle-même sur du code qu'elle n'a pas écrit.
+
+Trois sorties, dans cet ordre de préférence :
+
+1. **ne pas empiler** : une branche part de la branche d'intégration, jamais d'une autre branche de
+   fonctionnalité (section 2). C'est la même règle, et voici sa facture ;
+2. si tu as empilé, `git rebase --onto <base> <ancien-A> B` pour rejouer **seulement** les commits
+   propres à B ;
+3. en dernier recours, refaire B à partir de la base et y reporter son diff.
+
+### 9.4 Ce que la plateforme fait déjà, et qu'il est inutile de réécrire
+
+- **mettre une branche à jour sans checkout** : GitHub sait fusionner **ou rebaser** côté serveur
+  (bouton « Update branch », ou la mutation `updatePullRequestBranch` avec `updateMethod: REBASE`). Le
+  cas sans conflit ne coûte donc ni copie de travail, ni poussée. Le champ `expectedHeadOid` est une
+  concurrence optimiste : si la tête a bougé depuis ta lecture, l'opération est refusée **au lieu**
+  d'écraser ce qui l'a bougée ;
+- **« require branches to be up to date before merging »** : la protection de branche qui garantit que
+  rien n'est fusionné sans avoir été testé sur la base finale. ⚠ Son coût est réel et rarement dit :
+  elle **sérialise les fusions**, puisque chaque merge périme toutes les autres PR. Elle vaut le coup
+  quand un merge peut casser un autre en silence, et pas avant ;
+- **lier une branche à son item** : le bouton « create a branch » d'une issue crée la branche **et**
+  la relation côté plateforme (la section « Development »). Il impose son propre nommage
+  (`42-titre-de-l-issue`), mais la mutation qu'il utilise (`createLinkedBranch`) accepte un nom : on
+  garde donc `<type>/<id>-<slug>` de la section 2 **et** le lien. Ce n'est pas un ou l'autre.
+
+## La porte de sortie
+
+Ces sept réponses doivent exister, du backlog jusqu'au merge :
+
+1. l'item porte les **quatre réponses** : ce qui a été demandé, ce qui est vrai aujourd'hui, ce qui
+   manque, et comment on saura que c'est fini ;
+2. la branche se résume **en une phrase sans « et »**, elle est nommée `<type>/<id>-<slug>`, et elle part
+   de la branche d'intégration et non d'une autre branche de fonctionnalité ;
+3. chaque commit est **annulable seul**, et son message dit pourquoi plutôt que quoi ;
+4. la pull request dit **quoi, pourquoi, comment vérifier**, et ce qui n'est délibérément pas dedans ;
+5. la porte de merge est franchie par des **critères automatiques** : zéro avertissement nouveau, suite
+   verte jouée deux fois, aucun test ignoré ajouté ;
+6. la **stratégie de fermeture** est choisie une fois, pour la raison de la section 9, et les deux autres
+   sont désactivées dans les réglages du dépôt ;
+7. si la base a bougé, la branche a été **rebasée tant qu'elle était à nous, fusionnée dès qu'un
+   relecteur était passé**, et toute résolution de conflit a redemandé une revue.
+
+Et la règle qui les tient toutes : **on ne déclare pas une porte franchie sans avoir lancé, à l'instant,
+la commande qui le prouve.** Un item qu'on croit fini, une branche qu'on croit à jour et une suite qu'on
+croit verte se ressemblent beaucoup, vus de loin.

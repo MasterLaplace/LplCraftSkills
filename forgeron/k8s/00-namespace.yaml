@@ -1,0 +1,6 @@
+# Une cloison. Tout ce qui suit vit dedans, donc `kubectl delete namespace forgeron`
+# nettoie tout d'un coup - et c'est la seule facon sure de nettoyer des essais.
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: forgeron

@@ -195,3 +195,24 @@ construit, et ça vaut le coup, parce que c'est le seul cran où un exemple faux
   coûteux, parce qu'il fait perdre confiance dans **toute** la doc et pas seulement dans ce bloc ;
 - **la mesure par filtre écrit à la main.** Signature : un motif recopié de mémoire, un nombre plausible,
   et personne pour le contredire. C'est le symptôme d'une sortie machine absente ou impure.
+
+## La porte de sortie
+
+Avant de publier l'outil, ces six réponses doivent exister :
+
+1. le `--help` a été **relu comme un livrable** : il porte au moins un exemple, il montre les valeurs par
+   défaut, et il se lit sans connaître le code ;
+2. le README **ne recopie aucune option**. Ce qu'il garde, c'est ce que `--help` ne peut pas dire : à quoi
+   sert l'outil, et par où commencer ;
+3. la sortie machine est **pure**, rien d'autre ne sort sur le canal de sortie, et une commande la lit
+   sans qu'un humain ait à découper du texte ;
+4. les artefacts que l'outil produit, il sait **les relire** : un verbe qui les inspecte existe, sinon la
+   seule façon de vérifier une sortie est de la croire ;
+5. chaque message d'erreur dit **quoi, où, et comment en sortir**, à l'endroit exact où le lecteur en a
+   besoin ;
+6. ce qui reste en prose est **apparié par un test**, généré, ou l'écart est écrit avec la condition de
+   son retrait.
+
+Et le geste qui résume le skill : **monter d'un cran sur l'échelle, pas écrire moins de doc.** Une page
+qui liste des options fait descendre au cran 6 quelque chose qui vivait au cran 2, et le cran 6 est le
+seul où un texte peut mentir sans que rien ne casse.

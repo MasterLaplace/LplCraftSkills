@@ -1,0 +1,37 @@
+# Faire tourner forgeron en conteneur, en local.
+#
+# NON TESTE : ni docker ni kubectl sur la machine ou ce fichier a ete ecrit.
+#
+# Lancer :   docker compose -f docker/compose.yaml run --rm forgeron doctor
+# La boucle : docker compose -f docker/compose.yaml up -d
+services:
+  forgeron:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile
+    image: forgeron:0.1.0
+
+    # Le token d'abonnement et le token GitHub, depuis un fichier en 600. JAMAIS en
+    # `environment:` ici : ce fichier est versionne.
+    env_file:
+      - ${HOME}/.forgeron/secrets.env
+
+    environment:
+      GIT_AUTHOR_NAME: forgeron
+      GIT_AUTHOR_EMAIL: forgeron@localhost.invalid
+
+    volumes:
+      # l'etat du pilote : c'est la seule chose qui doit survivre au conteneur
+      - ${HOME}/.forgeron:/home/forgeron/.forgeron
+      # le clone dont les worktrees sont tires. En lecture-ecriture : un worktree
+      # ecrit dans le .git du clone, donc un montage en ro casserait `worktree add`.
+      - ${HOME}/forgeron-sandbox:/repos/forgeron-sandbox
+
+    command: ["run", "--write", "--interval", "60",
+              "--config", "/home/forgeron/.forgeron/config.json"]
+    restart: unless-stopped
+
+    # Un agent qui compile peut manger la machine. Des bornes, meme genereuses,
+    # valent mieux qu'un OOM killer qui choisit a ta place ce qui meurt.
+    cpus: 4.0
+    mem_limit: 8g

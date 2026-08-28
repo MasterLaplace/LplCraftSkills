@@ -78,10 +78,27 @@ sens. Elles attendront.
 **Si tu es déjà développeur** : lis `cycle-de-dev` pour la carte, puis va directement au skill du
 problème que tu as. Chacune se lit seule.
 
+## `forgeron/` — les skills appliquées sans surveillance
+
+[`forgeron/`](forgeron/README.md) est une **preuve de concept**, à part des skills : un pilote local
+qui écoute les issues GitHub étiquetées, ouvre une pull request en brouillon avant d'écrire une
+ligne, code en suivant ces skills, attend l'intégration continue, demande la revue, et boucle sur
+tes commentaires jusqu'à ce que tu fusionnes.
+
+Elle est ici parce que c'est le pack qu'elle applique, et elle est dans son propre dossier parce
+que ce pack **ne prescrit pas d'outillage** : `forgeron` est un exemple d'un principe, pas une
+recommandation. Rien dans `skills/` n'en dépend, et les skills se lisent sans elle.
+
+Python 3, `git`, `gh`, `claude`. Aucune infrastructure, aucun jeton à copier.
+
+```bash
+cd forgeron && ./tests/run.sh
+```
+
 ## Conventions
 
 - **chaque skill se termine par une « porte de sortie »** : la liste des réponses qui doivent exister avant
-  de passer à la suite. C'est la partie à relire ;
+  de passer à la suite. C'est la partie à relire, et la seule à relire si on est pressé ;
 - **les dossiers `references/`** contiennent le détail copiable, configurations, commandes, catalogues. Ils
   ne se lisent pas d'affilée : on y va quand le skill y renvoie ;
 - **les schémas sont en Mermaid**, jamais en art ASCII. Les rares blocs de texte qui ressemblent à des
@@ -90,15 +107,26 @@ problème que tu as. Chacune se lit seule.
   destinés à être copiés dans des sources et des configurations, où un problème d'encodage coûterait plus
   que le confort de lecture.
 
+Et ces conventions ne sont pas seulement écrites, elles sont **vérifiées** :
+
+```bash
+./check.sh   # les portes de sortie, les frontmatters, le tableau ci-dessus, l'absence d'art ASCII
+```
+
+Il existe parce que trois skills avaient perdu leur porte de sortie sans que personne ne le remarque :
+ce README l'affirmait, et rien ne le contredisait. Une affirmation invérifiable finit toujours par être
+fausse, ce qui est exactement le fil rouge du pack, appliqué au pack.
+
 ## Ce que ce pack ne fait pas
 
 - **il n'apprend aucun langage.** Il suppose que tu sais écrire une fonction ; il parle de ce qu'on fait
   autour ;
 - **il ne prescrit pas d'outillage.** Les outils cités sont des exemples d'un principe, jamais une
   recommandation. Le principe survit à l'outil ;
-- **il ne tranche pas ce qui dépend du contexte : il donne le critère.** Deux sujets y sont explicitement à
-  deux réponses, le backlog en fichiers ou en issues de forge, et le versionnement par contrat ou par
-  cadence. Dans les deux cas, le skill donne la question qui décide plutôt qu'un verdict ;
+- **il ne tranche pas ce qui dépend du contexte : il donne le critère.** Trois sujets y sont explicitement
+  à deux réponses : le backlog en fichiers ou en issues de forge, le versionnement par contrat ou par
+  cadence, et la fermeture d'une pull request en squash ou en commit de fusion. Dans les trois cas, le
+  skill donne la question qui décide plutôt qu'un verdict ;
 - **il n'est pas une étude.** C'est de l'expérience condensée : des règles qui ont chacune été payées par
   une panne, pas un résultat mesuré sur une population de projets. À lire comme un avis argumenté, et à
   contredire par une mesure si tu en as une. C'est d'ailleurs ce que le pack demande partout ailleurs.

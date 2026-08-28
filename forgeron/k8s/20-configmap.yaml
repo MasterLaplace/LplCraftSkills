@@ -1,0 +1,38 @@
+# La configuration du pilote, montee en fichier. Un ConfigMap et pas un Secret :
+# rien la-dedans n'est sensible, et les melanger ferait relire un Secret a chaque
+# fois qu'on veut changer un intervalle.
+#
+# ATTENTION : le `path` d'un depot est celui VU DEPUIS LE POD, pas depuis l'hote.
+# C'est la premiere chose qui casse quand on recopie une config locale telle quelle.
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: forgeron-config
+  namespace: forgeron
+data:
+  config.json: |
+    {
+      "home": "/var/lib/forgeron",
+      "repos": [
+        {
+          "slug": "MasterLaplace/forgeron-sandbox",
+          "path": "/repos/forgeron-sandbox",
+          "base": "main",
+          "labels": ["claude"],
+          "hold_label": "claude:hold",
+          "reviewers": ["MasterLaplace"]
+        }
+      ],
+      "limits": {
+        "max_rounds": 6,
+        "max_spend_usd": 12.0,
+        "auto_merge": false,
+        "checks_timeout_minutes": 45,
+        "max_check_fixes": 3
+      },
+      "max_concurrent": 1,
+      "poll_seconds": 60,
+      "model": "sonnet",
+      "budget_per_run_usd": 3.0,
+      "continuity": "rebuild"
+    }

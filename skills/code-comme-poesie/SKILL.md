@@ -190,3 +190,21 @@ Du plus cher au moins cher à corriger plus tard :
 5. **le style** : en dernier, et **s'il se discute en revue, c'est qu'il manque au formateur
    automatique.** Un style appliqué par un outil ne consomme pas de temps humain ; un débat de style en
    revue consomme celui qu'on n'a plus pour les points 1 à 3.
+
+## La porte de sortie
+
+Avant de rendre le code, ces six réponses doivent exister :
+
+1. un lecteur qui ne connaît pas ce code comprend **ce que fait chaque fonction sans descendre dans son
+   corps**, en lisant seulement sa signature ;
+2. l'invalide est **impossible** là où il pouvait l'être, et gardé tôt là où il ne pouvait pas ;
+3. chaque fonction se raconte **à une seule altitude**, sans « et » dans son résumé ;
+4. **aucun commentaire ne paraphrase le code** : ceux qui restent tombent dans les quatre cas, et il n'y a
+   ni code commenté, ni journal de modifications en commentaire ;
+5. la **doc de contrat** couvre la frontière publique et rien d'autre, elle dit ce que la fonction exige
+   et ce qu'elle garantit, jamais comment elle s'y prend ;
+6. quand ça rate, quelqu'un l'apprend, **tôt**, avec quoi et où.
+
+Et le test qui vaut pour tout le skill, parce qu'il attrape les cinq autres : **si un nom exact est
+impossible à trouver, ce n'est pas le nom qui résiste, c'est la chose nommée.** Une fonction qu'on ne
+sait pas nommer en fait deux ; un paramètre qu'on ne sait pas nommer n'a rien à faire là.

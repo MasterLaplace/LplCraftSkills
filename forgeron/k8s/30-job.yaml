@@ -1,0 +1,58 @@
+# UNE action de forgeron, une fois. Un Job et pas un Deployment : une action est
+# bornee (un run d'agent), alors qu'une issue vit des jours - le Deployment, s'il y
+# en a un un jour, c'est le reconciliateur qui decide, pas celui qui execute.
+#
+# NON TESTE : ni docker ni kubectl sur la machine ou ce fichier a ete ecrit.
+#
+# Avant d'appliquer, DEUX choses qui ne vont pas de soi :
+#
+# 1. l'image locale n'existe pas pour le cluster. Les noeuds k3d sont des conteneurs
+#    avec leur propre stockage d'images, donc une image construite sur l'hote leur
+#    est invisible. Il faut l'y pousser :
+#        k3d image import forgeron:0.1.0 -c forgeron
+#    Sans ca : le pod reste en ErrImagePull, ce qui ressemble a un probleme de
+#    reseau et n'en est pas un.
+#
+# 2. `continuity: "rebuild"` dans le ConfigMap, et ce n'est pas un detail : une
+#    session claude est rangee sous un slug du repertoire de travail, donc un pod
+#    ne peut pas reprendre une conversation creee ailleurs. Voir docs/CLUSTER.md.
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: forgeron-une-passe
+  namespace: forgeron
+spec:
+  backoffLimit: 1              # une action idempotente se reprend, elle ne se rejoue pas six fois
+  ttlSecondsAfterFinished: 3600
+  template:
+    spec:
+      restartPolicy: Never
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1000
+        fsGroup: 1000
+      containers:
+        - name: forgeron
+          image: forgeron:0.1.0
+          imagePullPolicy: IfNotPresent   # sinon il cherchera l'image sur un registre distant
+          args: ["once", "--write", "--config", "/etc/forgeron/config.json"]
+          envFrom:
+            - secretRef:
+                name: forgeron           # CLAUDE_CODE_OAUTH_TOKEN et GH_TOKEN
+          resources:
+            requests: { cpu: "500m", memory: "1Gi" }
+            limits:   { cpu: "4",    memory: "8Gi" }
+          volumeMounts:
+            - { name: config, mountPath: /etc/forgeron, readOnly: true }
+            - { name: state,  mountPath: /var/lib/forgeron }
+            - { name: repos,  mountPath: /repos }
+      volumes:
+        - name: config
+          configMap: { name: forgeron-config }
+        # emptyDir : l'etat meurt avec le pod. Suffisant pour un premier essai en
+        # `once`, PAS pour la boucle - il faudrait un PersistentVolumeClaim, sinon
+        # chaque passe redecouvre les issues depuis zero et replanifie tout.
+        - name: state
+          emptyDir: {}
+        - name: repos
+          emptyDir: {}

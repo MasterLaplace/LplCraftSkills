@@ -1,4 +1,4 @@
-# craft-skills
+# LplCraftSkills
 
 Douze skills [Claude Code](https://claude.com/claude-code) indépendantes du langage, qui encodent une façon
 de travailler : décider avant de coder, prouver avant de livrer, et faire porter par le code tout ce qui
@@ -11,8 +11,8 @@ déclenchement, et l'agent la charge quand la tâche y correspond. **À la deman
 ## Installer
 
 ```bash
-git clone <ce-depot> craft-skills
-cd craft-skills
+git clone <ce-depot> LplCraftSkills
+cd LplCraftSkills
 ./install.sh          # pose un lien par skill dans ~/.claude/skills
 ./install.sh --status # verifier
 ```

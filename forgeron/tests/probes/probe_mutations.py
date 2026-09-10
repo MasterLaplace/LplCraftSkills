@@ -97,6 +97,41 @@ MUTATIONS = [
      RESOLVED_OK,
      RESOLVED_MUTANT),
 
+    ("le fichier n'est pas ecarte avant de relancer",
+     "forgeron/regenerator.py",
+     "        os.replace(target, aside)\n        try:",
+     "        import shutil; shutil.copy2(target, aside)\n        try:"),
+
+    ("le verdict du verificateur est ignore",
+     "forgeron/engine.py",
+     "            if outcome.ok:",
+     "            if True:"),
+
+    ("un visuel peut sortir du worktree",
+     "forgeron/regenerator.py",
+     "        if os.path.commonpath([root, target]) != root:",
+     "        if False:"),
+
+    ("le plafond de visuels est retire",
+     "forgeron/engine.py",
+     "        for entry in declared[:MAX_VISUALS]:",
+     "        for entry in declared:"),
+
+    ("la verification d'attribution est retiree",
+     "forgeron/engine.py",
+     "        if tainted:",
+     "        if False:"),
+
+    ("le filtre emporte aussi un co-auteur humain",
+     "forgeron/attribution.py",
+     r'    r"^\s*co-authored-by:.*(claude|anthropic)",',
+     r'    r"^\s*co-authored-by:",'),
+
+    ("la prose de l'agent n'est plus nettoyee",
+     "forgeron/engine.py",
+     '        attribution.strip(verdict.get("summary", "")).strip(),\n        "",\n        answers,',
+     '        verdict.get("summary", "").strip(),\n        "",\n        answers,'),
+
     ("le plafond de correctifs CI est retire",
      "forgeron/states.py",
      "            if record.check_fixes >= limits.max_check_fixes:",

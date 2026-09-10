@@ -60,6 +60,13 @@ ENV PYTHONPATH=/opt/forgeron \
     PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1
 
+# La prevention de l'attribution IA doit exister LA OU L'AGENT COMMIT, et pas
+# seulement sur la machine de l'auteur : un conteneur neuf n'a aucun hook, donc la
+# couche qui previent y serait absente exactement la ou l'agent est le moins
+# surveille. Le script est derive des memes motifs que la verification du pilote.
+RUN python3 -m forgeron hook --install "/home/${USERNAME}/.config/git/hooks" \
+    && git config --global core.hooksPath "/home/${USERNAME}/.config/git/hooks"
+
 # Un healthcheck qui ment est pire que pas de healthcheck : celui-ci n'affirme que
 # ce qu'il verifie, a savoir que le pilote se charge et sait s'auto-decrire.
 HEALTHCHECK --interval=60s --timeout=15s --start-period=10s --retries=3 \

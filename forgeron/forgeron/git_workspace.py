@@ -103,6 +103,23 @@ class GitWorkspace:
         ).split()
         return False, conflicted
 
+    def commit_messages(self, worktree: str, base: str) -> list[tuple[str, str]]:
+        """Les commits que cette branche ajoute, en (sha court, message complet).
+
+        Separateurs de contrôle plutôt qu'un saut de ligne : un message de commit
+        contient des sauts de ligne, donc découper dessus fusionnerait un corps
+        avec le commit suivant et le contrôle porterait sur du texte inventé.
+        """
+        raw = self._git(worktree, ["log", "--format=%h%x1f%B%x1e", f"origin/{base}..HEAD"],
+                        check=False)
+        commits = []
+        for record in raw.split("\x1e"):
+            if "\x1f" not in record:
+                continue
+            sha, _, message = record.partition("\x1f")
+            commits.append((sha.strip(), message.strip("\n")))
+        return commits
+
     def conflicted(self, worktree: str) -> list[str]:
         """Files git still considers unresolved. Empty is the only proof of success.
 

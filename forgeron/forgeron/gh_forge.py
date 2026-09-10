@@ -165,10 +165,16 @@ class GhForge:
     def checks(self, repo: str, pr: int) -> tuple[CheckState, tuple[CheckRun, ...]]:
         """What CI says, folded into one state plus the runs that are red.
 
-        `gh pr checks --json` does not exist in gh 2.46, so the rollup is read
-        through `gh pr view`. Both node types are handled: CheckRun is Actions,
-        StatusContext is a commit status posted by anything else, and a repository
-        wired to an external CI would otherwise report "no checks" while being red.
+        Read through `gh pr view` rather than `gh pr checks --json`, and the
+        durable reason is the second one: both node types are handled. CheckRun is
+        Actions, StatusContext is a commit status posted by anything else, and a
+        repository wired to an external CI would otherwise report "no checks" while
+        being red.
+
+        The original reason has expired and is kept as a dated fact rather than a
+        live justification: `--json` was absent from `gh pr checks` in 2.46 (the
+        version Ubuntu shipped), and it exists in 2.100. A justification that stops
+        being true while the code stays right is how a comment starts lying.
         """
         argv = ["pr", "view", str(pr), "--repo", repo, "--json", "statusCheckRollup"]
         rollup = self._json(argv).get("statusCheckRollup") or []
@@ -319,8 +325,24 @@ class GhForge:
             argv += ["--add-reviewer", reviewer]
         self._run(argv)
 
-    def comment_on_pull_request(self, repo: str, number: int, body: str) -> None:
-        self._run(["pr", "comment", str(number), "--repo", repo, "--body-file", "-"], stdin=body)
+    def comment_on_pull_request(self, repo: str, number: int, body: str,
+                                attachments: tuple[tuple[str, str], ...] = (),
+                                cwd: str | None = None) -> None:
+        """Poste un commentaire, avec ses images ou videos si la forge sait les rendre.
+
+        `--attach` existe depuis gh 2.99.0 (mesure : absent en 2.98). Les chemins
+        sont RELATIFS et la commande tourne depuis `cwd`, pour que la reference
+        ecrite dans le corps reste lisible si l'envoi echoue : un `![x](rendu.png)`
+        casse se voit, un chemin absolu de la machine de quelqu'un d'autre est du
+        bruit que personne ne sait interpreter.
+
+        gh reecrit en place toute reference que le corps contient deja, et ajoute
+        a la fin celles qu'il ne trouve pas.
+        """
+        argv = ["pr", "comment", str(number), "--repo", repo, "--body-file", "-"]
+        for path, caption in attachments:
+            argv += ["--attach", f"{path}#{caption}" if caption else path]
+        self._run(argv, stdin=body, cwd=cwd)
 
     def comment_on_issue(self, repo: str, number: int, body: str) -> None:
         self._run(["issue", "comment", str(number), "--repo", repo, "--body-file", "-"], stdin=body)
@@ -333,9 +355,28 @@ class GhForge:
             return out
         return json.loads(out or "[]")
 
-    def _run(self, argv: list[str], stdin: str | None = None, check: bool = True) -> str:
+    def version(self) -> tuple[int, int, int]:
+        """La version de gh, en trois entiers. Ce qui est disponible en depend.
+
+        Demandee plutot que supposee : `--attach` n'existe pas avant 2.99.0 et
+        `gh pr checks --json` pas avant 2.6x, donc un drapeau inconnu echouerait
+        au milieu d'un run, ce qui est la pire facon de l'apprendre.
+        """
+        raw = self._run(["--version"], check=False).split()
+        for word in raw:
+            parts = word.split(".")
+            if len(parts) == 3 and all(part.isdigit() for part in parts):
+                return tuple(int(part) for part in parts)  # type: ignore[return-value]
+        return (0, 0, 0)
+
+    def supports_attachments(self) -> bool:
+        return self.version() >= (2, 99, 0)
+
+    def _run(self, argv: list[str], stdin: str | None = None, check: bool = True,
+             cwd: str | None = None) -> str:
         done = subprocess.run(
-            [self._gh, *argv], input=stdin, capture_output=True, text=True, timeout=self._timeout,
+            [self._gh, *argv], input=stdin, capture_output=True, text=True,
+            timeout=self._timeout, cwd=cwd,
         )
         if check and done.returncode != 0:
             raise GhError(f"gh {' '.join(argv)} -> {done.returncode}: {done.stderr.strip()[:500]}")

@@ -1,7 +1,7 @@
 # forgeron
 
 Un pilote qui écoute les issues GitHub étiquetées, ouvre une **pull request en brouillon avant
-d'écrire une ligne**, code la solution en suivant les [craft-skills](../README.md), **attend
+d'écrire une ligne**, code la solution en suivant les [LplCraftSkills](../README.md), **attend
 l'intégration continue**, demande la revue, et boucle sur tes commentaires jusqu'à ce que tu fusionnes.
 Puis il clôt la session.
 
@@ -42,7 +42,7 @@ stateDiagram-v2
     end note
 ```
 
-Trois choses qu'il ne fait jamais : pousser sur `main`, fusionner, et `push --force` — la seule
+Quatre choses qu'il ne fait jamais : ajouter un co-auteur agent, pousser sur `main`, fusionner, et `push --force` — la seule
 réécriture autorisée est un `--force-with-lease` sur sa propre branche, après un rebase, et seulement
 quand le pilote a vérifié qu'il ne reste aucun fichier en conflit.
 
@@ -96,6 +96,11 @@ liste d'options dans un README finit toujours par mentir — c'est ce que dit le
 4. tu relis **normalement** : commentaires en ligne, *request changes*, *approve*. Chaque retour
    déclenche un tour, avec **un seul commentaire** en réponse : une ligne par remarque, puis le
    tableau critère / tenu / preuve ;
+4a. si le changement se **voit** mieux qu'il ne se lit, la pull request porte une image ou une
+   vidéo. Et jamais une capture d'écran : l'agent doit déclarer la commande qui produit le fichier,
+   le pilote **écarte le fichier, relance la commande et exige qu'il revienne**, et la commande est
+   publiée sous l'image. Un visuel qui ne se régénère pas est écarté, avec sa raison. Demande
+   `gh` ≥ 2.99 ;
 4b. si quelqu'un fusionne autre chose sur `main` pendant ce temps, la branche se met à jour toute
    seule : **rebase tant que personne ne l'a relue, fusion dès qu'un relecteur est passé** — rebaser
    sous ses yeux effacerait le « ce qui a changé depuis ta dernière relecture » qu'il utilise. En cas
@@ -108,10 +113,14 @@ Pour reprendre la main sans rien casser : étiquette `claude:hold`. Pour tout ar
 
 ## Ce qui est vérifié, et ce qui ne l'est pas
 
-Vérifié hors ligne, à chaque `./tests/run.sh` : **82 tests** dont le trajet complet issue → fusion
-avec un build rouge et un tour de revue au milieu, plus **13 sondes de mutation** qui cassent une
+Vérifié hors ligne, à chaque `./tests/run.sh` : **115 tests** dont le trajet complet issue → fusion
+avec un build rouge et un tour de revue au milieu, plus **20 sondes de mutation** qui cassent une
 règle chacune et vérifient que la suite s'en aperçoit. Une suite verte au premier coup ne prouve
 rien ; c'est la sonde qui prouve qu'elle *pouvait* échouer.
+
+Vérifié contre un vrai disque : le vérificateur de visuels, dont le contrôle qui compte est
+qu'une commande **qui ne fait rien** est refusée. Sans la mise à l'écart du fichier avant de
+relancer, elle passerait, puisque le fichier était déjà là.
 
 Vérifié contre un vrai `git` : le worktree par issue, le renommage de branche avant premier push, le
 fait que **le checkout de l'humain reste propre**, la reprise d'une branche déjà poussée, `is_synced`

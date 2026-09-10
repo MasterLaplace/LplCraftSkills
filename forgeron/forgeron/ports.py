@@ -32,7 +32,11 @@ class Forge(Protocol):
 
     def request_review(self, repo: str, number: int, reviewers: tuple[str, ...]) -> None: ...
 
-    def comment_on_pull_request(self, repo: str, number: int, body: str) -> None: ...
+    def comment_on_pull_request(self, repo: str, number: int, body: str,
+                                attachments: tuple[tuple[str, str], ...] = (),
+                                cwd: str | None = None) -> None: ...
+
+    def supports_attachments(self) -> bool: ...
 
     def comment_on_issue(self, repo: str, number: int, body: str) -> None: ...
 
@@ -77,6 +81,8 @@ class Workspace(Protocol):
 
     def sync_with_base(self, worktree: str, base: str, method: str) -> tuple[bool, list[str]]: ...
 
+    def commit_messages(self, worktree: str, base: str) -> list[tuple[str, str]]: ...
+
     def conflicted(self, worktree: str) -> list[str]: ...
 
     def abort_sync(self, worktree: str) -> None: ...
@@ -84,6 +90,18 @@ class Workspace(Protocol):
     def push_forced(self, worktree: str, branch: str) -> None: ...
 
     def discard(self, worktree: str, repo_path: str) -> None: ...
+
+
+@runtime_checkable
+class Regenerator(Protocol):
+    """Prouve qu'une commande reproduit un fichier. Une seule methode, bornee par son nom.
+
+    Un port a part plutot qu'une methode de Workspace : celui-ci possede git, et
+    « lancer une commande arbitraire » est une capacite bien plus large que ce
+    qu'on veut voir passer par la couture d'un depot.
+    """
+
+    def reproduce(self, worktree: str, path: str, command: str): ...
 
 
 @runtime_checkable

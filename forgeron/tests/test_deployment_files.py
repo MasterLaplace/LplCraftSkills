@@ -93,6 +93,13 @@ class Dockerfile(unittest.TestCase):
             with self.subTest(forbidden=forbidden):
                 self.assertNotIn(forbidden, self.text)
 
+    def test_it_installs_the_commit_msg_hook(self) -> None:
+        # Le hook du poste de l'auteur ne suit pas dans l'image. Sans cette ligne
+        # la couche qui previent manque exactement la ou l'agent est le moins
+        # surveille, et il ne reste que la verification apres coup.
+        self.assertIn("forgeron hook --install", self.text)
+        self.assertIn("core.hooksPath", self.text)
+
     def test_the_package_path_it_copies_is_the_one_it_puts_on_pythonpath(self) -> None:
         self.assertIn("COPY --chown=$UID:$GID forgeron/ /opt/forgeron/forgeron/", self.text)
         self.assertIn("PYTHONPATH=/opt/forgeron", self.text)

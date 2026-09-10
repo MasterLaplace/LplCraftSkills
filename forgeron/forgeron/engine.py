@@ -13,11 +13,11 @@ import datetime
 import subprocess
 import uuid
 
-from . import prompts
+from . import attribution, prompts
 from .config import Config, RepoConfig
 from .journal import Journal
 from .model import (Action, CheckState, Decision, Feedback, IssueRef, MergeState,
-                    Observation, Phase, PullRequestView, Record)
+                    Observation, Phase, PullRequestView, Record, Visual)
 from .states import Limits, decide, phase_after_plan, sync_method
 from .store import Store
 
@@ -32,6 +32,7 @@ class Engine:
         store: Store,
         journal: Journal,
         dry_run: bool = False,
+        regenerator=None,
     ) -> None:
         self._config = config
         self._forge = forge
@@ -39,11 +40,8 @@ class Engine:
         self._agent = agent
         self._store = store
         self._journal = journal
-        # A dry run stops at the decision rather than executing with the writes
-        # withheld. Half-executing would still persist a phase - and the phase it
-        # would persist is BLOCKED, because the suppressed writes make every action
-        # fail. A preview that leaves the state worse than it found it is not one.
         self._dry_run = dry_run
+        self._regenerator = regenerator
 
     # -- one pass -----------------------------------------------------------
 
@@ -471,7 +469,7 @@ class Engine:
             self._forge.comment_on_pull_request(record.repo, record.pr, "\n".join([
                 f"### forgeron · conflit avec `{repo.base}` resolu ({method.lower()})",
                 "",
-                result.verdict.get("summary", "").strip(),
+                attribution.strip(result.verdict.get("summary", "")).strip(),
                 "",
                 "⚠ **Cette resolution n'a ete relue par personne.** Fusionner deux changements "
                 "peut produire quelque chose qui compile et qui est faux, donc la revue est "
@@ -606,6 +604,13 @@ class Engine:
             self._journal.emit("worktree_dirty", key=record.key,
                                detail="des fichiers non commites seront perdus au nettoyage")
 
+        tainted = self._attributed_commits(record, repo)
+        if tainted:
+            if record.pr:
+                self._forge.comment_on_pull_request(record.repo, record.pr, _tainted_note(tainted))
+            return record.with_(phase=Phase.BLOCKED,
+                                note=f"attribution IA dans {len(tainted)} commit(s)")
+
         if not self._workspace.is_synced(record.worktree, record.branch):
             self._journal.emit("verdict_overstated", key=record.key,
                                claimed_pushed=bool(verdict.get("pushed")))
@@ -614,10 +619,65 @@ class Engine:
         self._journal.emit("head", key=record.key, sha=self._workspace.head(record.worktree),
                            branch=record.branch)
 
+        accepted, refused = self._verify_visuals(record, verdict)
         if record.pr:
-            self._forge.comment_on_pull_request(record.repo, record.pr,
-                                                _work_note(verdict, record, answered))
+            self._forge.comment_on_pull_request(
+                record.repo, record.pr,
+                _work_note(verdict, record, answered, accepted, refused),
+                attachments=tuple((visual.path, visual.caption) for visual in accepted),
+                cwd=record.worktree,
+            )
         return record.with_(phase=phase_ok, note="")
+
+    def _verify_visuals(self, record: Record, verdict: dict):
+        """Ne garde que les visuels dont la commande reproduit reellement le fichier.
+
+        Le refus est RAPPORTE et non silencieux : un agent qui a produit une image
+        et se la voit ecarter doit pouvoir lire pourquoi, et un relecteur doit
+        savoir qu'il manque quelque chose plutot que de croire qu'il n'y avait
+        rien a montrer.
+        """
+        declared = verdict.get("visuals") or []
+        if not declared:
+            return (), ()
+        if self._regenerator is None:
+            return (), (("(tous)", "aucun verificateur de regeneration n'est cable"),)
+        if not self._forge.supports_attachments():
+            return (), (("(tous)", "gh est trop ancien pour --attach, il faut 2.99.0"),)
+
+        accepted: list[Visual] = []
+        refused: list[tuple[str, str]] = []
+        for entry in declared[:MAX_VISUALS]:
+            visual = Visual(path=entry.get("path", ""), caption=entry.get("caption", ""),
+                            command=entry.get("command", ""))
+            outcome = self._regenerator.reproduce(record.worktree, visual.path, visual.command)
+            self._journal.emit("visual_checked", key=record.key, path=visual.path,
+                               ok=outcome.ok, reason=outcome.reason)
+            if outcome.ok:
+                accepted.append(visual)
+            else:
+                refused.append((visual.path, outcome.reason))
+
+        for entry in declared[MAX_VISUALS:]:
+            refused.append((entry.get("path", "?"), f"au-dela du plafond de {MAX_VISUALS}"))
+        return tuple(accepted), tuple(refused)
+
+    def _attributed_commits(self, record: Record, repo: RepoConfig):
+        """Les commits de la branche qui portent une attribution IA.
+
+        Une troisième couche derrière le réglage et le hook, et elle existe parce
+        que les deux premières ont chacune un trou : `git commit --no-verify`
+        saute le hook, et un conteneur neuf n'en a aucun. Celle-ci ne prévient
+        rien et n'est contournable par rien, puisqu'elle regarde le résultat.
+        """
+        tainted = []
+        for sha, message in self._workspace.commit_messages(record.worktree, repo.base):
+            lines = attribution.offending_lines(message)
+            if lines:
+                tainted.append((sha, lines[0]))
+                self._journal.emit("attribution_found", key=record.key, commit=sha,
+                                   line=lines[0][:80])
+        return tuple(tainted)
 
     def _resume(self, record: Record) -> bool:
         """Resume the conversation, or restate the context from scratch.
@@ -676,7 +736,12 @@ def _pr_body(plan: dict, record: Record, config: Config) -> str:
     ])
 
 
-def _work_note(verdict: dict, record: Record, answered: tuple[Feedback, ...] = ()) -> str:
+MAX_VISUALS = 4
+
+
+def _work_note(verdict: dict, record: Record, answered: tuple[Feedback, ...] = (),
+               visuals: tuple[Visual, ...] = (),
+               refused: tuple[tuple[str, str], ...] = ()) -> str:
     rows = "\n".join(
         f"| {'oui' if item.get('met') else 'NON'} | {item.get('criterion', '')} | "
         f"{_cell(item.get('evidence', ''))} |"
@@ -687,7 +752,7 @@ def _work_note(verdict: dict, record: Record, answered: tuple[Feedback, ...] = (
     return "\n".join([
         f"### forgeron · tour {record.rounds}",
         "",
-        verdict.get("summary", "").strip(),
+        attribution.strip(verdict.get("summary", "")).strip(),
         "",
         answers,
         "",
@@ -702,7 +767,27 @@ def _work_note(verdict: dict, record: Record, answered: tuple[Feedback, ...] = (
         "```",
         "",
         "</details>",
+        _visual_block(visuals, refused),
     ])
+
+
+def _visual_block(visuals: tuple[Visual, ...],
+                  refused: tuple[tuple[str, str], ...]) -> str:
+    """Chaque image publiee avec, juste dessous, la commande qui la regenere.
+
+    C'est la regle de `rendre-l-etat-visible` rendue visible pour le lecteur :
+    sans cette ligne, ce qu'il voit est une capture d'ecran, et il n'a aucun moyen
+    de savoir si elle decrit encore le code qu'il relit.
+    """
+    if not visuals and not refused:
+        return ""
+    lines = ["", "#### Visuels", ""]
+    for visual in visuals:
+        lines += [f"![{visual.caption}]({visual.path})", "",
+                  f"Regenerer : `{visual.command}`", ""]
+    for path, reason in refused:
+        lines.append(f"- `{path}` **ecarte** : {reason}")
+    return "\n".join(lines)
 
 
 def _answers_note(verdict: dict, feedback: tuple[Feedback, ...]) -> str:
@@ -715,7 +800,8 @@ def _answers_note(verdict: dict, feedback: tuple[Feedback, ...]) -> str:
     lines = ["**Reponses aux remarques :**", ""]
     answers = verdict.get("answers") or []
     for index, item in enumerate(feedback):
-        answer = answers[index] if index < len(answers) else "_(sans reponse explicite)_"
+        answer = attribution.strip(answers[index]) if index < len(answers) \
+            else "_(sans reponse explicite)_"
         head = f"**@{item.author}"
         head += f" · {item.path}:{item.line}**" if item.path else "**"
         lines += [f"{index + 1}. {head} — {answer}"]
@@ -741,7 +827,7 @@ def _wrap_note(verdict: dict, record: Record) -> str:
     return "\n".join([
         f"### forgeron · session close",
         "",
-        verdict.get("summary", "").strip(),
+        attribution.strip(verdict.get("summary", "")).strip(),
         "",
         f"Pull request #{record.pr} fusionnee en {record.rounds} tour(s), "
         f"{record.spent_usd:.2f} USD. Worktree supprime, branche conservee.",
@@ -749,6 +835,22 @@ def _wrap_note(verdict: dict, record: Record) -> str:
         "**Suites reperees, a ouvrir en issues si elles valent la peine :**",
         "",
         followups,
+    ])
+
+
+def _tainted_note(tainted: tuple[tuple[str, str], ...]) -> str:
+    listing = "\n".join(f"- `{sha}` — `{line.strip()}`" for sha, line in tainted)
+    return "\n".join([
+        "**forgeron refuse d'avancer : un commit porte une attribution IA.**",
+        "",
+        listing,
+        "",
+        "L'auteur de ce depot ne veut pas de cette ligne dans son historique, et le refus est "
+        "mecanique plutot que confie a la vigilance de l'agent. Trois couches devaient l'empecher : "
+        "le reglage `attribution`, le hook `commit-msg`, et ce controle. Les deux premieres ont "
+        "ete contournees, par `--no-verify` ou par leur absence.",
+        "",
+        "Reecrire le ou les messages sans la ligne, puis republier la branche.",
     ])
 
 

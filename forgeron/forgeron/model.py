@@ -150,6 +150,22 @@ class Feedback:
 
 
 @dataclasses.dataclass(frozen=True, slots=True)
+class Visual:
+    """An image or a video an agent wants on the pull request, with its provenance.
+
+    The three fields are inseparable, and that is the whole point. A visual whose
+    producing command is unknown is a screenshot: it stops matching the code the
+    day the code moves, and nothing signals it, because a picture cannot fail a
+    build. Requiring the command here makes the rule of `rendre-l-etat-visible`
+    a precondition of the mechanism rather than a sentence in a prompt.
+    """
+
+    path: str        # relative to the worktree, never outside it
+    caption: str     # alt text, what the reader is looking at
+    command: str     # what produced it, run again before anything is uploaded
+
+
+@dataclasses.dataclass(frozen=True, slots=True)
 class IssueRef:
     repo: str            # "owner/name"
     number: int

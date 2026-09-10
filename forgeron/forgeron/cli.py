@@ -14,12 +14,13 @@ import subprocess
 import sys
 import uuid
 
-from . import __version__, config as config_module
+from . import __version__, attribution, config as config_module
 from .claude_agent import ClaudeAgent
 from .engine import Engine
 from .gh_forge import GhForge
 from .git_workspace import GitWorkspace
 from .journal import Journal
+from .regenerator import ShellRegenerator
 from .model import Phase, Record
 from .sources import IntervalTrigger
 from .store import Store
@@ -87,6 +88,12 @@ def _parser() -> argparse.ArgumentParser:
     run.add_argument("--write", action="store_true", help="autorise les ecritures")
     run.set_defaults(handler=_run)
 
+    hook = sub.add_parser(
+        "hook", help="le hook commit-msg qui retire toute attribution IA d'un message")
+    hook.add_argument("--install", metavar="DOSSIER",
+                      help="ecrit le hook dans DOSSIER et le rend executable")
+    hook.set_defaults(handler=_hook)
+
     adopt = sub.add_parser("adopt", help="prend une issue en charge sans attendre l'etiquette")
     adopt.add_argument("repo", help="owner/name, doit etre dans l'allowlist")
     adopt.add_argument("issue", type=int)
@@ -122,6 +129,14 @@ def _doctor(args: argparse.Namespace) -> int:
                 scopes = line.split(":", 1)[1].strip()
         check("gh authentifie", auth.returncode == 0, scopes or "aucune portee lue")
         check("portee repo", "'repo'" in scopes, "necessaire pour issues et pull requests")
+        version = subprocess.run(["gh", "--version"], capture_output=True, text=True,
+                                 timeout=20).stdout.split()
+        triple = next((tuple(int(n) for n in w.split("."))
+                       for w in version if w.count(".") == 2
+                       and all(n.isdigit() for n in w.split("."))), (0, 0, 0))
+        check("gh >= 2.99 (pieces jointes)", triple >= (2, 99, 0),
+              f"{'.'.join(str(n) for n in triple)} : --attach permet de joindre une image "
+              f"ou une video a une pull request", optional=True)
         check("portee admin:repo_hook", "admin:repo_hook" in scopes,
               "requise seulement pour gh webhook forward : gh auth refresh -s admin:repo_hook",
               optional=True)
@@ -130,6 +145,11 @@ def _doctor(args: argparse.Namespace) -> int:
               optional=True)
     except Exception as failure:
         check("gh authentifie", False, str(failure)[:200])
+
+    # Verifier qu'un hook EXISTE ne prouve rien : on lui donne un message a filtrer
+    # et on regarde ce qu'il en fait. Une garde qu'on n'a pas vue agir n'est pas
+    # une garde, c'est un fichier.
+    check("attribution : le hook agit", *_probe_commit_msg_hook())
 
     try:
         configuration = config_module.load(args.config)
@@ -238,6 +258,29 @@ def _run(args: argparse.Namespace) -> int:
     return EXIT_OK
 
 
+def _hook(args: argparse.Namespace) -> int:
+    """Emet le hook, ou l'installe. Le script est DERIVE des motifs du paquet.
+
+    Sans `--install` il part sur la sortie standard, ce qui le rend composable :
+    `forgeron hook > ~/.config/git/hooks/commit-msg`. La forme derivee existe pour
+    que la couche qui previent et la couche qui verifie ne puissent pas se mettre
+    a diverger sur ce qui compte comme une attribution.
+    """
+    script = attribution.hook_script()
+    if not args.install:
+        print(script, end="")
+        return EXIT_OK
+
+    os.makedirs(args.install, exist_ok=True)
+    target = os.path.join(args.install, "commit-msg")
+    with open(target, "w", encoding="utf-8") as handle:
+        handle.write(script)
+    os.chmod(target, os.stat(target).st_mode | 0o111)
+    print(f"ecrit : {target}", file=sys.stderr)
+    print("le brancher : git config --global core.hooksPath " + args.install, file=sys.stderr)
+    return EXIT_OK
+
+
 def _adopt(args: argparse.Namespace) -> int:
     configuration = _load_or_die(args)
     repo = configuration.repo(args.repo)
@@ -282,8 +325,42 @@ def _build(args: argparse.Namespace) -> tuple[Engine, Journal]:
     # what makes a preview worth reading, and no write can happen because the driver
     # stops at the decision. Faking the reads too would exercise the fake.
     engine = Engine(configuration, GhForge(), GitWorkspace(), agent,
-                    Store(configuration.state_dir), journal, dry_run=not write)
+                    Store(configuration.state_dir), journal, dry_run=not write,
+                    regenerator=ShellRegenerator())
     return engine, journal
+
+
+def _probe_commit_msg_hook() -> tuple[bool, str]:
+    """Fait tourner le hook actif sur un message piege, et rapporte ce qu'il en reste."""
+    try:
+        directory = subprocess.run(["git", "config", "--get", "core.hooksPath"],
+                                   capture_output=True, text=True, timeout=10).stdout.strip()
+    except Exception as failure:
+        return False, f"git injoignable : {failure}"
+    if not directory:
+        return False, "aucun core.hooksPath : lancer forgeron hook --install <dossier>"
+
+    hook = os.path.join(os.path.expanduser(directory), "commit-msg")
+    if not os.access(hook, os.X_OK):
+        return False, f"{hook} absent ou non executable"
+
+    import tempfile
+    piege = "feat: sonde\n\nCorps.\n\nCo-Authored-By: Claude Opus 5 <noreply@anthropic.com>"
+    with tempfile.NamedTemporaryFile("w", suffix=".msg", delete=False, encoding="utf-8") as handle:
+        handle.write(piege)
+        path = handle.name
+    try:
+        subprocess.run([hook, path], capture_output=True, text=True, timeout=10)
+        with open(path, encoding="utf-8") as handle:
+            left = handle.read()
+    finally:
+        os.remove(path)
+
+    if attribution.offending_lines(left):
+        return False, f"{hook} a laisse passer la ligne"
+    if "Corps." not in left:
+        return False, f"{hook} a mange le corps du message"
+    return True, f"{hook} retire la ligne et garde le corps"
 
 
 def _load_or_die(args: argparse.Namespace):

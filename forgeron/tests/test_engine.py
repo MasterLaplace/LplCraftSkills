@@ -17,7 +17,7 @@ from forgeron.journal import Journal
 from forgeron.model import FeedbackKind, IssueRef, Phase
 from forgeron.states import Limits
 from forgeron.store import Store
-from tests.fakes import FakeAgent, FakeForge, FakeWorkspace
+from tests.fakes import FakeAgent, FakeForge, FakeRegenerator, FakeWorkspace
 
 ISSUE = IssueRef(repo="o/r", number=42, title="Ajouter un cache LRU",
                  body="Les lectures repetees coutent trop cher.", url="https://fake/42",
@@ -38,15 +38,17 @@ class Harness:
         self.forge = FakeForge([ISSUE])
         self.workspace = FakeWorkspace()
         self.agent = FakeAgent()
+        self.regenerator = FakeRegenerator()
         self.store = Store(self.config.state_dir)
         self.journal = Journal(None, echo=None)
         self.engine = Engine(self.config, self.forge, self.workspace, self.agent,
-                             self.store, self.journal)
+                             self.store, self.journal, regenerator=self.regenerator)
 
     def dry(self) -> "Engine":
         """The same wiring, previewing only. Same fakes, so the reads are identical."""
         return Engine(self.config, self.forge, self.workspace, self.agent,
-                      self.store, self.journal, dry_run=True)
+                      self.store, self.journal, dry_run=True,
+                      regenerator=self.regenerator)
 
     def step(self) -> str:
         """One pass. Returns the phase afterwards, which is what tests read."""

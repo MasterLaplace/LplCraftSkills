@@ -36,6 +36,8 @@ class FakeForge:
         self.update_succeeds = True
         self.landed = ["abc1234 feat: un changement arrive sur main"]
         self.links: list[tuple[str, str]] = []
+        self.attachments: list[tuple[str, str]] = []
+        self.attachments_supported = True
         self._numbers = itertools.count(101)
 
     # -- reads --------------------------------------------------------------
@@ -113,8 +115,14 @@ class FakeForge:
     def request_review(self, repo: str, number: int, reviewers: tuple[str, ...]) -> None:
         self.review_requests.append((number, reviewers))
 
-    def comment_on_pull_request(self, repo: str, number: int, body: str) -> None:
+    def comment_on_pull_request(self, repo: str, number: int, body: str,
+                                attachments: tuple[tuple[str, str], ...] = (),
+                                cwd: str | None = None) -> None:
         self.comments.append(("pr", number, body))
+        self.attachments.extend(attachments)
+
+    def supports_attachments(self) -> bool:
+        return self.attachments_supported
 
     def comment_on_issue(self, repo: str, number: int, body: str) -> None:
         self.comments.append(("issue", number, body))
@@ -166,6 +174,9 @@ class FakeWorkspace:
         self.syncs: list[tuple[str, str]] = []
         self.forced_pushes: list[str] = []
         self.aborts = 0
+        # (sha, message) des commits que la branche ajoute. Propres par defaut :
+        # le cas courant ne doit rien couter aux tests qui ne parlent pas d'attribution.
+        self.branch_commits: list[tuple[str, str]] = []
 
     def prepare(self, repo_path: str, worktree: str, branch: str, base: str) -> None:
         self.prepared.append((worktree, branch))
@@ -194,6 +205,9 @@ class FakeWorkspace:
         if self.conflicts_on_sync:
             return False, list(self.conflicts_on_sync)
         return True, []
+
+    def commit_messages(self, worktree: str, base: str) -> list[tuple[str, str]]:
+        return list(self.branch_commits)
 
     def conflicted(self, worktree: str) -> list[str]:
         return list(self.conflicts_remaining)
@@ -262,3 +276,30 @@ class FakeAgent:
     @property
     def prompts(self) -> list[str]:
         return [call["prompt"] for call in self.calls]
+
+
+@dataclasses.dataclass
+class FakeReproduction:
+    ok: bool
+    reason: str = ""
+    identical: bool = True
+
+
+class FakeRegenerator:
+    """Rejoue un verdict scripte par chemin, et enregistre ce qu'on lui a demande.
+
+    Le vrai vérificateur écarte le fichier et relance une commande ; le fake ne
+    peut pas le simuler honnêtement, donc il ne prétend pas le faire. Ce qu'il
+    exerce est la décision du pilote autour du verdict, et c'est
+    `test-regenerator` qui exerce le verdict lui-même, contre un vrai disque.
+    """
+
+    def __init__(self) -> None:
+        self.calls: list[tuple[str, str]] = []
+        self.refuse: dict[str, str] = {}
+
+    def reproduce(self, worktree: str, path: str, command: str) -> FakeReproduction:
+        self.calls.append((path, command))
+        if path in self.refuse:
+            return FakeReproduction(False, self.refuse[path])
+        return FakeReproduction(True, "reproduit")

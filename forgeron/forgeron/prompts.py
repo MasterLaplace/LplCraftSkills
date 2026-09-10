@@ -89,6 +89,20 @@ WORK_SCHEMA: dict[str, Any] = {
             },
         },
         "pushed": {"type": "boolean"},
+        "visuals": {
+            "type": "array",
+            "description": "vide sauf si le changement se voit mieux qu'il ne se lit",
+            "items": {
+                "type": "object",
+                "properties": {
+                    "path": {"type": "string", "description": "chemin RELATIF au worktree"},
+                    "caption": {"type": "string", "description": "ce que le lecteur regarde"},
+                    "command": {"type": "string", "description": "la commande qui produit ce fichier"},
+                },
+                "required": ["path", "caption", "command"],
+                "additionalProperties": False,
+            },
+        },
         "blocked_reason": {"type": "string"},
         "answers": {
             "type": "array",
@@ -154,6 +168,20 @@ def plan_prompt(issue: IssueRef, answers: tuple[Feedback, ...] = ()) -> str:
     return "\n".join(parts)
 
 
+VISUAL_CONTRACT = [
+    "",
+    "Si le changement se VOIT mieux qu'il ne se lit, `visuals` te permet de joindre une image ou",
+    "une video a la pull request. Invoque `rendre-l-etat-visible` avant d'en produire une : un",
+    "visuel n'est utile que quand l'information est dans la FORME et pas dans une valeur. Partout",
+    "ailleurs un tableau de nombres bat une capture d'ecran.",
+    "",
+    "La contrainte est stricte, et elle est VERIFIEE et non crue : `command` doit REPRODUIRE",
+    "`path`. L'orchestrateur ecarte le fichier, relance ta commande, et n'attache le visuel que",
+    "s'il revient. Un fichier qui ne se regenere pas est une capture d'ecran, et une capture",
+    "d'ecran ment en silence des que le code bouge, puisqu'une image ne casse aucun build.",
+]
+
+
 def implement_prompt(issue: IssueRef, plan: dict[str, Any], pr_url: str) -> str:
     criteria = "\n".join(f"- {item}" for item in plan.get("acceptance", ())) or "- (aucun)"
     return "\n".join([
@@ -170,6 +198,7 @@ def implement_prompt(issue: IssueRef, plan: dict[str, Any], pr_url: str) -> str:
         "",
         "Termine par des commits Conventional Commits et un `git push` sur ta branche.",
         "`pushed` doit dire la verite : l'orchestrateur le verifie contre l'etat de git.",
+        *VISUAL_CONTRACT,
     ])
 
 
@@ -189,6 +218,7 @@ def revise_prompt(issue: IssueRef, feedback: tuple[Feedback, ...], round_number:
         "Remplis `answers` avec une ligne par remarque, dans l'ordre recu : ces lignes sont publiees",
         "telles quelles sur la pull request, c'est ta reponse au relecteur.",
         "Puis commite et pousse sur ta branche.",
+        *VISUAL_CONTRACT,
     ])
 
 

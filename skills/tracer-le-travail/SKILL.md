@@ -498,7 +498,7 @@ l'autre voulait faire (`git log -p` sur les commits de la base qui touchent ce f
 réellement incompatibles, ce n'est plus un conflit de texte mais **une décision de conception**, et elle
 se remonte au lieu de se trancher seul dans un `git rebase --continue`.
 
-⚠ **Et une résolution de conflit n'a été relue par personne.** Elle produit du code qui n'existait ni
+**Et une résolution de conflit n'a été relue par personne.** Elle produit du code qui n'existait ni
 d'un côté ni de l'autre. Sur une pull request déjà approuvée, elle **invalide l'approbation** : c'est un
 des rares cas où redemander une revue n'est pas une politesse.
 
@@ -524,7 +524,7 @@ Trois sorties, dans cet ordre de préférence :
   concurrence optimiste : si la tête a bougé depuis ta lecture, l'opération est refusée **au lieu**
   d'écraser ce qui l'a bougée ;
 - **« require branches to be up to date before merging »** : la protection de branche qui garantit que
-  rien n'est fusionné sans avoir été testé sur la base finale. ⚠ Son coût est réel et rarement dit :
+  rien n'est fusionné sans avoir été testé sur la base finale. Son coût est réel et rarement dit :
   elle **sérialise les fusions**, puisque chaque merge périme toutes les autres PR. Elle vaut le coup
   quand un merge peut casser un autre en silence, et pas avant ;
 - **lier une branche à son item** : le bouton « create a branch » d'une issue crée la branche **et**

@@ -5,9 +5,12 @@ description: >-
   `--help` complet et relu comme un livrable, une surface qui varie selon le palier de build, une
   sortie machine (`--json`) pure, des messages d'erreur auto-descriptifs, des verbes de lecture pour
   relire ce que l'outil produit, et de la doc generee ou apparie par un test quand elle reste en
-  prose. A utiliser pour ecrire ou relire un README, concevoir une surface de CLI ou d'API, ajouter
-  une option, rediger un message d'erreur, ou quand une doc est perimee sans que rien ne l'ait
-  signale.
+  prose. Porte aussi la carte des artefacts : quel support repond a quelle question (README, --help,
+  CHANGELOG, CONTRIBUTING, doc de contrat, backlog, wiki), la frontiere entre se servir d'un projet et
+  le changer, le critere qui decide de ce qui va dans un wiki, et le sort d'un fichier destine a un
+  agent. A utiliser pour ecrire ou relire un README, concevoir une
+  surface de CLI ou d'API, ajouter une option, rediger un message d'erreur, arbitrer ou une
+  information doit vivre, ou quand une doc est perimee sans que rien ne l'ait signale.
 ---
 
 # La doc dérivée, celle que personne n'écrit deux fois
@@ -39,6 +42,112 @@ Chaque descente d'un cran ajoute une chose qui peut mentir **sans que rien ne ca
 Le geste utile n'est pas « écrire moins de doc », c'est **monter d'un cran** chaque fois que c'est
 possible. Une page de prose qui liste des options fait descendre au cran 6 quelque chose qui vivait au
 cran 2.
+
+## La carte des artefacts : deux axes, pas un
+
+Le blocage habituel vient de ce qu'on trie par **public** (les utilisateurs, les développeurs, tout le
+monde) alors que l'échelle ci-dessus trie par **fiabilité**. Les deux axes sont réels et orthogonaux :
+un artefact se place au croisement de *à qui il répond* et de *à quel cran il peut mentir*.
+
+| Qui, et sa question | Artefact | Cran |
+|---|---|---|
+| n'importe qui, en cinq minutes : à quoi ça sert, comment j'obtiens un premier résultat | le README | 5, si un test joue ses commandes |
+| celui qui s'en sert : quelles options, quels codes de sortie, quels formats | le `--help` | 2 |
+| celui qui met à jour : qu'est-ce qui va m'arriver | le CHANGELOG, dérivé des commits (forme dans `tracer-le-travail`) | 2 |
+| celui qui appelle : qu'exige cette fonction, que garantit-elle | la doc de contrat sur la frontière publique (voir `code-comme-poesie`) | 3 |
+| celui qui modifie : comment ça marche | **le code** | 1 |
+| celui qui contribue : comment on nomme, on commit, ce qui bloque un merge | le CONTRIBUTING | 5, et chaque convention qui devient un contrôle monte au cran 2 |
+| celui qui décide de la suite : qu'est-ce qui est prévu, priorisé, bloqué | le backlog, un seul (sa question qui décide est dans `tracer-le-travail`) | selon le support |
+| celui qui demande POURQUOI : pourquoi ce choix, pourquoi pas l'autre | le wiki | daté, donc n'expire pas |
+
+**Aucune ligne ne se répète, et c'est le test de la carte.** Si deux artefacts répondent à la même
+question, l'un des deux mentira, et ce sera celui que personne ne relit. Le cas le plus courant est un
+fichier de feuille de route à côté d'un backlog de forge déjà priorisé : la forge porte l'état, le
+fichier porte l'intention d'il y a six mois, et rien ne signale l'écart.
+
+Les deux lignes qu'on confond le plus sont le README et le CONTRIBUTING, et la frontière est nette :
+le premier sert à **se servir** du projet, le second à **le changer**. Un lecteur qui veut un résultat
+n'a rien à faire d'un format de message de commit, et un contributeur n'a pas besoin qu'on lui
+re-explique à quoi sert le projet.
+
+### Le wiki n'a pas de public à lui, d'où la difficulté à le remplir
+
+Tous les publics de la carte sont déjà servis. Ce qui reste au wiki est une **question** que rien
+d'autre ne porte, et le critère qui décide est celui du temps grammatical :
+
+> **Le wiki accueille ce qui porte une DATE, pas un ÉTAT.**
+
+Une décision datée ne peut pas devenir fausse : elle n'a jamais prétendu décrire maintenant. Une
+description du présent expire, et elle expire **en silence**, parce qu'un wiki vit hors du dépôt, donc
+hors de la revue et hors de portée de tout test. C'est l'anti-pattern listé plus bas, et c'est la
+même raison qui rend le wiki parfait pour le premier usage et interdit pour le second.
+
+Y vont donc les décisions d'architecture avec ce qui a été **rejeté** et pourquoi, les leçons payées
+avec leur signature et leur remède, et le long-form daté : une étude de performance avec sa machine et
+sa date, un chapitre, un rapport.
+
+**Deux choses n'y vont pas, dont une qui s'y invite toujours.** Les commandes d'installation
+**restent dans le README**, parce que là un test peut les extraire et les jouer : les déplacer les fait
+passer du cran 5 au cran 6 et supprime le seul mécanisme capable de voir qu'elles mentent. Et l'état
+présent ne s'y écrit pas, il **se génère**. Une liste de modules tenue à la main est la page qui
+mentira la première et le plus vite, puisque c'est celle dont la vérité change à chaque ajout.
+
+### Les visuels sont des artefacts, pas de la décoration
+
+Leur règle vit dans `rendre-l-etat-visible` et elle vaut ici sans changement : tout visuel qui part
+dans une doc porte **la commande qui le régénère**, sinon c'est une capture d'écran et elle mentira en
+silence. Ça pèse d'autant plus dans un README, où une image ou une animation est à la fois le contenu
+le plus utile et le plus périssable qui existe : elle montre une interface, une commande et une sortie,
+et les trois bougent. Un diagramme d'architecture se **dérive** du graphe de dépendances plutôt que de
+se dessiner, ce qui le fait monter du cran 6 au cran 2.
+
+## Le fichier destiné à un agent
+
+Un document écrit pour un agent est au cran 6 **sans public humain**, ce qui est la pire case de la
+grille : rien ne le relit, donc rien ne le contredit, donc il grossit. Un fichier de contexte de
+plusieurs milliers de lignes est le produit normal d'une prose dont le seul lecteur ne l'ouvrira
+jamais en entier, et il est chargé automatiquement, donc son coût est payé à chaque
+session.
+
+**La question à poser porte sur ce qui a besoin d'y être, avant celle de sa longueur.** Trier son
+contenu ligne à ligne donne un résultat contre-intuitif : presque rien.
+
+| ce qu'on y trouve | où ça va vraiment |
+|---|---|
+| une convention de nommage, un format de commit, une exigence de signature | le CONTRIBUTING, qu'un humain qui contribue lit, donc qui est relue |
+| un piège d'outillage, du genre « telle commande ne construit rien » ou « le code de sortie d'un pipeline est celui de sa dernière commande » | un **contrôle** s'il est vérifiable, le CONTRIBUTING sinon. tout contributeur le rencontre, un humain compris |
+| une règle que la machine applique déjà, du genre « ne pas commiter ce dossier » | rien, le fichier d'exclusion la porte déjà et la prose est un doublon |
+| l'historique des décisions | le wiki, daté |
+| la carte du projet | le README |
+
+Ce qui reste après le tri tient à une seule question : **qui applique la borne.** Un agent qui
+contribue à travers la forge occupe le siège du contributeur externe, et un contributeur externe n'a
+besoin d'aucun document pour savoir qu'il ne poussera pas sur la branche d'intégration : la forge le
+lui refuse. Sa borne n'est écrite nulle part, elle est structurellement infranchissable.
+
+Donc « ne pousse jamais sur la branche d'intégration » dans un fichier d'agent est au cran 6, quand la
+même règle en protection de branche est au cran 1, le serveur refusant le push. Toute interdiction
+qu'on s'apprête à écrire dans un fichier d'agent commence par la question de savoir si le modèle de
+permissions peut la porter, et la plupart peuvent.
+
+Ce que les permissions ne savent pas exprimer reste dans le CONTRIBUTING, parce que ça vaut pour tout
+contributeur. « On ne réécrit pas l'historique d'une branche que quelqu'un est en train de relire » ne
+peut pas devenir une protection sans interdire du même coup le rebase légitime après un conflit, et
+c'est une règle qui s'adresse autant à un humain.
+
+**Et un agent qui tourne avec les identifiants du mainteneur n'occupe pas ce siège**, quoi qu'en dise
+son prompt : il détient l'accès en écriture de la personne qu'il est censé assister, donc chacune de
+ses bornes redevient une phrase. Ce qui rend le rôle réel est une identité propre, avec sa propre
+installation aux permissions restreintes. Un document mieux rédigé n'y change rien. Après ça, un
+fichier d'agent ne porte que ce que la forge ne sait pas représenter, et il est plausible qu'il ne
+reste rien.
+
+Un fichier de délégation fait une dizaine de lignes. **Un fichier d'agent qui grossit est donc un
+symptôme mesurable** : compter dedans les pièges notés comme re-payés donne le nombre de contrôles
+qui n'ont pas été écrits, et compter ses conventions donne la taille du CONTRIBUTING qui manque.
+
+Le test de taille est celui du lecteur : **ce que tu ne relis pas, un agent ne le lira pas non plus,
+il l'échantillonnera.**
 
 ## Ce que le README garde, et ce qu'il doit rendre
 

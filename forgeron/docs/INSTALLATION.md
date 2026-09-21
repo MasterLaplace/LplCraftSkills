@@ -518,6 +518,23 @@ des essais, et la plus dangereuse de nettoyer autre chose.
 
 ## 4. Faire tourner `forgeron` en conteneur
 
+⚠ **Deux préalables**. Cette section suppose qu'ils sont
+faits, ce qu'elle ne disait pas, et le symptôme est trompeur : `docker compose` **crée
+silencieusement** le répertoire hôte d'un montage absent, donc `~/forgeron-sandbox` apparaît vide
+et `git` échouera bien plus tard, loin de la cause.
+
+1. **le dépôt bac à sable existe et est cloné.** Le bloc complet est en fin de
+   [GITHUB.md](GITHUB.md), et il commence par `gh repo create forgeron-sandbox --private --clone` ;
+2. **`~/.forgeron/config.json` existe**, ce qui est l'objet du 4.3 ci-dessous.
+
+Vérifier les deux avant d'aller plus loin, sinon le conteneur démarre et s'arrête sur un message
+qui ne nomme que le second :
+
+```bash
+git -C ~/forgeron-sandbox log --oneline -1   # doit rendre un commit, pas « not a git repository »
+test -f ~/.forgeron/config.json && echo ok
+```
+
 ⚠ **Rien de cette section n'a été exécuté.** L'image n'a pas été construite, le Job n'a pas été
 appliqué. Ce qui **a** été vérifié, c'est que les fichiers sont cohérents avec le code : 11 tests de
 [`tests/test_deployment_files.py`](../tests/test_deployment_files.py) relisent le `ConfigMap` avec le
@@ -587,10 +604,53 @@ pas en faire l'option par défaut :
 
 En cluster, l'option B est de toute façon exclue : il n'y a pas de `~/.claude` à monter.
 
-### 4.3 La boucle, avec `compose`
+### 4.3 La configuration, puis la boucle
 
 [`docker/compose.yaml`](../docker/compose.yaml) monte deux choses et rien d'autre : `~/.forgeron`
 (l'état, la seule chose qui doit survivre au conteneur) et le clone dont les worktrees sont tirés.
+
+Le pilote ne démarre pas sans configuration, et il n'en invente pas :
+
+```bash
+mkdir -p ~/.forgeron
+cat > ~/.forgeron/config.json <<'JSON'
+{
+  "repos": [
+    {
+      "slug": "TON_LOGIN/forgeron-sandbox",
+      "path": "/repos/forgeron-sandbox",
+      "base": "main",
+      "labels": ["claude"],
+      "hold_label": "claude:hold",
+      "reviewers": ["TON_LOGIN"]
+    }
+  ],
+  "limits": { "max_rounds": 6, "max_spend_usd": 12.0, "auto_merge": false },
+  "max_concurrent": 1,
+  "poll_seconds": 60,
+  "model": "sonnet",
+  "budget_per_run_usd": 3.0,
+  "continuity": "resume"
+}
+JSON
+```
+
+Deux choses à comprendre dans ce fichier, et elles se contredisent d'apparence.
+
+⚠ **`path` est le chemin vu du CONTENEUR** (`/repos/forgeron-sandbox`), jamais celui de ton `$HOME`.
+C'est la première chose qui casse quand on recopie une configuration locale, et le symptôme (`gh`
+répond bien, `git` échoue) n'a rien qui désigne la cause. Conséquence directe : **ce fichier ne sert
+pas aux deux côtés**. Une passe lancée depuis l'hôte veut son propre fichier, et `--config` est là
+pour ça.
+
+À l'inverse, **`home` est délibérément absent** : il se dérive de `$HOME` à l'exécution, donc le même
+fichier tombe sur `/home/forgeron/.forgeron` dans le conteneur et sur le tien à l'extérieur. Un
+chemin écrit en dur y casserait exactement ce que son absence fait marcher.
+
+*(`forgeron config --init` écrit un squelette équivalent, mais avec des chemins d'hôte : il sert
+pour une utilisation locale, pas pour celle-ci.)*
+
+Puis la boucle :
 
 ```bash
 # une passe, sans ecrire : le meilleur premier essai
@@ -601,11 +661,6 @@ docker compose -f docker/compose.yaml run --rm forgeron \
 docker compose -f docker/compose.yaml up -d
 docker compose -f docker/compose.yaml logs -f
 ```
-
-⚠ **Le `path` de chaque dépôt dans `~/.forgeron/config.json` doit être le chemin vu du conteneur**
-(`/repos/forgeron-sandbox`), pas celui de ton `$HOME`. C'est la première chose qui casse quand on
-recopie une configuration locale, et le symptôme (`gh` répond bien, `git` échoue) n'a rien qui
-désigne la cause.
 
 ⚠ Le clone est monté **en lecture-écriture**, et ce n'est pas une négligence : `git worktree add`
 écrit dans le `.git` du clone. Un montage `:ro` échouerait dès la première passe.

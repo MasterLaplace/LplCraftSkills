@@ -326,10 +326,7 @@ de la position des mots :
   quoi ; « j'ai ajouté un index sur `customer_id` » les dit. Les noms qui remplacent des verbes
   (*optimisation, réalisation, mise en place*), Helen Sword les appelle des « noms zombies » ;
 - **une idée par phrase.** Deux idées liées font deux phrases et un connecteur simple ;
-- **un terme par chose.** Défini à sa **première** occurrence, en une incise, puis employé tel quel
-  partout, anglicisme compris. Pas de synonyme pour varier : deux mots font croire à deux choses. Sur un
-  rapport réel, 28 « contrôle » et 13 « gate » désignaient la même chose, et le lecteur y voyait deux
-  mécanismes. Pas de glossaire en tête ni en fin : la définition vit là où le mot arrive ;
+- **un terme par chose**, défini là où il arrive (détail juste après cette liste) ;
 - **le mot de l'équipe, pas sa traduction** : si tout le monde dit *gate*, *hook* ou *release*, on écrit
   *gate*, *hook* ou *release*. Une périphrase (« l'outil qui sait unir plusieurs rapports ») se remplace
   par le nom ;
@@ -340,6 +337,33 @@ de la position des mots :
 - **la deuxième personne ne s'adresse qu'à quelqu'un de précis.** Un texte projeté ou lu par une
   équipe parle du système, pas au lecteur. Un guide qui s'adresse à un lecteur à la fois, comme ce
   pack, peut le tutoyer.
+
+### Un terme spécifique se définit là où il arrive, puis ne change plus
+
+La règle a trois temps, et c'est le deuxième qui coûte le plus :
+
+1. **le terme se définit à sa première occurrence**, en une incise ou une phrase. Pas dans un bloc de
+   définitions en tête : une définition qui arrive avant son usage n'a rien à quoi s'accrocher, et le
+   lecteur l'a oubliée quand le mot revient. C'est la règle de l'exemple avant l'explication
+   (section 6), appliquée au vocabulaire ;
+2. **une fois défini, il s'emploie tel quel partout**, anglicisme compris, et son synonyme disparaît.
+   C'est la définition qui autorise l'anglicisme : *gate* ou *hook* ne gênent plus personne une fois
+   expliqués. Deux mots pour une chose font croire à deux choses : sur un rapport réel, 28 « contrôle »
+   et 13 « gate » désignaient le même mécanisme, et le lecteur en voyait deux ;
+3. **un même mot pour deux choses se désambiguïse**, c'est le cas inverse : un contrôle de formulaire
+   n'est pas un *gate*, et les laisser homonymes fait croire à un seul mécanisme.
+
+**Le test** : relire le document en s'arrêtant au premier emploi de chaque terme technique. Si le
+lecteur doit deviner, ou chercher plus loin, la définition est au mauvais endroit. Puis chercher
+chaque terme défini : s'il a un synonyme ailleurs dans le texte, l'un des deux est de trop.
+
+**Et le glossaire ?** Dans un document qui se lit d'un bout à l'autre, il fait doublon : chaque terme
+est déjà défini là où il sert, et personne ne va en fin de document chercher un mot qu'il vient de
+lire. Il redevient utile quand le document se **consulte** au lieu de se lire : une référence, une
+norme, un rapport dont chaque partie peut être lue seule. Même là, il complète la définition au fil
+de l'eau sans la remplacer, et deux gestes coûtent souvent moins cher : **redonner une glose de
+quelques mots** au premier emploi dans chaque partie qui se lit seule, ou faire du terme **un lien
+vers sa définition**.
 
 En français, la chasse aux tics d'écriture générée (tiret cadratin d'incise, copule évitée, inflation
 d'importance, participes en cascade) et l'adaptation à la voix d'un auteur relèvent d'une **passe
@@ -424,7 +448,7 @@ appliqué à un texte.
 
 ## La porte de sortie
 
-Avant de livrer un texte, un rapport ou des slides, ces sept réponses doivent exister :
+Avant de livrer un texte, un rapport ou des slides, ces huit réponses doivent exister :
 
 1. le **lecteur** est nommé, avec ce qu'il sait déjà et ce qu'il doit faire après avoir lu ;
 2. le **message** tient en une phrase qui pourrait être fausse, chaque section a la sienne, et **les
@@ -435,8 +459,9 @@ Avant de livrer un texte, un rapport ou des slides, ces sept réponses doivent e
 5. le **test de suppression** a été passé : plus rien ne se retire sans perdre un fait ;
 6. chaque **chiffre** porte son unité, son dénominateur et sa date, et chaque fait est **cliquable vers
    sa source** à l'endroit où il est affirmé ;
-7. un **lecteur froid**, humain ou sous-agent sans contexte, a redit le message avec ses mots, et ses
+7. chaque **terme spécifique** est défini à son premier emploi, puis employé sans synonyme ;
+8. un **lecteur froid**, humain ou sous-agent sans contexte, a redit le message avec ses mots, et ses
    hésitations ont été corrigées.
 
-Si le point 7 manque, on ne sait pas si le texte est compris : on sait seulement que son auteur le
+Si le point 8 manque, on ne sait pas si le texte est compris : on sait seulement que son auteur le
 comprend.

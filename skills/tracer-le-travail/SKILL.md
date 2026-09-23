@@ -346,6 +346,10 @@ Côté auteur, le réflexe coûteux est l'accord empressé. Le motif qui marche 
    Y » clôt une discussion ; « je pense que ça ira » l'ouvre ;
 6. **traiter un point à la fois, et tester chacun.**
 
+Pour les points qui méritent plus qu'un correctif, découper chaque point en fait, conséquence, gravité
+et correctif, et les juger séparément : la méthode, et la grille de réponse point par point, sont dans
+`challenger-le-sujet`, section 5.
+
 **La règle non évidente, et c'est la plus utile : si un point sur six est flou, on n'implémente aucun
 des cinq autres avant d'avoir demandé.** Les points d'une revue sont souvent liés, donc une
 compréhension partielle produit une implémentation fausse, qu'il faudra défaire, et le relecteur devra

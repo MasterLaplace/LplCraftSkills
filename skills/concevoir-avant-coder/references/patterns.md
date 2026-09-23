@@ -44,6 +44,9 @@ coûte**. La dernière colonne est celle qu'on oublie, et c'est celle qui décid
 | **Producteur / consommateur** | découpler un rythme d'un autre | un appelant lent bloque un producteur rapide | la file **doit être bornée**, et la politique de saturation choisie explicitement |
 | **Disjoncteur** (Circuit breaker) | arrêter de marteler une dépendance en panne | des rafales d'expirations en cascade | des seuils à régler ; **inutile sans mesure de ce qu'il coupe** |
 | **Port et adaptateur** (hexagonal) | le métier ne doit dépendre ni de la base ni du transport | pour tester une règle, il faut une base de données | des interfaces en plus ; rentable dès que le métier a une vraie valeur à protéger |
+| **Agrégat** (Aggregate) | plusieurs objets doivent rester cohérents ensemble, et n'importe quel appelant peut les modifier séparément | on fabrique un enfant à côté de son parent, en espérant que l'ensemble reste valide | une seule porte en écriture, donc des jointures explicites en lecture ; trop gros, il devient lent à charger et disputé entre appelants |
+| **Lecture et écriture séparées** (CQRS) | la forme qui garantit l'invariant n'est pas celle que l'affichage réclame | on charge un graphe d'objets entier pour afficher trois colonnes | deux modèles à tenir en phase ; inutile tant que la forme qui garantit l'invariant est celle qu'on affiche |
+| **Boîte d'envoi transactionnelle** (Outbox) | un effet externe doit suivre une écriture, sans la faire échouer ni se perdre quand elle réussit | un envoi juste après la validation, sous un `catch` qui avale l'erreur | une table, un lecteur, un délai ; et le consommateur **doit** être idempotent dès qu'une reprise existe |
 
 ## Les trois pièges qui reviennent
 

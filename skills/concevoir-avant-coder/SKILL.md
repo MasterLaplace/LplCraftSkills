@@ -9,8 +9,10 @@ description: >-
   rapport, ou un barreau baisse la PRETENTION du resultat et jamais la BARRE), et choix de design
   pattern. A utiliser des qu'il faut poser une architecture, ajouter un point d'extension,
   decider d'une abstraction, arbitrer « est-ce que j'en fais une interface ? »,
-  reduire l'etendue d'un changement ou la taille d'une PR, decouper un artefact en paliers, concevoir un
-  mode degrade ou un repli, ou quand du code existant part en heritage profond, en god class ou en couplage dur.
+  reduire l'etendue d'un changement ou la taille d'une PR, decouper un artefact en paliers, decouper un
+  projet en tranches par cas d'usage plutot qu'en couches, delimiter une frontiere de coherence en
+  ecriture, concevoir un mode degrade ou un repli, ou quand du code existant part en heritage profond,
+  en god class ou en couplage dur.
 ---
 
 # Concevoir avant de coder
@@ -38,6 +40,15 @@ Trois questions qui déshabillent une demande :
 > **Avant de construire une capacité, énumérer celles qui existent déjà.** Chercher dehors ce que le
 > projet porte déjà est l'erreur la plus coûteuse de la conception, parce qu'elle ne produit aucun
 > symptôme : on livre quelque chose qui marche, en double.
+
+Les deux gestes de cette section ont une méthode complète ailleurs. Déshabiller une demande, c'est
+challenger la question avant d'y répondre, et en particulier trouver l'hypothèse qui la porte :
+« il faut un cache » suppose que l'appel est lent **parce qu'il** se répète, ce que personne n'a
+peut-être mesuré (`challenger-le-sujet`, sections 1 et 5). Énumérer ce qui existe suppose de savoir
+chercher dans un code qu'on n'a pas écrit, par la chaîne visible, les points d'entrée et les
+références plutôt qu'en lisant de haut en bas (`explorer-le-code`), puis au-delà du dépôt : le même
+problème a peut-être déjà été résolu dans un dépôt voisin de l'organisation (`challenger-le-sujet`,
+section 3).
 
 ## 2. YAGNI, et sa frontière exacte
 
@@ -94,7 +105,9 @@ localement minimal et l'ensemble devient ingérable.
 La résolution est celle que le reste du pack emploie partout : **séparer le refactor du changement
 de comportement**, en deux commits ou deux PR. Le refactor ne change rien d'observable, donc il se
 relit vite ; le changement de comportement devient alors minuscule. On obtient les deux, un petit diff
-**et** une conception intacte, au lieu de choisir.
+**et** une conception intacte, au lieu de choisir. Kent Beck l'a dit en une ligne : *pour chaque
+changement voulu, rendre le changement facile (attention, ça peut être difficile), puis faire le
+changement facile.*
 
 Dernière précision, parce que « minimal » se mesure mal : **l'unité n'est pas la ligne, c'est le
 nombre de concepts que le relecteur doit tenir en tête.** Un renommage mécanique de deux cents lignes
@@ -137,7 +150,10 @@ le réflexe est d'installer un paquet et d'écrire une enveloppe autour.
 
 **La condition qui la rend valide, et elle est dans sa source** : l'échelle se descend **après** avoir
 compris le problème, jamais à la place. Une échelle parcourue trop tôt produit une réutilisation qui
-ne répond pas au besoin, ce qui coûte plus cher que du code neuf.
+ne répond pas au besoin, ce qui coûte plus cher que du code neuf. Et le barreau 1 n'a de valeur que si
+on a vraiment cherché : « je n'ai rien trouvé dans le projet » et « je n'ai pas su chercher » se disent
+avec les mêmes mots, et seul le premier autorise à descendre au barreau suivant (la façon de chercher
+est dans `explorer-le-code`).
 
 Et **deux gardes à ajouter**, qui viennent du reste de ce document :
 
@@ -295,6 +311,32 @@ sens** bon marché : si promouvoir un morceau d'outillage vers le produit se ré
 et retirer une référence, l'architecture est bonne. Si ça demande une réécriture, la frontière n'était
 pas au bon endroit.
 
+### Découper par cas d'usage plutôt que par couche
+
+La direction du graphe dit comment les modules dépendent les uns des autres. Elle ne dit pas où
+passent les coupes. Presque tous les squelettes de projet répondent par des couches : tous les points
+d'entrée ensemble, tous les services ensemble, tous les accès aux données ensemble. C'est un rangement
+par ce que le code **est**, alors que le S de SOLID demande un rangement par **qui demande le
+changement**. La question de la section 4 s'applique telle quelle au dossier, *qui demande une
+modification de ce fichier ?*, et elle ne donne pas la même réponse selon la coupe.
+
+| | Découpage par couche | Découpage par cas d'usage |
+|---|---|---|
+| ce qui est regroupé | ce qui se ressemble techniquement | ce qui change ensemble |
+| un ajout fonctionnel touche | un fichier dans chaque couche | un dossier |
+| un dossier a | autant de commanditaires que de fonctionnalités | un seul |
+| ce qui devient difficile | suivre une fonctionnalité de bout en bout | placer le code partagé |
+
+La colonne de droite gagne sur ce critère, et elle déplace la difficulté au lieu de la supprimer : le
+code partagé n'a plus de place évidente. La réponse est une **hiérarchie de proximité**, du plus local
+au plus global, partagé dans la tranche, puis entre tranches voisines, puis commun à tout le projet. On
+monte d'un cran quand un deuxième appelant réel apparaît, jamais avant, et **en cas de doute on
+duplique** : une duplication se voit et se retire en une fois, un partage posé trop tôt se paie à
+chaque changement suivant.
+
+Le rappel qui ouvre cette section vaut ici aussi. **Un dossier par cas d'usage n'est toujours pas une
+frontière** : il le devient le jour où quelque chose interdit à une tranche d'importer sa voisine.
+
 **Une architecture à plugins se paie**, et le prix est rarement compté : un registre, une découverte, un
 cycle de vie, une **version de contrat**, un mode dégradé quand un plugin est absent ou cassé, et une
 histoire d'erreur qui traverse la frontière. Ne la construire qu'au **deuxième implémenteur réel**, et
@@ -372,7 +414,9 @@ Quatre règles, chacune corrige un mode de panne mesuré :
    défaut, on répare l'accessibilité, de **rare** : la condition est atteignable, le cas est peu
    fréquent ; c'est un filet en bon état, on le garde, avec un test qui lui fabrique son cas. Et
    **avant de conclure quoi que ce soit d'un zéro, vérifier le compteur** : un zéro dit souvent que le
-   lecteur ne voit pas la branche, pas qu'elle ne tire pas.
+   lecteur ne voit pas la branche, pas qu'elle ne tire pas. Avant de retirer un chemin qu'on croit
+   injoignable, trouver aussi **pourquoi il a été ajouté** : la PR d'origine décrit souvent l'incident
+   qu'il empêche, et la remonter prend une commande (`explorer-le-code`, section 6).
 4. **Le défaut décrit ce qui arrive à qui ne choisit pas.** Si tout ce qui compte passe déjà une option
    explicite, le défaut est faux et il ne mord que les distraits.
 
@@ -464,5 +508,7 @@ Avant d'implémenter, ces cinq réponses doivent exister :
 2. l'**ossature** compile, en stubs qui lèvent, avec des noms définitifs ;
 3. ce qui est **injecté**, et pourquoi, ça varie, ou ça touche le monde ;
 4. les **points d'extension** existants sont justifiés par un deuxième cas **réel**, ou n'existent pas ;
-5. ce qu'on a **décidé de ne pas faire**, écrit. C'est ce qui empêche la question de revenir tous les
-   quinze jours, et c'est la partie qu'on oublie toujours d'écrire.
+5. ce qu'on a **décidé de ne pas faire**, écrit : les non-objectifs, et les alternatives écartées avec
+   leur raison. C'est ce qui empêche la question de revenir tous les quinze jours, et c'est la partie
+   qu'on oublie toujours d'écrire. La forme d'une note de décision datée est dans
+   `se-faire-comprendre`, `references/genres.md`.

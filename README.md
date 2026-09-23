@@ -1,8 +1,8 @@
 # LplCraftSkills
 
-Douze skills [Claude Code](https://claude.com/claude-code) indépendantes du langage, qui encodent une façon
-de travailler : décider avant de coder, prouver avant de livrer, et faire porter par le code tout ce qui
-pourrait mentir ailleurs.
+Quinze skills [Claude Code](https://claude.com/claude-code) indépendantes du langage, qui encodent une façon
+de travailler : comprendre avant de décider, décider avant de coder, prouver avant de livrer, et faire
+porter par le code tout ce qui pourrait mentir ailleurs.
 
 Elles fonctionnent de deux façons. **Automatiquement** : chaque skill porte une description de
 déclenchement, et l'agent la charge quand la tâche y correspond. **À la demande** : taper
@@ -25,11 +25,13 @@ Les autres modes (`--copy`, `--uninstall`) et les codes de sortie : `./install.s
 listés ici, parce qu'une liste d'options recopiée dans un README finit toujours par mentir, c'est
 précisément ce que dit le skill `doc-derivee`.
 
-## Les douze skills
+## Les quinze skills
 
 | Skill | En une phrase |
 |---|---|
 | [`cycle-de-dev`](skills/cycle-de-dev/SKILL.md) | backlog, branche, test, code, doc, PR, revue, chaque étape fermée par une question falsifiable |
+| [`explorer-le-code`](skills/explorer-le-code/SKILL.md) | interroger un dépôt inconnu au lieu de le lire : la première heure, un fil suivi de bout en bout, l'histoire d'une ligne |
+| [`challenger-le-sujet`](skills/challenger-le-sujet/SKILL.md) | les questions de la revue posées avant elle, par des grilles plutôt que par l'inspiration, puis le fil minimal |
 | [`cadrer-et-planifier`](skills/cadrer-et-planifier/SKILL.md) | une spec approuvée section par section, des critères d'acceptation, puis un plan aux tâches calibrées |
 | [`concevoir-avant-coder`](skills/concevoir-avant-coder/SKILL.md) | besoin avant solution, YAGNI sur ses deux axes, ossature en stubs, SOLID, injection, modules et paliers de build |
 | [`tests-first`](skills/tests-first/SKILL.md) | critères d'acceptation puis tests rouges, et la liste des tests qui mentent |
@@ -40,6 +42,7 @@ précisément ce que dit le skill `doc-derivee`.
 | [`trouver-la-cause`](skills/trouver-la-cause/SKILL.md) | pas de correctif sans cause racine, et les correctifs qui masquent au lieu de corriger |
 | [`mesure-et-telemetrie`](skills/mesure-et-telemetrie/SKILL.md) | un banc est un test de non-régression sur une grandeur continue ; télémétrie et artefact de production |
 | [`rendre-l-etat-visible`](skills/rendre-l-etat-visible/SKILL.md) | quand l'information est dans la forme, on la rend visible, et le même artefact habille la doc |
+| [`se-faire-comprendre`](skills/se-faire-comprendre/SKILL.md) | le lecteur, le message en une phrase, la réponse d'abord, l'exemple avant l'explication, le visuel cadré, un lecteur froid |
 | [`tracer-le-travail`](skills/tracer-le-travail/SKILL.md) | backlog, commits, versionnement, changelog, PR, revue, porte de merge |
 
 ## Le fil rouge, en trois idées
@@ -67,9 +70,15 @@ Tout le reste en découle.
    le plus de temps, à chercher au `printf` ce qu'un point d'arrêt montre en dix secondes ;
 5. **`trouver-la-cause`**, dans la foulée : l'outil sans la méthode ne suffit pas, et « corriger un
    symptôme est un échec » est la leçon qui coûte le plus cher à apprendre seul ;
-6. **`tracer-le-travail`, sections 1 à 3**, backlog, branche, commits. Ce que tu rencontres dès la
-   première contribution à un projet partagé ;
-7. **`concevoir-avant-coder`**, quand tu auras assez de code pour que les abstractions te mordent.
+6. **`explorer-le-code`, sections 1 à 3**, avant ta première contribution à un projet partagé : un
+   dépôt que tu n'as pas écrit s'interroge, il ne se lit pas de haut en bas ;
+7. **`tracer-le-travail`, sections 1 à 3**, backlog, branche, commits. Ce que tu rencontres dès cette
+   première contribution ;
+8. **`concevoir-avant-coder`**, quand tu auras assez de code pour que les abstractions te mordent.
+
+Deux skills sortent du code et se lisent dès qu'un rapport, un audit, un exposé ou une revue arrive,
+quel que soit ton niveau : **`challenger-le-sujet`** et **`se-faire-comprendre`**. Elles vont par paire :
+on ne choisit bien l'essentiel à dire que parmi tout ce qu'on sait.
 
 Les cinq autres (`cadrer-et-planifier`, `commencer-ferme`, `doc-derivee`, `mesure-et-telemetrie`,
 `rendre-l-etat-visible`) répondent à des problèmes qu'il faut avoir rencontrés pour que la réponse ait du
@@ -128,5 +137,7 @@ fausse, ce qui est exactement le fil rouge du pack, appliqué au pack.
   cadence, et la fermeture d'une pull request en squash ou en commit de fusion. Dans les trois cas, le
   skill donne la question qui décide plutôt qu'un verdict ;
 - **il n'est pas une étude.** C'est de l'expérience condensée : des règles qui ont chacune été payées par
-  une panne, pas un résultat mesuré sur une population de projets. À lire comme un avis argumenté, et à
-  contredire par une mesure si tu en as une. C'est d'ailleurs ce que le pack demande partout ailleurs.
+  une panne, pas un résultat mesuré sur une population de projets. Quand une règle s'appuie sur une
+  étude, elle la cite avec son auteur et son année, pour qu'on puisse la vérifier. Le reste est à lire
+  comme un avis argumenté, et à contredire par une mesure si tu en as une. C'est d'ailleurs ce que le
+  pack demande partout ailleurs.

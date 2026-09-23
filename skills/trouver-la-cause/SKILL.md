@@ -63,7 +63,9 @@ Presque gratuit, systematiquement oublie : le diff, les derniers commits, une de
 version, une configuration modifiee, une difference d'environnement entre la machine qui echoue et
 celle qui marche.
 
-La question qui cadre : **qu'est-ce qui etait vrai hier et ne l'est plus ?**
+La question qui cadre : **qu'est-ce qui etait vrai hier et ne l'est plus ?** Et quand « hier » est loin
+ou inconnu, l'histoire se lit : `git bisect run` trouve le commit qui a change le comportement,
+`git log -S` celui ou une chaine est apparue (voir `explorer-le-code`, section 6).
 
 ### Trouver OU ca casse avant de chercher POURQUOI
 
@@ -101,6 +103,10 @@ Deux regles :
   l'a corrige, et on vient de creer une dette qu'on ne sait pas nommer ;
 - **noter ce qui a ete refute.** Une hypothese eliminee est un resultat. Sans trace, on la retestera,
   et pire, quelqu'un d'autre la retestera.
+
+Et tenir **au moins deux hypotheses** tant qu'aucune n'est refutee : une seule, et on se met a lire les
+faits pour elle. La methode generale (hypotheses concurrentes, considerer le contraire, verifier par
+une deuxieme route) est dans `challenger-le-sujet`.
 
 **Et avant d'accuser le produit, la bibliotheque ou l'environnement, lire leur source.** Deux
 recherches dans le code coutent moins qu'un essai, et la cause d'un blocage est souvent ecrite en

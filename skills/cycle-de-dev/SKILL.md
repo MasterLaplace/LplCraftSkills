@@ -8,9 +8,9 @@ description: >-
   « prepare la PR »), et pour arbitrer quand une etape veut etre sautee. Porte deux regles
   transversales : « aucun avertissement ne franchit un merge » et « on ne declare pas une porte
   franchie sans avoir lance a l'instant la commande qui le prouve ». Delegue aux skills
-  cadrer-et-planifier, concevoir-avant-coder, tests-first, code-comme-poesie, commencer-ferme,
-  doc-derivee, journal-et-debogueur, trouver-la-cause, mesure-et-telemetrie, rendre-l-etat-visible
-  et tracer-le-travail.
+  explorer-le-code, challenger-le-sujet, cadrer-et-planifier, concevoir-avant-coder, tests-first,
+  code-comme-poesie, commencer-ferme, doc-derivee, journal-et-debogueur, trouver-la-cause,
+  mesure-et-telemetrie, rendre-l-etat-visible, se-faire-comprendre et tracer-le-travail.
 ---
 
 # Le cycle de développement, et la seule faute qui compte
@@ -141,6 +141,9 @@ chère qui existe, **parce qu'elle a l'air terminée.**
 | voir un état interne : chronologie, grille, graphe, distribution | `rendre-l-etat-visible` |
 | spec, plan d'implémentation, critères d'acceptation, découpage en tâches | `cadrer-et-planifier` |
 | un bug, un test rouge, un comportement inattendu : l'enquête avant le correctif | `trouver-la-cause` |
+| un dépôt ou un module inconnu : l'interroger avant d'y toucher, et l'histoire d'une ligne | `explorer-le-code` |
+| une conclusion, une demande ou une revue à challenger avant de la présenter ou d'y répondre | `challenger-le-sujet` |
+| un rapport, un audit, un exposé, un schéma : écrire et montrer pour être compris | `se-faire-comprendre` |
 
 **Invoque-les. Ne re-dérive pas leur contenu de mémoire** : c'est exactement le mécanisme par lequel
 une règle se met à diverger de sa propre définition.

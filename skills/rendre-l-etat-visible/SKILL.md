@@ -253,7 +253,9 @@ explication demande des étiquettes, une légende, et **un cas réduit**, pas un
 
 **La réponse n'est pas un second outil, c'est un preset** : le même générateur, avec une entrée minuscule,
 les étiquettes activées et des couleurs choisies pour le contraste. Un second outil divergerait ; un preset
-garde la propriété de dérivation, qui est tout l'intérêt.
+garde la propriété de dérivation, qui est tout l'intérêt. Ce que le preset doit changer au cadrage (un
+sujet en accent, son contexte atténué, un seul niveau de zoom par vue, la légende sur l'image) est dans
+`se-faire-comprendre`, section 8.
 
 C'est la raison de fond pour laquelle ce skill appartient au pack, et pas seulement au débogage.
 

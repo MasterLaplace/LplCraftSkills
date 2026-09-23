@@ -38,7 +38,8 @@ persistees, format sur le fil) en merite trois phrases, meme si elle fait deux l
 ### Explorer le contexte avant de poser la premiere question
 
 Les fichiers, la documentation, les derniers commits. Une question dont la reponse est deja dans le
-depot fait perdre du credit et du temps, et elle signale qu'on n'a pas regarde.
+depot fait perdre du credit et du temps, et elle signale qu'on n'a pas regarde. Dans un depot qu'on ne
+connait pas, l'ordre de lecture et la facon d'interroger le code sont dans `explorer-le-code`.
 
 ### Verifier le perimetre AVANT d'affiner les details
 
@@ -74,7 +75,9 @@ qu'il ne se propage dans tout le reste de la conception.
 
 Une passe rapide sur la spec ecrite, qui cherche quatre choses : des **trous** laisses en attente, des
 **contradictions** entre deux sections, des **ambiguites** (une phrase qui autorise deux lectures), et
-un **perimetre** qui a grossi pendant la redaction.
+un **perimetre** qui a grossi pendant la redaction. Pour aller plus loin que ces quatre recherches
+(grilles, pre-mortem, relecteur hostile), voir `challenger-le-sujet` ; pour la forme d'une section qui
+se comprend du premier coup, `se-faire-comprendre`.
 
 ## Les criteres d'acceptation, produit de la phase de cadrage
 

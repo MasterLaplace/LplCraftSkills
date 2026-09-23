@@ -65,6 +65,10 @@ question, l'un des deux mentira, et ce sera celui que personne ne relit. Le cas 
 fichier de feuille de route à côté d'un backlog de forge déjà priorisé : la forge porte l'état, le
 fichier porte l'intention d'il y a six mois, et rien ne signale l'écart.
 
+Cette carte dit **où** vit une information. **Comment** l'écrire pour qu'elle soit comprise (le
+lecteur, le message en une phrase, la réponse d'abord, l'exemple avant l'explication) est dans
+`se-faire-comprendre`.
+
 Les deux lignes qu'on confond le plus sont le README et le CONTRIBUTING, et la frontière est nette :
 le premier sert à **se servir** du projet, le second à **le changer**. Un lecteur qui veut un résultat
 n'a rien à faire d'un format de message de commit, et un contributeur n'a pas besoin qu'on lui

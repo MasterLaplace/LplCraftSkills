@@ -31,19 +31,32 @@ SKILLS=(
   tracer-le-travail
 )
 
+AGENTS=(
+  artisan
+)
+AGENT_SRC="$REPO_ROOT/agents"
+AGENT_DEST="${HOME}/.claude/agents"
+AGENT_MARK='craft-skills : copie generee par install.sh'
+
 MODE=link   # link (defaut) | copy
 ACTION=install
 
 usage() {
   cat <<'EOF'
-install.sh -- installe le pack craft dans ~/.claude/skills
+install.sh -- installe le pack craft dans ~/.claude/skills et ~/.claude/agents
 
 SYNOPSIS
   ./install.sh [--copy] [--status] [--uninstall] [--help]
 
 CE QU'IL FAIT DU MONDE
-  ECRIT dans ~/.claude/skills (cree le dossier au besoin). Ne touche jamais a ce depot,
-  ni a votre configuration git, ni a quoi que ce soit d'autre.
+  ECRIT dans ~/.claude/skills et ~/.claude/agents (cree les dossiers au besoin). Ne
+  touche jamais a ce depot, ni a votre configuration git, ni a quoi que ce soit d'autre.
+
+AGENTS
+  L'agent `artisan` (agents/artisan.md) est GENERE, jamais lie : ses hooks appellent
+  agents/hooks/artisan-gate.cjs par le chemin absolu de ce depot. Apres une modification
+  de agents/artisan.md, relancer ./install.sh (--status dit si la copie est perimee).
+  Ses hooks demandent `node`. Utilisation : claude --agent artisan
 
 MODES
   (defaut)      pose un LIEN par skill vers ce depot : jonction sous Windows, lien
@@ -58,7 +71,8 @@ MODES
 REFUS
   Si une destination existe deja en tant que VRAI dossier et que son contenu DIFFERE de
   celui du depot, le script REFUSE et nomme les fichiers en cause, plutot que d'ecraser
-  un travail non versionne.
+  un travail non versionne. Meme regle pour un agent : un fichier du meme nom qui ne
+  porte pas la marque de ce depot n'est jamais ecrase.
 
 CODES DE SORTIE
   0  succes
@@ -89,6 +103,16 @@ is_windows() { case "$(uname -s)" in MINGW*|MSYS*|CYGWIN*) return 0 ;; *) return
 to_win() {
   if command -v cygpath >/dev/null 2>&1; then cygpath -w "$1"; else echo "$1"; fi
 }
+
+craft_root_for_hooks() {
+  if is_windows && command -v cygpath >/dev/null 2>&1; then cygpath -m "$REPO_ROOT"; else echo "$REPO_ROOT"; fi
+}
+
+render_agent() {
+  sed "s|{{CRAFT_ROOT}}|$(craft_root_for_hooks)|g" "$AGENT_SRC/$1.md"
+}
+
+has_mark() { [[ -f "$1" ]] && grep -qF "$AGENT_MARK" "$1"; }
 
 # Git Bash presente une jonction NTFS comme un lien symbolique : -L et readlink suffisent
 # des deux cotes, sans interroger cmd.
@@ -138,6 +162,22 @@ case "$ACTION" in
         fi
       fi
     done
+    echo
+    echo "agents      : $AGENT_DEST"
+    for a in "${AGENTS[@]}"; do
+      d="$AGENT_DEST/$a.md"
+      if [[ ! -e "$d" ]]; then
+        printf '  [ ] %-24s absent\n' "$a"
+      elif ! has_mark "$d"; then
+        printf '  [!] %-24s fichier ETRANGER (sans la marque de ce depot), non gere\n' "$a"
+      elif diff -q <(render_agent "$a") "$d" >/dev/null 2>&1; then
+        printf '  [G] %-24s genere, a jour\n' "$a"
+      else
+        printf '  [G] %-24s genere, PERIME : relancer ./install.sh\n' "$a"
+      fi
+    done
+    command -v node >/dev/null 2>&1 \
+      || echo "  ATTENTION : node introuvable, les hooks des agents ne pourront pas tourner."
     exit 0
     ;;
 
@@ -148,6 +188,12 @@ case "$ACTION" in
       # Meme regle que a l'installation : sur un lien, rm -f retire le lien, jamais sa cible.
       if is_link "$d"; then rm -f "$d"; else rm -rf "$d"; fi
       echo "[retire] $s"
+    done
+    for a in "${AGENTS[@]}"; do
+      d="$AGENT_DEST/$a.md"
+      [[ -e "$d" ]] || continue
+      if has_mark "$d"; then rm -f "$d"; echo "[retire] agent $a"
+      else echo "[garde ] agent $a : fichier etranger, pas genere par ce depot"; fi
     done
     echo
     echo "Le depot n'a pas ete touche."
@@ -196,13 +242,32 @@ for s in "${SKILLS[@]}"; do
   fi
 done
 
+mkdir -p "$AGENT_DEST"
+for a in "${AGENTS[@]}"; do
+  src="$AGENT_SRC/$a.md"
+  dst="$AGENT_DEST/$a.md"
+  [[ -f "$src" ]] || { echo "ERREUR: $src introuvable" >&2; exit 3; }
+  if [[ -e "$dst" ]] && ! has_mark "$dst"; then
+    echo "REFUS: $dst existe et ne porte pas la marque de ce depot : ce n'est pas notre copie." >&2
+    echo "       Rien n'a ete ecrit pour cet agent. Renommez ou retirez ce fichier, puis relancez." >&2
+    conflicts=$((conflicts + 1))
+    continue
+  fi
+  render_agent "$a" > "$dst"
+  has_mark "$dst" || { echo "ERREUR: $dst illisible apres ecriture." >&2; exit 3; }
+  echo "[agent] $a (genere)"
+done
+command -v node >/dev/null 2>&1 \
+  || echo "ATTENTION : node introuvable ; les hooks de l'agent ne tourneront pas tant qu'il manque." >&2
+
 echo
 if [[ $conflicts -gt 0 ]]; then
-  echo "$conflicts skill(s) non installe(s) pour cause de conflit. Voir ci-dessus." >&2
+  echo "$conflicts element(s) non installe(s) pour cause de conflit. Voir ci-dessus." >&2
   exit 2
 fi
 
-echo "Installe : ${#SKILLS[@]} skills dans $DEST"
+echo "Installe : ${#SKILLS[@]} skills dans $DEST, ${#AGENTS[@]} agent(s) dans $AGENT_DEST"
+echo "Agent : claude --agent artisan"
 [[ "$MODE" == link ]] && echo "Mode LIEN : editer dans le depot ou dans la destination est equivalent."
 echo "Redemarrer la session Claude Code pour que les skills apparaissent."
 echo "Verifier : ./install.sh --status"

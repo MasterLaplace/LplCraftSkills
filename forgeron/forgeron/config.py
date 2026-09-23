@@ -48,6 +48,7 @@ class Config:
     checks_grace_seconds: int = 150  # how long an empty check rollup still means "not yet"
     checks_log_bytes: int = 12000    # how much failing log the agent is given
     notify_command: str = ""        # optional: shell template, {title} {url} available
+    agent: str = "artisan" # "artisan" is the default agent, "claude" is the bare model, "" means no agent
 
     @property
     def state_dir(self) -> str:
@@ -81,6 +82,7 @@ class Config:
             "checks_grace_seconds": self.checks_grace_seconds,
             "checks_log_bytes": self.checks_log_bytes,
             "notify_command": self.notify_command,
+            "agent": self.agent,
         }
 
 

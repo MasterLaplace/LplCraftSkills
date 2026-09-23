@@ -58,7 +58,12 @@ fonction `decide(record, observation, limits)` rend une action et une raison. L'
 
 ## Le cycle d'une issue
 
-Quatre phases d'agent, chacune un processus `claude` distinct sur **la même conversation**.
+Quatre phases d'agent, chacune un processus `claude` distinct sur **la même conversation**, lancé en
+`--agent artisan` : l'agent apporte la méthode et ses deux hooks, le contrat du pilote reste dans
+`--append-system-prompt`, et les outils de chaque phase restent bornés par `--tools`. Un agent qui
+déclarerait lui-même ses outils l'emporterait sur `--tools` et ferait disparaître la sortie
+structurée : c'est mesuré dans `tests/probes/probe_claude_agent.sh`, et c'est pourquoi il n'en déclare
+aucun.
 
 1. **Cadrer** — outils en lecture seule, et c'est un fait plutôt qu'une consigne : « ne modifie rien »
    est une demande, retirer `Edit` est une garantie. Rend un plan, des critères d'acceptation
@@ -96,6 +101,24 @@ Mais le verdict reste la **parole** de l'agent. Deux choses sont donc vérifiée
 
 Chacun a été vérifié ici, pas supposé. Les sondes sont dans
 [`tests/probes/`](../tests/probes/).
+
+Ce que fait `--agent`, là où la documentation se tait (mesuré le 2026-09-23 avec Claude Code 2.1.259,
+sonde [`probe_claude_agent.sh`](../tests/probes/probe_claude_agent.sh)) :
+
+- **un nom d'agent inconnu échoue bruyamment** : code 1, « `--agent 'x' not found. Available agents:
+  ...` ». forgeron ne peut donc pas partir sans son agent sans que ça se voie ;
+- **le champ `skills:` d'un agent n'a aucun effet** en session principale sous `-p` : sans aucun outil,
+  l'agent n'a pas le texte du skill. D'où le chargement de `cycle-de-dev` par l'outil `Skill`, imposé
+  par un hook ;
+- **le corps de l'agent s'ajoute au prompt système** de Claude Code au lieu de le remplacer, et
+  `--append-system-prompt` passe toujours. Le contrat reste donc dans `--append-system-prompt` ;
+- ⚠ **un `tools:` déclaré dans l'agent l'emporte sur `--tools`** (`Read` dans l'agent et
+  `--tools Read Grep Bash` en ligne de commande donnent `Read` seul), et il fait disparaître l'outil
+  derrière `--json-schema` : `structured_output` revient vide. L'agent ne déclare donc aucun outil ;
+- ⚠ **les hooks d'un agent posé dans le `.claude/agents/` d'un projet ne se déclenchent pas**, ni en
+  session principale ni en sous-agent. **Au niveau utilisateur (`~/.claude/agents/`), ils se
+  déclenchent**, et leur entrée porte `agent_type`. D'où l'installation au niveau utilisateur ;
+- des hooks passés par `--settings` se déclenchent aussi, en plus de ceux de l'agent.
 
 - ⚠ **`--tools`, `--allowedTools` et `--add-dir` sont variadiques.** Un prompt passé en argument
   positionnel après l'un d'eux est avalé comme une valeur de plus, et `claude` sort sur « Input must

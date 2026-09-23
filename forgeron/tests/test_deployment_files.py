@@ -61,6 +61,12 @@ class ConfigMap(unittest.TestCase):
         # while claiming continuity.
         self.assertEqual(configmap_json()["continuity"], "rebuild")
 
+    def test_an_agent_is_named_only_if_the_image_installs_the_pack_and_node(self) -> None:
+        dockerfile = (ROOT / "docker" / "Dockerfile").read_text(encoding="utf-8")
+        if configmap_json().get("agent", Config().agent):
+            self.assertIn("/opt/craft/install.sh", dockerfile)
+            self.assertIn("nodejs", dockerfile)
+
 
 class ImageNaming(unittest.TestCase):
     def test_compose_and_job_name_the_same_image(self) -> None:
@@ -69,6 +75,16 @@ class ImageNaming(unittest.TestCase):
         tag = "forgeron:0.1.0"
         self.assertIn(f"image: {tag}", compose)
         self.assertIn(f"image: {tag}", job)
+
+    def test_compose_builds_from_the_repository_root(self) -> None:
+        compose = (ROOT / "docker" / "compose.yaml").read_text(encoding="utf-8")
+        context = next(line.split(":", 1)[1].strip() for line in compose.splitlines()
+                       if line.strip().startswith("context:"))
+        dockerfile = next(line.split(":", 1)[1].strip() for line in compose.splitlines()
+                          if line.strip().startswith("dockerfile:"))
+        root = (ROOT / "docker" / context).resolve()
+        self.assertTrue((root / "install.sh").is_file(), f"{root} n'est pas la racine du depot")
+        self.assertEqual((root / dockerfile).resolve(), (ROOT / "docker" / "Dockerfile").resolve())
 
     def test_the_tag_matches_the_package_version(self) -> None:
         from forgeron import __version__
@@ -101,8 +117,19 @@ class Dockerfile(unittest.TestCase):
         self.assertIn("core.hooksPath", self.text)
 
     def test_the_package_path_it_copies_is_the_one_it_puts_on_pythonpath(self) -> None:
-        self.assertIn("COPY --chown=$UID:$GID forgeron/ /opt/forgeron/forgeron/", self.text)
+        self.assertIn("COPY --chown=$UID:$GID forgeron/forgeron/ /opt/forgeron/forgeron/", self.text)
         self.assertIn("PYTHONPATH=/opt/forgeron", self.text)
+
+    def test_it_installs_the_pack_it_tells_the_agent_to_use(self) -> None:
+        for piece in ("skills/ /opt/craft/skills/", "agents/ /opt/craft/agents/",
+                      "install.sh /opt/craft/install.sh", "RUN /opt/craft/install.sh"):
+            with self.subTest(piece=piece):
+                self.assertIn(piece, self.text)
+
+    def test_its_ignore_file_keeps_git_history_out_of_the_context(self) -> None:
+        ignore = (ROOT / "docker" / "Dockerfile.dockerignore").read_text(encoding="utf-8")
+        self.assertIn(".git", ignore)
+        self.assertIn("__pycache__", ignore)
 
 
 class Entrypoint(unittest.TestCase):

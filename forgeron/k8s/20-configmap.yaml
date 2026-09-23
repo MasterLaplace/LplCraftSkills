@@ -34,5 +34,6 @@ data:
       "poll_seconds": 60,
       "model": "sonnet",
       "budget_per_run_usd": 3.0,
-      "continuity": "rebuild"
+      "continuity": "rebuild",
+      "agent": "artisan"
     }

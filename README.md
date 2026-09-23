@@ -13,13 +13,17 @@ déclenchement, et l'agent la charge quand la tâche y correspond. **À la deman
 ```bash
 git clone <ce-depot> LplCraftSkills
 cd LplCraftSkills
-./install.sh          # pose un lien par skill dans ~/.claude/skills
+./install.sh          # un lien par skill dans ~/.claude/skills, et l'agent artisan dans ~/.claude/agents
 ./install.sh --status # verifier
 ```
 
 Puis redémarrer la session Claude Code. Le mode par défaut pose des **liens**, jonctions sous Windows,
 liens symboliques ailleurs, donc il n'y a **qu'une source de vérité** : éditer dans le dépôt ou dans
 `~/.claude/skills` est équivalent. Aucun droit administrateur requis.
+
+L'agent `artisan` est la seule exception : il est **généré**, pas lié, parce que ses hooks ont besoin
+du chemin absolu du dépôt. Après une modification de `agents/artisan.md`, relancer `./install.sh` ;
+`--status` dit si la copie installée est périmée.
 
 Les autres modes (`--copy`, `--uninstall`) et les codes de sortie : `./install.sh --help`. Ils ne sont pas
 listés ici, parce qu'une liste d'options recopiée dans un README finit toujours par mentir, c'est
@@ -29,7 +33,7 @@ précisément ce que dit le skill `doc-derivee`.
 
 | Skill | En une phrase |
 |---|---|
-| [`cycle-de-dev`](skills/cycle-de-dev/SKILL.md) | backlog, branche, test, code, doc, PR, revue, chaque étape fermée par une question falsifiable |
+| [`cycle-de-dev`](skills/cycle-de-dev/SKILL.md) | backlog, comprendre l'existant, branche, test, code, doc, PR, revue : chaque étape fermée par une question falsifiable, et le skill à charger à chacune |
 | [`explorer-le-code`](skills/explorer-le-code/SKILL.md) | interroger un dépôt inconnu au lieu de le lire : la première heure, un fil suivi de bout en bout, l'histoire d'une ligne |
 | [`challenger-le-sujet`](skills/challenger-le-sujet/SKILL.md) | les questions de la revue posées avant elle, par des grilles plutôt que par l'inspiration, puis le fil minimal |
 | [`cadrer-et-planifier`](skills/cadrer-et-planifier/SKILL.md) | une spec approuvée section par section, des critères d'acceptation, puis un plan aux tâches calibrées |
@@ -87,6 +91,36 @@ sens. Elles attendront.
 **Si tu es déjà développeur** : lis `cycle-de-dev` pour la carte, puis va directement au skill du
 problème que tu as. Chacune se lit seule.
 
+Cet ordre sert à **apprendre**, et ce n'est pas l'ordre dans lequel on s'en sert. L'ordre d'exécution,
+étape par étape et avec le skill à charger à chaque étape, est le cycle de `cycle-de-dev` : c'est lui
+que suit l'agent `artisan`.
+
+## L'agent `artisan` : les skills appliqués par des rails
+
+Pour qu'une session de Claude Code travaille selon ce pack sans qu'on le lui rappelle :
+
+```bash
+claude --agent artisan
+```
+
+L'agent ([`agents/artisan.md`](agents/artisan.md)) ne recopie aucun skill. Il dit quand charger lequel :
+`cycle-de-dev` d'abord, puis le skill de chaque étape au moment où elle arrive, et la porte de sortie de
+chacun prouvée par une commande avant de conclure. Charger les quinze d'avance coûterait environ
+85 000 jetons et noierait la règle utile au moment où elle sert.
+
+Deux règles ne dépendent pas de sa bonne volonté, parce que ce sont des hooks
+([`agents/hooks/artisan-gate.cjs`](agents/hooks/artisan-gate.cjs)) :
+
+- **aucune écriture avant la carte** : `Edit` et `Write` sont refusés tant que `cycle-de-dev` n'a pas
+  été chargé. Lire et explorer restent permis ;
+- **aucun arrêt sur une écriture non prouvée** : un fichier modifié après la dernière commande fait
+  refuser le premier arrêt, une fois. Le hook sait qu'une commande a tourné, pas que c'était la bonne.
+
+Les hooks demandent `node`. Et l'agent doit vivre au niveau utilisateur, là où `install.sh` le pose :
+dans le `.claude/agents/` d'un projet, ses hooks ne se déclenchent pas. C'est mesuré, comme le reste
+de ce que la documentation de Claude Code ne dit pas, par
+[`forgeron/tests/probes/probe_claude_agent.sh`](forgeron/tests/probes/probe_claude_agent.sh).
+
 ## `forgeron/` — les skills appliquées sans surveillance
 
 [`forgeron/`](forgeron/README.md) est une **preuve de concept**, à part des skills : un pilote local
@@ -119,7 +153,8 @@ cd forgeron && ./tests/run.sh
 Et ces conventions ne sont pas seulement écrites, elles sont **vérifiées** :
 
 ```bash
-./check.sh   # les portes de sortie, les frontmatters, le tableau ci-dessus, l'absence d'art ASCII
+./check.sh   # les portes de sortie, les frontmatters, le tableau ci-dessus, l'absence d'art ASCII,
+             # la carte de l'agent (elle nomme tous les skills) et les tests de ses hooks
 ```
 
 Il existe parce que trois skills avaient perdu leur porte de sortie sans que personne ne le remarque :

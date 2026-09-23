@@ -12,6 +12,7 @@ import contextlib
 import dataclasses
 import json
 import os
+import socket
 import time
 from typing import Any, Iterator
 
@@ -72,7 +73,7 @@ class Store:
         """
         path = self.path_of(record) + ".lease"
         now = time.time()
-        holder = f"{os.uname().nodename}:{os.getpid()}"
+        holder = f"{socket.gethostname()}:{os.getpid()}"
         existing = _read_lease(path)
         if existing and existing["expires"] > now and existing["holder"] != holder:
             yield False

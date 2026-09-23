@@ -7,8 +7,8 @@
 services:
   forgeron:
     build:
-      context: ..
-      dockerfile: docker/Dockerfile
+      context: ../..
+      dockerfile: forgeron/docker/Dockerfile
     image: forgeron:0.1.0
 
     # Le token d'abonnement et le token GitHub, depuis un fichier en 600. JAMAIS en

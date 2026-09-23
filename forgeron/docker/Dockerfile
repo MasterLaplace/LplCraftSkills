@@ -1,10 +1,5 @@
 # forgeron dans un conteneur.
 #
-# ATTENTION : cette image n'a PAS ete construite. Il n'y a ni docker ni kubectl sur
-# la machine ou elle a ete ecrite, donc c'est une recette fondee sur les sources
-# officielles, pas un compte rendu d'execution. La commande de build et ce qu'elle
-# doit afficher sont dans docs/INSTALLATION.md section 4.
-#
 # Trois choix, avec leur raison :
 #  - debian:trixie-slim et non python:3-slim, parce que l'image a de toute facon
 #    besoin de git, curl et gh : partir d'une base Python n'economise rien et fige
@@ -27,7 +22,7 @@ ARG GID=1000
 # jq, zstd         : optionnels, mais l'installateur claude s'en sert s'ils sont la
 # openssh-client   : si un jour le remote est en ssh plutot qu'en https
 RUN apt-get update && apt-get install -y --no-install-recommends \
-        ca-certificates curl git python3 jq zstd openssh-client gnupg \
+        ca-certificates curl git python3 nodejs jq zstd openssh-client gnupg \
     && rm -rf /var/lib/apt/lists/*
 
 # gh, depuis le depot officiel : la version d'un depot de distribution a des mois
@@ -53,8 +48,13 @@ WORKDIR /home/$USERNAME
 RUN curl -fsSL https://claude.ai/install.sh | bash
 ENV PATH="/home/${USERNAME}/.local/bin:${PATH}"
 
-COPY --chown=$UID:$GID forgeron/ /opt/forgeron/forgeron/
-COPY --chown=$UID:$GID docker/entrypoint.sh /usr/local/bin/entrypoint.sh
+COPY --chown=$UID:$GID skills/ /opt/craft/skills/
+COPY --chown=$UID:$GID agents/ /opt/craft/agents/
+COPY --chown=$UID:$GID install.sh /opt/craft/install.sh
+RUN /opt/craft/install.sh
+
+COPY --chown=$UID:$GID forgeron/forgeron/ /opt/forgeron/forgeron/
+COPY --chown=$UID:$GID forgeron/docker/entrypoint.sh /usr/local/bin/entrypoint.sh
 
 ENV PYTHONPATH=/opt/forgeron \
     PYTHONDONTWRITEBYTECODE=1 \

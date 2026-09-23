@@ -136,6 +136,24 @@ MUTATIONS = [
      "forgeron/states.py",
      "            if record.check_fixes >= limits.max_check_fixes:",
      "            if False:"),
+
+    ("l'agent n'est plus transmis a claude",
+     "forgeron/claude_agent.py",
+     '        if self._agent:\n            argv += ["--agent", self._agent]\n',
+     '        if False:\n            argv += ["--agent", self._agent]\n'),
+
+    ("l'agent passe apres l'option variadique --tools",
+     "forgeron/claude_agent.py",
+     '        if self._agent:\n            argv += ["--agent", self._agent]\n\n'
+     '        text = contract or self._contract\n'
+     '        if text:\n            argv += ["--append-system-prompt", text]\n\n'
+     '        if read_only:\n'
+     '            argv += ["--tools", "Read", "Grep", "Glob", "Bash", "Skill", "WebFetch"]\n',
+     '        text = contract or self._contract\n'
+     '        if text:\n            argv += ["--append-system-prompt", text]\n\n'
+     '        if read_only:\n'
+     '            argv += ["--tools", "Read", "Grep", "Glob", "Bash", "Skill", "WebFetch"]\n'
+     '        if self._agent:\n            argv += ["--agent", self._agent]\n'),
 ]
 
 

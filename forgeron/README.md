@@ -5,7 +5,7 @@ d'écrire une ligne**, code la solution en suivant les [LplCraftSkills](../READM
 l'intégration continue**, demande la revue, et boucle sur tes commentaires jusqu'à ce que tu fusionnes.
 Puis il clôt la session.
 
-Preuve de concept locale. Zéro infrastructure : `gh`, `git`, `claude`, Python 3, rien d'autre.
+Preuve de concept locale. Zéro infrastructure : `gh`, `git`, `claude`, Python 3, et `node` pour les hooks de l'agent.
 
 ## En une image
 
@@ -48,16 +48,17 @@ quand le pilote a vérifié qu'il ne reste aucun fichier en conflit.
 
 ## Installer
 
-Il faut `git`, `python3` (3.10+), `gh` et `claude`. Rien d'autre : pas de dépendance à installer, pas
-de jeton à copier. Docker et Kubernetes sont **optionnels** et ne débloquent que le parallélisme sur
-plusieurs machines.
+Il faut `git`, `python3` (3.10+), `gh` et `claude`, plus `node` pour les hooks de l'agent `artisan`.
+Rien d'autre : pas de dépendance à installer, pas de jeton à copier. Docker et Kubernetes sont
+**optionnels** et ne débloquent que le parallélisme sur plusieurs machines.
 
-Si l'un des quatre manque, ou si tu veux la partie Docker / Kubernetes expliquée depuis zéro :
+Si l'un d'eux manque, ou si tu veux la partie Docker / Kubernetes expliquée depuis zéro :
 **[docs/INSTALLATION.md](docs/INSTALLATION.md)** — écrit et vérifié pour Ubuntu 26.04 sous WSL2, y
 compris la façon d'authentifier `claude` **sur ton abonnement** plutôt qu'avec une clé d'API facturée
 en plus.
 
 ```bash
+./install.sh                    # depuis la RACINE du depot : les skills ET l'agent artisan
 cd forgeron
 ./tests/run.sh                  # la porte complete : suite + sondes de mutation, hors ligne
 python3 -m forgeron doctor      # verifie gh, git, claude, les portees du jeton
@@ -68,6 +69,19 @@ Puis éditer `~/.forgeron/config.json` : au minimum le `slug` du dépôt, le `pa
 et `reviewers` (toi). Le dépôt doit être dans cette **liste blanche** : un jeton peut atteindre tous
 tes dépôts, et « sur lesquels un bot a le droit d'ouvrir une pull request » n'est pas une question
 qu'un jeton sait trancher.
+
+## La méthode vient de l'agent, les rails restent au pilote
+
+Chaque run part en `claude -p --agent artisan`. L'agent
+([`../agents/artisan.md`](../agents/artisan.md)) porte la **méthode** : charger `cycle-de-dev`, puis le
+skill de chaque étape, et prouver chaque porte de sortie. Deux hooks en font des rails : aucune écriture
+avant la carte, aucun arrêt sur un fichier modifié après la dernière commande. Le pilote garde ce qui
+ne se délègue pas : la branche, le push, les outils de chaque phase, et tout ce qu'il vérifie contre le
+monde.
+
+L'agent doit être installé **au niveau utilisateur** par `../install.sh` : posé dans le `.claude/agents/`
+d'un projet, il perd ses hooks. `doctor` le vérifie avant la première dépense. Pour s'en passer :
+`"agent": ""` dans la configuration, et le contrat seul part comme avant.
 
 ## Lancer
 
@@ -113,8 +127,8 @@ Pour reprendre la main sans rien casser : étiquette `claude:hold`. Pour tout ar
 
 ## Ce qui est vérifié, et ce qui ne l'est pas
 
-Vérifié hors ligne, à chaque `./tests/run.sh` : **115 tests** dont le trajet complet issue → fusion
-avec un build rouge et un tour de revue au milieu, plus **20 sondes de mutation** qui cassent une
+Vérifié hors ligne, à chaque `./tests/run.sh` : **129 tests** dont le trajet complet issue → fusion
+avec un build rouge et un tour de revue au milieu, plus **22 sondes de mutation** qui cassent une
 règle chacune et vérifient que la suite s'en aperçoit. Une suite verte au premier coup ne prouve
 rien ; c'est la sonde qui prouve qu'elle *pouvait* échouer.
 
@@ -132,16 +146,27 @@ donc aucun réseau.
 Vérifié contre le vrai GitHub, en lecture seule : identité, liste d'issues, recherche de pull
 request, agrégat de checks, et **récupération des journaux d'un job en échec**.
 
-Vérifié contre le vrai `claude` : la sortie structurée (`--json-schema` → champ `structured_output`)
-et la **reprise de conversation d'un processus à l'autre** (`--session-id` puis `--resume`).
+Vérifié contre le vrai `claude` : la sortie structurée (`--json-schema` → champ `structured_output`),
+la **reprise de conversation d'un processus à l'autre** (`--session-id` puis `--resume`), et ce que
+fait `--agent` là où la documentation se tait : un nom inconnu échoue bruyamment, l'agent s'ajoute au
+prompt système au lieu de le remplacer, un `tools:` dans l'agent l'emporte sur `--tools` et fait
+disparaître la sortie structurée, et ses hooks ne se déclenchent qu'au niveau utilisateur
+([`tests/probes/probe_claude_agent.sh`](tests/probes/probe_claude_agent.sh)).
+
+Sous Windows natif, **4 tests échouent** parce qu'ils supposent un shell POSIX : un script de hook
+lancé directement, et un `;` qui n'est pas un séparateur pour `cmd.exe`. forgeron vise Linux et WSL, où
+ils passent ; les 125 autres passent aussi sous Windows.
 
 **Pas encore vérifié de bout en bout**, et c'est dit à chaque fois dans les fichiers concernés :
 le chemin d'**écriture** sur la forge (créer le brouillon, le passer prêt, commenter), qui demande un
-dépôt bac à sable — voir [docs/GITHUB.md](docs/GITHUB.md) ; et tout ce qui touche à **Docker et
-Kubernetes** ([docker/](docker/), [k8s/](k8s/)), puisqu'aucun des deux n'est installé sur la machine
-où ce code a été écrit. Ce qui **est** vérifié de ce côté-là : 11 tests relisent le `ConfigMap` avec
-le vrai chargeur de configuration, comparent les chemins montés à ceux que la configuration nomme, et
-refusent qu'un secret soit cuit dans l'image.
+dépôt bac à sable — voir [docs/GITHUB.md](docs/GITHUB.md) ; et le **Job Kubernetes**
+([k8s/](k8s/)), jamais appliqué, puisqu'il agirait sur un vrai dépôt. L'**image**, elle, a été
+construite et vérifiée sous WSL (Docker 29.8) : elle installe le pack, `claude` y reconnaît l'agent
+`artisan`, les tests de ses hooks y passent, et l'entrypoint refuse de démarrer sans authentification.
+À chaque `./tests/run.sh`, 16 tests relisent le `ConfigMap` avec le vrai chargeur de configuration,
+comparent les chemins montés à ceux que la configuration nomme, refusent qu'un secret soit cuit dans
+l'image, et interdisent au `ConfigMap` de nommer un agent si le `Dockerfile` cesse d'installer le pack
+ou `node`.
 
 ## Lire la suite
 

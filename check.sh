@@ -47,9 +47,37 @@ fi
 echo
 echo "== les schemas sont en Mermaid, jamais en art ASCII =="
 # Un bloc de code contenant des caracteres de boite est un schema dessine a la main.
-suspects="$(grep -rlE '[│├└┌┐┘─╔╗╚╝║]' skills/ 2>/dev/null || true)"
+box=()
+for char in '│' '├' '└' '┌' '┐' '┘' '─' '╔' '╗' '╚' '╝' '║'; do box+=(-e "$char"); done
+suspects="$(grep -rlF "${box[@]}" skills/ agents/ 2>/dev/null || true)"
 [ -z "$suspects" ] && report ok "aucun art ASCII" \
     || { report MANQUE "art ASCII trouve dans :"; echo "$suspects" | sed 's/^/         /'; }
+
+echo
+echo "== chaque agent porte un nom, une description, et la carte de TOUS les skills =="
+for agent in agents/*.md; do
+    name="$(basename "$agent" .md)"
+    grep -qE '^name: ' "$agent" && grep -qE '^description: ' "$agent" \
+        || { report MANQUE "$name — name: ou description: absent"; continue; }
+    missing=""
+    for skill in $present; do
+        grep -qF "\`$skill\`" "$agent" || missing="$missing $skill"
+    done
+    [ -z "$missing" ] && report ok "$name nomme les $(echo "$present" | wc -l) skills" \
+        || report MANQUE "$name ne nomme pas :$missing"
+done
+
+echo
+echo "== les hooks des agents passent leurs tests =="
+if command -v node >/dev/null 2>&1; then
+    if node --test agents/hooks/ > /dev/null 2>&1; then
+        report ok "node --test agents/hooks/"
+    else
+        report MANQUE "node --test agents/hooks/ echoue (le relancer pour le detail)"
+    fi
+else
+    report SAUTE "node introuvable, les tests des hooks n'ont pas tourne"
+fi
 
 echo
 if [ "$failures" -eq 0 ]; then

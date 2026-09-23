@@ -1,0 +1,8 @@
+.git/
+**/__pycache__/
+**/*.pyc
+*.log
+.tmp/
+forgeron/tests/
+forgeron/docs/
+forgeron/k8s/

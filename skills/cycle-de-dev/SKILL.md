@@ -2,7 +2,7 @@
 name: cycle-de-dev
 description: >-
   Pilote un travail de developpement de bout en bout selon le cycle
-  backlog -> branche -> test -> code -> doc -> PR -> revue, avec une porte de sortie
+  backlog -> comprendre l'existant -> branche -> test -> code -> doc -> PR -> revue, avec une porte de sortie
   falsifiable a chaque etape. A utiliser des qu'on attaque une feature, un bug, un refactor
   ou une tache non triviale (« on ajoute X », « il faut corriger Y », « par ou je commence »,
   « prepare la PR »), et pour arbitrer quand une etape veut etre sautee. Porte deux regles
@@ -15,14 +15,14 @@ description: >-
 
 # Le cycle de développement, et la seule faute qui compte
 
-*En une phrase : sept étapes dans cet ordre, chacune fermée par une question à laquelle on doit
+*En une phrase : huit étapes dans cet ordre, chacune fermée par une question à laquelle on doit
 pouvoir répondre par oui ou non.*
 
 ```mermaid
 flowchart LR
-  BL[backlog] --> BR[branche] --> TE[test] --> CO[code] --> DO[doc] --> PR[pull request] --> RE[revue]
+  BL[backlog] --> CE["comprendre<br/>l'existant"] --> BR[branche] --> TE[test] --> CO[code] --> DO[doc] --> PR[pull request] --> RE[revue]
   RE -.-> BL
-  BL -.->|"si se tromper coute cher"| CA["cadrer + plan"]
+  CE -.->|"si se tromper coute cher"| CA["cadrer + plan"]
   CA -.-> TE
 ```
 
@@ -43,11 +43,12 @@ plus rien en aval ne la revérifie.
 > « Le code est propre » ne l'est pas ; « la suite passe deux fois de suite sans nettoyage manuel »
 > l'est. Tout ce pack repose sur cette distinction.
 
-## Les sept portes
+## Les huit portes
 
 | Étape | Ce qui entre | Ce qui sort | La porte, une question falsifiable |
 |---|---|---|---|
 | backlog | une demande, en langage humain | un item avec un identifiant stable | *quel comportement observable change, et qui le constate ?* |
+| comprendre l'existant | un item, et le code qu'il touche | une carte : où vit ce code, et la commande qui le teste | *sais-je construire, tester, et où vit le code que je vais changer ?* |
 | branche | un item | une branche nommée d'après lui | *cette branche porte-t-elle UNE intention ?* |
 | test | des critères d'acceptation | des tests qui ÉCHOUENT | *ai-je vu le test rouge, et pour la bonne raison ?* |
 | code | des tests rouges | des tests verts | *tous verts, **zéro avertissement**, et aucun test affaibli pour y arriver ?* |
@@ -58,7 +59,7 @@ plus rien en aval ne la revérifie.
 Une porte sans réponse **arrête le travail** ; elle ne se remet pas à plus tard. Et si la réponse
 manque parce qu'une information manque, **demander est la réponse.**
 
-### La règle qui vaut pour les sept : on ne déclare pas, on prouve
+### La règle qui vaut pour toutes : on ne déclare pas, on prouve
 
 **Tu ne peux pas dire qu'une porte est franchie si tu n'as pas lancé, à l'instant, la commande qui le
 prouve.** Une exécution d'il y a vingt minutes ne compte pas, une extrapolation encore moins.
@@ -126,27 +127,41 @@ chère qui existe, **parce qu'elle a l'air terminée.**
 > format sur le fil mérite trois phrases écrites, **même si elle fait deux lignes**, parce qu'on ne
 > pourra pas la reprendre.
 
-## Ce que chaque étape délègue
+## Ce que chaque étape charge, et à quel moment
 
-| Sujet | Skill |
+Un skill se charge **au moment où son étape arrive**, jamais tous d'avance : les quinze ensemble
+pèsent environ 85 000 jetons, et une règle lue cinquante appels d'outils avant le geste pèse moins
+qu'une règle lue juste avant.
+
+| Étape | Charger | Pour |
+|---|---|---|
+| zéro, une fois par projet | `journal-et-debogueur` | le journal et le débogueur, installés avant le premier item |
+| backlog | `challenger-le-sujet`, puis `tracer-le-travail` | questionner la demande (vrai problème ou solution déjà choisie ?), puis écrire l'item |
+| comprendre l'existant | `explorer-le-code` | la première heure, un fil suivi de bout en bout, l'histoire du code qu'on va changer |
+| cadrer, si se tromper coûte cher | `cadrer-et-planifier`, `concevoir-avant-coder` | la conception approuvée, les critères, le plan ; YAGNI, ossature, frontières |
+| branche | `tracer-le-travail` | une branche par intention |
+| test | `tests-first` | les critères en tests rouges, et les tests qui mentent |
+| code | `code-comme-poesie`, `commencer-ferme` | les noms, les gardes, les qualifieurs, les avertissements au maximum |
+| doc | `doc-derivee`, `se-faire-comprendre` | où l'information vit, et comment l'écrire pour être compris |
+| PR | `tracer-le-travail`, `se-faire-comprendre`, `challenger-le-sujet` | la description, l'avant/après, et le relecteur hostile avant le vrai |
+| revue | `challenger-le-sujet` (section 5), puis `tracer-le-travail` | découper chaque remarque en affirmations, puis la clore par un changement ou un argument écrit |
+
+Et trois skills qui ne suivent pas le cycle, parce qu'ils répondent à un événement :
+
+| Quand | Charger |
 |---|---|
-| backlog, branche, commits, versionnement, changelog, PR, revue | `tracer-le-travail` |
-| conception, ossature en stubs, YAGNI, SOLID, injection, modules, paliers de build | `concevoir-avant-coder` |
-| critères d'acceptation, tests rouges, doubles, non-régression | `tests-first` |
-| nommage, clauses de garde, commentaires, doc de contrat | `code-comme-poesie` |
-| qualifieurs, visibilité, typage fort, avertissements au maximum | `commencer-ferme` |
-| README, `--help`, sortie machine, messages d'erreur | `doc-derivee` |
-| journal, débogueur en une touche, assertions, modes de build | `journal-et-debogueur` |
-| bancs de mesure, profilage, télémétrie, artefact de production | `mesure-et-telemetrie` |
-| voir un état interne : chronologie, grille, graphe, distribution | `rendre-l-etat-visible` |
-| spec, plan d'implémentation, critères d'acceptation, découpage en tâches | `cadrer-et-planifier` |
-| un bug, un test rouge, un comportement inattendu : l'enquête avant le correctif | `trouver-la-cause` |
-| un dépôt ou un module inconnu : l'interroger avant d'y toucher, et l'histoire d'une ligne | `explorer-le-code` |
-| une conclusion, une demande ou une revue à challenger avant de la présenter ou d'y répondre | `challenger-le-sujet` |
-| un rapport, un audit, un exposé, un schéma : écrire et montrer pour être compris | `se-faire-comprendre` |
+| un bug, un test rouge, un comportement inattendu | `trouver-la-cause` |
+| l'information est dans une forme (chronologie, grille, graphe), pas dans une valeur | `rendre-l-etat-visible` |
+| une lenteur, une mesure, un artefact de production | `mesure-et-telemetrie` |
+
+`challenger-le-sujet` apparaît trois fois, et c'est le seul skill présent au début et à la fin du
+cycle : il questionne la demande à l'entrée, anticipe la revue avant la PR, et juge chaque remarque à la
+sortie.
 
 **Invoque-les. Ne re-dérive pas leur contenu de mémoire** : c'est exactement le mécanisme par lequel
-une règle se met à diverger de sa propre définition.
+une règle se met à diverger de sa propre définition. L'agent `artisan` du pack suit cette table, et
+deux hooks la rendent difficile à oublier : aucune écriture avant d'avoir chargé ce skill, aucun arrêt
+sur un fichier modifié après la dernière commande.
 
 Deux précisions sur la carte ci-dessus :
 
@@ -189,7 +204,7 @@ vert, donc plus rien ne signale que la garantie a disparu.
 C'est le skill qui porte des portes, donc la sienne est celle du cycle entier. Ces cinq réponses
 doivent exister avant de considérer le travail terminé :
 
-1. les **sept portes** ont chacune une réponse. Celle qui manque n'a pas été reportée : elle a arrêté
+1. les **huit portes** ont chacune une réponse. Celle qui manque n'a pas été reportée : elle a arrêté
    le travail là où elle était ;
 2. chaque réponse a été **prouvée par une commande lancée à l'instant**, et non déduite d'un tour
    précédent. « Ça devrait passer » n'est pas une réponse, c'est l'absence de réponse ;

@@ -6,10 +6,10 @@ sortie ne ressemble pas à ça, l'étape n'est pas franchie, et il ne sert à ri
 
 ⚠ **Ce qui a été vérifié en écrivant ce document, et ce qui ne l'a pas été.** Les dépôts, les
 versions, les URL et le comportement de l'installateur `claude` ont été **mesurés** ici (les
-mesures sont dans le texte). En revanche **rien de la partie Docker ni Kubernetes n'a été exécuté** :
-ni l'un ni l'autre n'est installé sur cette machine, donc les sections 2 à 5 sont des instructions
-fondées sur les sources officielles, pas un compte rendu d'exécution. Les commandes de vérification
-sont là précisément pour ça.
+mesures sont dans le texte). Pour Docker et Kubernetes, les sections 2 à 5 ont d'abord été écrites
+depuis les sources officielles ; depuis, l'image de la section 4.1 a été construite et vérifiée le
+2026-09-23, mais le Job de la section 4.4 n'a jamais été appliqué. Les commandes de vérification sont
+là précisément pour ça.
 
 ## Ce que chaque outil fait ici
 
@@ -202,11 +202,14 @@ sert pas.
 ### 1.5 Vérifier le socle d'un coup
 
 ```bash
-cd ~/LplCraftSkills/forgeron && ./tests/run.sh && python3 -m forgeron doctor
+sudo apt install -y nodejs                   # les hooks de l'agent artisan tournent sous node
+cd ~/LplCraftSkills && ./install.sh          # les skills ET l'agent artisan, au niveau utilisateur
+cd forgeron && ./tests/run.sh && python3 -m forgeron doctor
 ```
 
-À voir : `Ran 47 tests ... OK`, `9/9 mutations detectees`, puis `doctor` avec les vérifications
-requises passées. Les deux lignes `note` (portées `admin:repo_hook` et `workflow`) sont normales :
+À voir : `OK` à la fin de la suite, `N/N mutations detectees` avec le même N des deux côtés, puis
+`doctor` avec les vérifications requises passées, dont `agent artisan`. Les nombres ne sont pas écrits
+ici : ils changent à chaque garde ajoutée, et un nombre recopié dans un guide finit par mentir. Les deux lignes `note` (portées `admin:repo_hook` et `workflow`) sont normales :
 ce sont des absences voulues.
 
 **À ce stade tout `forgeron` fonctionne.** Les sections suivantes sont pour apprendre Docker et
@@ -535,8 +538,11 @@ git -C ~/forgeron-sandbox log --oneline -1   # doit rendre un commit, pas « not
 test -f ~/.forgeron/config.json && echo ok
 ```
 
-⚠ **Rien de cette section n'a été exécuté.** L'image n'a pas été construite, le Job n'a pas été
-appliqué. Ce qui **a** été vérifié, c'est que les fichiers sont cohérents avec le code : 11 tests de
+L'image a été construite et vérifiée le 2026-09-23 sous WSL (Ubuntu 26.04, Docker 29.8) : le build
+passe, `install.sh` y pose les 15 skills et l'agent `artisan`, les tests des hooks passent dans le
+conteneur, `claude` y reconnaît l'agent, et l'entrypoint refuse de démarrer sans authentification. Le
+Job, lui, n'a pas été appliqué. Ce qui est vérifié à chaque `./tests/run.sh`, c'est que les fichiers
+sont cohérents avec le code : les tests de
 [`tests/test_deployment_files.py`](../tests/test_deployment_files.py) relisent le `ConfigMap` avec le
 **vrai** chargeur de configuration, vérifient que les chemins montés sont ceux que la configuration
 nomme, que les trois fichiers s'accordent sur l'étiquette d'image, qu'aucun secret n'est cuit dans le
@@ -545,12 +551,14 @@ nomme, que les trois fichiers s'accordent sur l'étiquette d'image, qu'aucun sec
 ### 4.1 Construire l'image
 
 ```bash
-cd ~/LplCraftSkills/forgeron
-docker build -f docker/Dockerfile -t forgeron:0.1.0 .
+cd ~/LplCraftSkills
+docker build -f forgeron/docker/Dockerfile -t forgeron:0.1.0 .
 ```
 
-⚠ **Le `.` final est le contexte, et il doit être la racine de `forgeron/`**, pas `docker/` — le
-`Dockerfile` copie `forgeron/` et `docker/entrypoint.sh`, qui sont tous deux relatifs à cette racine.
+⚠ **Le `.` final est le contexte, et il doit être la racine du dépôt**, pas `forgeron/` : l'image
+embarque le pack (`skills/`, `agents/`, `install.sh`) en plus du paquet `forgeron`, et le pack vit
+au-dessus de `forgeron/`. Ce qui n'a rien à faire dans le contexte est écarté par
+`forgeron/docker/Dockerfile.dockerignore`, que Docker lit parce qu'il porte le nom du `Dockerfile`.
 
 **Vérifier :**
 

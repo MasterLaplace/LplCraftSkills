@@ -146,9 +146,6 @@ def _doctor(args: argparse.Namespace) -> int:
     except Exception as failure:
         check("gh authentifie", False, str(failure)[:200])
 
-    # Verifier qu'un hook EXISTE ne prouve rien : on lui donne un message a filtrer
-    # et on regarde ce qu'il en fait. Une garde qu'on n'a pas vue agir n'est pas
-    # une garde, c'est un fichier.
     check("attribution : le hook agit", *_probe_commit_msg_hook())
 
     try:
@@ -156,6 +153,8 @@ def _doctor(args: argparse.Namespace) -> int:
         check("configuration lue", True, args.config)
         for repo in configuration.repos:
             check(f"clone {repo.slug}", os.path.isdir(os.path.join(repo.path, ".git")), repo.path)
+        check(f"agent {configuration.agent or '(aucun)'}",
+              *_agent_installed(configuration.agent, USER_AGENTS_DIR))
     except FileNotFoundError:
         check("configuration lue", False, f"{args.config} absent — lancer: forgeron config --init")
     except Exception as failure:
@@ -172,6 +171,19 @@ def _doctor(args: argparse.Namespace) -> int:
         print(f"\n{len(required) - len(failed)}/{len(required)} verifications requises passees, "
               f"{len(checks) - len(required)} notes")
     return EXIT_OK if not failed else EXIT_ENVIRONMENT
+
+
+USER_AGENTS_DIR = os.path.expanduser("~/.claude/agents")
+
+
+def _agent_installed(name: str, agents_dir: str) -> tuple[bool, str]:
+    if not name:
+        return True, "sans agent : le contrat seul, sans les hooks de la methode"
+    path = os.path.join(agents_dir, f"{name}.md")
+    if os.path.isfile(path):
+        return True, path
+    return False, (f"{path} absent : lancer ../install.sh depuis le depot craft-skills, "
+                   f"ou mettre \"agent\": \"\" dans la configuration pour s'en passer")
 
 
 def _config(args: argparse.Namespace) -> int:
@@ -192,6 +204,7 @@ def _config(args: argparse.Namespace) -> int:
             "model": "sonnet",
             "budget_per_run_usd": 3.0,
             "continuity": "resume",
+            "agent": "artisan",
         }
         with open(args.config, "w", encoding="utf-8") as handle:
             json.dump(skeleton, handle, ensure_ascii=False, indent=2)
@@ -320,10 +333,7 @@ def _build(args: argparse.Namespace) -> tuple[Engine, Journal]:
     if not write:
         journal.emit("dry_run", detail="lectures reelles, aucune action : ajouter --write pour agir")
     agent = ClaudeAgent(model=configuration.model, budget_usd=configuration.budget_per_run_usd,
-                        dry_run=not write)
-    # The forge and the workspace are the REAL ones even in a dry run: the reads are
-    # what makes a preview worth reading, and no write can happen because the driver
-    # stops at the decision. Faking the reads too would exercise the fake.
+                        dry_run=not write, agent=configuration.agent)
     engine = Engine(configuration, GhForge(), GitWorkspace(), agent,
                     Store(configuration.state_dir), journal, dry_run=not write,
                     regenerator=ShellRegenerator())

@@ -43,6 +43,7 @@ class ClaudeAgent:
         timeout: int = 3600,
         contract: str = "",
         dry_run: bool = False,
+        agent: str = "",
     ) -> None:
         self._claude = executable
         self._model = model
@@ -50,6 +51,7 @@ class ClaudeAgent:
         self._timeout = timeout
         self._contract = contract
         self._dry_run = dry_run
+        self._agent = agent
 
     def run(
         self,
@@ -71,14 +73,13 @@ class ClaudeAgent:
             "--permission-mode", "acceptEdits",
         ]
         argv += ["--resume", session_id] if resume else ["--session-id", session_id]
+        if self._agent:
+            argv += ["--agent", self._agent]
 
         text = contract or self._contract
         if text:
             argv += ["--append-system-prompt", text]
 
-        # A read-only phase gets a read-only toolset instead of a promise in the
-        # prompt. "Do not modify files" is a request; withholding Edit is a fact.
-        # Variadic flag, so it stays last and the prompt goes on stdin.
         if read_only:
             argv += ["--tools", "Read", "Grep", "Glob", "Bash", "Skill", "WebFetch"]
 
@@ -106,9 +107,6 @@ def _parse(done: subprocess.CompletedProcess[str], session_id: str) -> Result:
     )
     verdict = payload.get("structured_output")
 
-    # An exit code of zero with no structured output means the run ended without
-    # answering the schema - budget exhausted, or a refusal. Treating it as a
-    # success is how a bot asks for review on an empty branch.
     if payload.get("is_error") or verdict is None:
         detail = payload.get("subtype") or payload.get("terminal_reason") or "no structured output"
         return Result(False, verdict or {}, cost, str(detail), session_id,

@@ -1,24 +1,24 @@
-# Protocole de mesure : la liste de contrôle et les commandes
+# Protocole de mesure : la liste de contrôle et les commandes
 
 Une mesure qui ne dit pas **dans quelles conditions** elle a été prise n'est pas reproductible, donc ce
 n'est pas une mesure. Ce fichier tient le protocole minimal et les commandes par écosystème.
 
-> Les commentaires des blocs de code restent sans accents : ils sont destinés à être copiés dans des
+> Les commentaires des blocs de code restent sans accents : ils sont destinés à être copiés dans des
 > scripts et des sources.
 
 ## La liste de contrôle, avant de publier un chiffre
 
-- [ ] **itérations de chauffe** jetées : cache, compilation à la volée, contexte GPU, allocateur
+- [ ] **itérations de chauffe** jetées : cache, compilation à la volée, contexte GPU, allocateur
 - [ ] **N tirages**, avec la **variance** et le **nombre de tirages** publiés
 - [ ] **médiane et p95 ou p99**, jamais une moyenne seule
 - [ ] **cœur épinglé**, gouverneur de fréquence fixe, machine au repos
 - [ ] **A et B entrelacés** (A, B, A, B...) et non tous les A puis tous les B
-- [ ] **état de l'arbre enregistré** avec la mesure : commit, modifications non commitées, empreinte
+- [ ] **état de l'arbre enregistré** avec la mesure : commit, modifications non commitées, empreinte
 - [ ] le résultat n'est **pas trop beau**, un ordre de grandeur inattendu est un bug de banc
-- [ ] la **taille d'entrée varie** : un temps insensible à l'entrée ne mesure rien
+- [ ] la **taille d'entrée varie** : un temps insensible à l'entrée ne mesure rien
 - [ ] un **test de correction** couvre le même code
 
-## Linux : réduire le bruit
+## Linux : réduire le bruit
 
 ```bash
 # Epingler sur un coeur, priorite haute
@@ -37,10 +37,10 @@ grep MHz /proc/cpuinfo | sort -u
 setarch $(uname -m) -R ./bench
 ```
 
-**Vérifier après, pas seulement demander** : un gouverneur est refusé en silence sur certaines machines
+**Vérifier après, pas seulement demander** : un gouverneur est refusé en silence sur certaines machines
 virtuelles, et un bridage thermique ne s'annonce pas.
 
-## Temps de bout en bout : `hyperfine`
+## Temps de bout en bout : `hyperfine`
 
 ```bash
 hyperfine --warmup 3 --runs 20 \
@@ -51,7 +51,7 @@ hyperfine --warmup 3 --runs 20 \
 Il fait la chauffe, les tirages, l'écart-type et la comparaison relative. Pour de l'A/B, c'est le moyen le
 plus court d'obtenir une distribution au lieu d'un nombre.
 
-## Compteurs matériels : `perf`
+## Compteurs matériels : `perf`
 
 ```bash
 # Ce qui distingue "devenu memoire" de "devenu algorithme"
@@ -62,7 +62,7 @@ perf record -g --call-graph dwarf ./bench && perf report
 perf annotate -s ComputeChecksum
 ```
 
-Les deux rapports qui parlent : **instructions par cycle**, un ratio bas veut dire qu'on attend la mémoire
+Les deux rapports qui parlent : **instructions par cycle**, un ratio bas veut dire qu'on attend la mémoire
 , et le **taux de défauts de cache**. Un temps qui double à instructions constantes se lit directement ici.
 
 ## Comptage d'instructions pour l'intégration continue
@@ -75,11 +75,11 @@ grep -E '^(I refs|D1  misses|LLd misses)' .tmp/cg.txt
 perf stat -e instructions -x, ./bench 2>&1 | cut -d, -f1
 ```
 
-C'est ce qui permet un seuil serré sur un exécuteur partagé : la variance du **temps** y est de 20 à 50 %,
+C'est ce qui permet un seuil serré sur un exécuteur partagé : la variance du **temps** y est de 20 à 50 %,
 celle des **instructions** est de l'ordre du pour-mille. Ça ne mesure pas la latence, et ce n'est pas ce
 qu'on lui demande.
 
-## C++ : Google Benchmark
+## C++ : Google Benchmark
 
 ```cpp
 static void BM_ComputeChecksum(benchmark::State &state)
@@ -99,10 +99,10 @@ BENCHMARK(BM_ComputeChecksum)->Range(1 << 10, 1 << 24);   // fait varier la tail
         --benchmark_out=.tmp/bench.json --benchmark_out_format=json
 ```
 
-`Range` est ce qui rend le banc **diagnostique** : la courbe montre le décrochage quand un niveau de cache
+`Range` est ce qui rend le banc **diagnostique** : la courbe montre le décrochage quand un niveau de cache
 déborde, ce qu'un point unique ne peut pas montrer.
 
-## CUDA : mesurer le noyau, pas la mise en file
+## CUDA : mesurer le noyau, pas la mise en file
 
 ```cpp
 cudaEvent_t start, stop;
@@ -129,10 +129,10 @@ ncu --set full --kernel-name LaunchKernel -o .tmp/kernel ./app
 ncu --metrics dram__throughput.avg.pct_of_peak_sustained_elapsed ./app
 ```
 
-Compiler avec `-lineinfo` : le profil se corrèle au source, sans coût en performance. Publier **trois
+Compiler avec `-lineinfo` : le profil se corrèle au source, sans coût en performance. Publier **trois
 nombres** (hôte vers périphérique, calcul, périphérique vers hôte), jamais leur somme seule.
 
-## .NET : BenchmarkDotNet
+## .NET : BenchmarkDotNet
 
 ```csharp
 [MemoryDiagnoser]                       // allocations : souvent la vraie cause
@@ -152,7 +152,7 @@ dotnet run -c Release -- --filter '*Proration*' --exporters json
 dotnet-counters monitor -p <pid>      # en production : GC, files d'attente, exceptions
 ```
 
-Il gère chauffe, tirages, distribution, ratio contre la ligne de base et allocations. **Jamais en Debug** :
+Il gère chauffe, tirages, distribution, ratio contre la ligne de base et allocations. **Jamais en Debug** :
 il refuse, et c'est bien.
 
 ## Node et TypeScript
@@ -188,7 +188,7 @@ git rev-parse HEAD >> "$OUT.tree"; git diff --stat >> "$OUT.tree"
 | un gain d'un ordre de grandeur inattendu | le calcul a été supprimé, ou on mesure une mise en file |
 | un temps insensible à la taille d'entrée | on ne mesure pas le code visé |
 | un écart qui disparaît en changeant l'ordre des bras | de la dérive, pas un effet |
-| une variance supérieure à l'écart mesuré | il n'y a **pas** d'écart mesurable : dire « non concluant » |
+| une variance supérieure à l'écart mesuré | il n'y a **pas** d'écart mesurable : dire « non concluant » |
 
-La dernière ligne est la plus importante : **« non concluant » est un résultat**, et le publier vaut mieux
+La dernière ligne est la plus importante : **« non concluant » est un résultat**, et le publier vaut mieux
 que de trancher sur du bruit.

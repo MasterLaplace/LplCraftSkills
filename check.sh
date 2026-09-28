@@ -80,6 +80,19 @@ else
 fi
 
 echo
+echo "== la prose porte une espace insecable avant ; : ! ? =="
+normal_spaces="$(find . -name '*.md' -not -path './.git/*' -print0 | xargs -0 awk '
+    FNR == 1 { front = 0; fence = 0 }
+    FNR == 1 && /^---[[:space:]]*$/ { front = 1; next }
+    front { if (/^---[[:space:]]*$/) front = 0; next }
+    /^[[:space:]]*```/ { fence = !fence; next }
+    fence || /^[[:space:]]*<!--/ { next }
+    { line = $0; gsub(/`[^`]*`/, "", line); gsub(/[a-z]+:\/\/[^ )]*/, "", line)
+      if (line ~ / [;:!?]/) print FILENAME ":" FNR }')"
+[ -z "$normal_spaces" ] && report ok "aucune espace normale devant une ponctuation double" \
+    || { report MANQUE "espace normale devant ; : ! ? (typographie francaise) :"; echo "$normal_spaces" | head -20 | sed 's/^/         /'; }
+
+echo
 if [ "$failures" -eq 0 ]; then
     echo "tout ce que le README affirme est vrai."
 else

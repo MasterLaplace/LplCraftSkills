@@ -1,10 +1,10 @@
 # Les squelettes par genre
 
-Ce fichier ne se lit pas d'affilée : on y vient avec un genre à écrire. Chaque squelette est un point
+Ce fichier ne se lit pas d'affilée : on y vient avec un genre à écrire. Chaque squelette est un point
 de départ copiable, pas un formulaire à remplir case par case. Une section qui n'apporte rien à **ce**
 lecteur se retire, même si le squelette la prévoit.
 
-> Les squelettes sont dans des blocs de code, donc sans accents : ils sont faits pour être copiés dans
+> Les squelettes sont dans des blocs de code, donc sans accents : ils sont faits pour être copiés dans
 > un éditeur. Le texte qu'on écrit dedans, lui, porte ses accents s'il est lu par des humains.
 
 ## Le rapport, la synthèse
@@ -31,12 +31,12 @@ Ce que ca ne dit pas : <la limite de la mesure, le perimetre non regarde>
 ## <Section 2 : ...>
 ```
 
-La case « ce que ça ne dit pas » est celle qu'on saute, et c'est celle qui protège l'auteur en
-réunion : un chiffre dont on a dit la limite ne peut pas être retourné contre lui.
+La case « ce que ça ne dit pas » est celle qu'on saute, et c'est celle qui protège l'auteur en
+réunion : un chiffre dont on a dit la limite ne peut pas être retourné contre lui.
 
 ## Le plan de rédaction, avant un document long
 
-Il se fait **avant** d'écrire, et il rend la synthèse vérifiable : si un fait n'entre dans aucun
+Il se fait **avant** d'écrire, et il rend la synthèse vérifiable : si un fait n'entre dans aucun
 paragraphe, il n'a rien à faire dans le document.
 
 ```markdown
@@ -58,18 +58,18 @@ Faits :
 Puis une **passe adversariale** qui rouvre chaque source et marque chaque fait vérifié, corrigé ou
 rejeté (voir `challenger-le-sujet`).
 
-Pour un paragraphe qui raconte une contribution personnelle, une forme en trois temps marche bien :
+Pour un paragraphe qui raconte une contribution personnelle, une forme en trois temps marche bien :
 **ce que je croyais, ce que la mesure a montré, ce que j'ai changé.** Elle dit le geste de l'auteur,
 et elle prouve qu'il a mesuré au lieu de supposer.
 
 ## L'audit
 
 Le lecteur veut savoir ce qui ne va pas, à quel point, et quoi faire. Les normes d'audit ont figé la
-forme d'un constat, et elle est bonne pour tout audit, y compris d'un code ou d'une architecture : les
+forme d'un constat, et elle est bonne pour tout audit, y compris d'un code ou d'une architecture : les
 *Global Internal Audit Standards* de l'IIA (2024, norme 14.3) demandent le **critère**, le **constat**,
 la **cause racine** quand on peut l'établir, l'**effet** (le risque ou l'exposition), et
-l'**importance**, avec sa priorité ; la **recommandation** fait l'objet d'une norme séparée (14.4). Le
-*Yellow Book* du GAO américain dit la même chose en quatre mots : critère, constat, cause, effet. Et la
+l'**importance**, avec sa priorité ; la **recommandation** fait l'objet d'une norme séparée (14.4). Le
+*Yellow Book* du GAO américain dit la même chose en quatre mots : critère, constat, cause, effet. Et la
 norme demande des constats rédigés de façon succincte, en langage clair.
 
 ```markdown
@@ -93,28 +93,28 @@ norme demande des constats rédigés de façon succincte, en langage clair.
 - Recommandation : <le geste, et ce qu'il rend possible>
 ```
 
-Deux règles propres à l'audit :
+Deux règles propres à l'audit :
 
 - **le périmètre non regardé est écrit.** Un audit qui ne dit pas ce qu'il n'a pas examiné laisse croire
-  que ce qu'il ne mentionne pas est sain ;
+  que ce qu'il ne mentionne pas est sain ;
 - **le critère vient avant le constat.** Un écart n'existe que par rapport à une règle, et une règle
   qu'on ne peut pas citer transforme le constat en opinion.
 
 ## L'exposé, les slides
 
 Le public écoute quelqu'un qui parle, et ne peut pas relire. Le texte projeté n'est donc pas le texte
-dit : l'écran porte le message et sa preuve, la voix porte le reste.
+dit : l'écran porte le message et sa preuve, la voix porte le reste.
 
-- **un message par slide**, et **le titre est ce message**, en phrase : la structure
-  *assertion-preuve* de Michael Alley, un titre-phrase et une preuve visuelle en dessous ;
-- **le test du coup d'œil** (Nancy Duarte) : une slide se comprend en trois secondes ;
+- **un message par slide**, et **le titre est ce message**, en phrase : la structure
+  *assertion-preuve* de Michael Alley, un titre-phrase et une preuve visuelle en dessous ;
+- **le test du coup d'œil** (Nancy Duarte) : une slide se comprend en trois secondes ;
 - **pas de slide de synthèse qui répète** ce qui a déjà été dit, ni en ouverture ni en clôture.
-  L'ouverture dit l'état et le problème ; la clôture dit ce qui se passe ensuite ;
+  L'ouverture dit l'état et le problème ; la clôture dit ce qui se passe ensuite ;
 - **une grammaire stable d'une slide à l'autre**, quand l'exposé présente plusieurs sujets comparables.
-  Pour un état des lieux suivi de propositions, par exemple : **définition, ce qu'on a, ce qui manque, la
-  solution** ;
-- **pas de deuxième personne** quand on s'adresse à une équipe : on parle du système, pas au public ;
-- **la solution, pas son coût**, devant un public qui décide : ce qui deviendra possible, pas le nombre
+  Pour un état des lieux suivi de propositions, par exemple : **définition, ce qu'on a, ce qui manque, la
+  solution** ;
+- **pas de deuxième personne** quand on s'adresse à une équipe : on parle du système, pas au public ;
+- **la solution, pas son coût**, devant un public qui décide : ce qui deviendra possible, pas le nombre
   de PR, de tickets ou de jours.
 
 ```markdown
@@ -124,14 +124,14 @@ Slide N
   Notes   : <ce que l'orateur dit, que l'ecran ne porte pas>
 ```
 
-**L'alternative aux slides, quand il faut décider** : le mémo narratif. Chez Amazon, une réunion de
+**L'alternative aux slides, quand il faut décider** : le mémo narratif. Chez Amazon, une réunion de
 décision commence par la lecture silencieuse d'un mémo de six pages rédigé en prose, au lieu d'une
 présentation. Un texte suivi oblige l'auteur à relier ses idées, là où des puces les juxtaposent.
 
 ## Le post-mortem
 
 Le lecteur veut comprendre ce qui s'est passé, et que ça ne se reproduise pas. Le modèle du livre SRE
-de Google est devenu un standard, et son principe compte autant que sa forme : **sans coupable**. On
+de Google est devenu un standard, et son principe compte autant que sa forme : **sans coupable**. On
 cherche ce qui a rendu l'erreur possible, pas qui l'a commise.
 
 ```markdown
@@ -158,15 +158,15 @@ Lecons :
 Chronologie : <horodatee, avec les sources (journal, alerte, message)>
 ```
 
-La ligne « où on a eu de la chance » est la plus précieuse du modèle : elle nomme les incidents qui ne
+La ligne « où on a eu de la chance » est la plus précieuse du modèle : elle nomme les incidents qui ne
 sont pas arrivés, donc ceux qu'aucune action ne couvrirait sinon.
 
 ## La note de décision
 
 Le lecteur, souvent soi-même dans six mois, veut savoir ce qui a été choisi, pourquoi, et contre quoi.
-La forme courte est l'*Architecture Decision Record* de Michael Nygard (2011) : titre, contexte,
+La forme courte est l'*Architecture Decision Record* de Michael Nygard (2011) : titre, contexte,
 décision, statut, conséquences, en une ou deux pages. Une note de décision porte une **date** et ne
-se met pas à jour : si la décision change, une nouvelle note remplace l'ancienne, qui reste. C'est ce
+se met pas à jour : si la décision change, une nouvelle note remplace l'ancienne, qui reste. C'est ce
 qui la rend fiable, et c'est ce qui la destine au wiki (voir `doc-derivee`).
 
 ```markdown
@@ -192,10 +192,10 @@ Nous <verbe au present> <ce qui est choisi>, parce que <la raison qui a tranche>
 
 Le lecteur veut savoir ce qu'on attend de lui, sans avoir à le chercher.
 
-- **la demande en première ligne**, formulée comme une question à laquelle on peut répondre ;
-- **ce qu'on a déjà vérifié**, en une ligne : c'est ce qui évite la réponse « as-tu essayé de... » ;
-- **le contexte ensuite**, seulement ce qu'il faut pour répondre ;
-- **une demande par message** : deux demandes dans le même message obtiennent une réponse à la
+- **la demande en première ligne**, formulée comme une question à laquelle on peut répondre ;
+- **ce qu'on a déjà vérifié**, en une ligne : c'est ce qui évite la réponse « as-tu essayé de... » ;
+- **le contexte ensuite**, seulement ce qu'il faut pour répondre ;
+- **une demande par message** : deux demandes dans le même message obtiennent une réponse à la
   première.
 
 ```text
@@ -205,15 +205,15 @@ J'ai verifie <ce qui a ete lu, lance, mesure>, et <ce que ca a donne>.
 Contexte : <le minimum pour repondre>.
 ```
 
-## La documentation d'un outil : les quatre besoins de Diátaxis
+## La documentation d'un outil : les quatre besoins de Diátaxis
 
-Le cadre de Daniele Procida range les besoins d'un lecteur de doc sur deux axes : agir ou comprendre,
+Le cadre de Daniele Procida range les besoins d'un lecteur de doc sur deux axes : agir ou comprendre,
 apprendre ou travailler.
 
 | | pour apprendre | pour travailler |
 |---|---|---|
-| **agir** | le **tutoriel** : une leçon qui mène le débutant jusqu'à un premier résultat | le **guide pratique** : les étapes d'une tâche précise, pour qui sait déjà |
-| **comprendre** | l'**explication** : le pourquoi, le contexte, les alternatives | la **référence** : la description exacte, qu'on consulte sans la lire |
+| **agir** | le **tutoriel** : une leçon qui mène le débutant jusqu'à un premier résultat | le **guide pratique** : les étapes d'une tâche précise, pour qui sait déjà |
+| **comprendre** | l'**explication** : le pourquoi, le contexte, les alternatives | la **référence** : la description exacte, qu'on consulte sans la lire |
 
 Une page par case. Le mélange le plus fréquent, un tutoriel interrompu par des tableaux de référence,
 perd le débutant et agace l'expert. Et la référence, quand elle décrit des options ou des commandes,

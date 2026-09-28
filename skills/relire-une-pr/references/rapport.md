@@ -1,6 +1,6 @@
 # Le gabarit du rapport de revue
 
-Le rapport s'écrit pour la personne qui a demandé la revue, pas pour l'auteur de la PR : c'est elle qui
+Le rapport s'écrit pour la personne qui a demandé la revue, pas pour l'auteur de la PR : c'est elle qui
 décide de ce qui part sur la forge. Il tient sur un écran en tête, puis une carte par remarque.
 
 ## Le squelette
@@ -52,9 +52,9 @@ Ou : pas de passe hostile, et pourquoi.>
 
 ## Trois règles de forme
 
-- **le titre d'une remarque est son constat**, pas son sujet. « La tuile affiche le total global quand
-  un seul projet est filtré » se lit sans la carte ; « Problème de la tuile » oblige à la lire ;
+- **le titre d'une remarque est son constat**, pas son sujet. « La tuile affiche le total global quand
+  un seul projet est filtré » se lit sans la carte ; « Problème de la tuile » oblige à la lire ;
 - **la même forme pour chaque carte**, pour qu'une preuve absente se voie (`se-faire-comprendre`,
-  section 4) ;
+  section 4) ;
 - **les chemins de fichier disent à quel commit ils renvoient** quand le lecteur n'a pas la PR sous les
-  yeux : un `fichier:ligne` de la copie de travail du lecteur peut désigner une autre version.
+  yeux : un `fichier:ligne` de la copie de travail du lecteur peut désigner une autre version.

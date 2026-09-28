@@ -236,6 +236,11 @@ implicite), `virtual` **et** `override` ensemble (choisir `override`), `private`
 | **TypeScript** | `private` ou `#`, `readonly`, `as const`, `strict` complet, types marqués | `asserts x is T`, prédicats de type |
 | **Rust** | privé par défaut, immuable par défaut, `#[must_use]`, type enveloppe | `unsafe`, `Send` et `Sync` manuels |
 
+Pour TypeScript, l'échelle complète, les options du compilateur et les constructions que le
+compilateur croit sans vérifier (`as unknown as T`, `!`, `any`, les prédicats de type) sont dans
+`references/typescript.md`, avec la même grille à trois niveaux. C'est le langage où le niveau 3 se
+cache le mieux, parce que tout y a l'air typé.
+
 ## La porte de sortie
 
 Sur chaque déclaration écrite, ces trois réponses doivent exister :

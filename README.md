@@ -1,6 +1,6 @@
 # LplCraftSkills
 
-Quinze skills [Claude Code](https://claude.com/claude-code) indépendantes du langage, qui encodent une façon
+Seize skills [Claude Code](https://claude.com/claude-code) indépendantes du langage, qui encodent une façon
 de travailler : comprendre avant de décider, décider avant de coder, prouver avant de livrer, et faire
 porter par le code tout ce qui pourrait mentir ailleurs.
 
@@ -29,7 +29,7 @@ Les autres modes (`--copy`, `--uninstall`) et les codes de sortie : `./install.s
 listés ici, parce qu'une liste d'options recopiée dans un README finit toujours par mentir, c'est
 précisément ce que dit le skill `doc-derivee`.
 
-## Les quinze skills
+## Les seize skills
 
 | Skill | En une phrase |
 |---|---|
@@ -48,6 +48,7 @@ précisément ce que dit le skill `doc-derivee`.
 | [`rendre-l-etat-visible`](skills/rendre-l-etat-visible/SKILL.md) | quand l'information est dans la forme, on la rend visible, et le même artefact habille la doc |
 | [`se-faire-comprendre`](skills/se-faire-comprendre/SKILL.md) | le lecteur, le message en une phrase, la réponse d'abord, l'exemple avant l'explication, le visuel cadré, un lecteur froid |
 | [`tracer-le-travail`](skills/tracer-le-travail/SKILL.md) | backlog, commits, versionnement, changelog, PR, revue, porte de merge |
+| [`garder-les-frontieres`](skills/garder-les-frontieres/SKILL.md) | la sécurité comme une question posée quand un changement touche une frontière de confiance, puis l'escalade vers l'équipe sécurité, jamais un feu vert auto-décerné |
 
 ## Le fil rouge, en trois idées
 
@@ -84,6 +85,9 @@ Deux skills sortent du code et se lisent dès qu'un rapport, un audit, un expos�
 quel que soit ton niveau : **`challenger-le-sujet`** et **`se-faire-comprendre`**. Elles vont par paire :
 on ne choisit bien l'essentiel à dire que parmi tout ce qu'on sait.
 
+Une autre se lit au premier événement qui l'appelle : **`garder-les-frontieres`**, la première fois
+qu'un changement touche une entrée, un secret, une permission ou une dépendance.
+
 Les cinq autres (`cadrer-et-planifier`, `commencer-ferme`, `doc-derivee`, `mesure-et-telemetrie`,
 `rendre-l-etat-visible`) répondent à des problèmes qu'il faut avoir rencontrés pour que la réponse ait du
 sens. Elles attendront.
@@ -105,8 +109,8 @@ claude --agent artisan
 
 L'agent ([`agents/artisan.md`](agents/artisan.md)) ne recopie aucun skill. Il dit quand charger lequel :
 `cycle-de-dev` d'abord, puis le skill de chaque étape au moment où elle arrive, et la porte de sortie de
-chacun prouvée par une commande avant de conclure. Charger les quinze d'avance coûterait environ
-85 000 jetons et noierait la règle utile au moment où elle sert.
+chacun prouvée par une commande avant de conclure. Charger les seize d'avance coûterait environ
+89 000 jetons et noierait la règle utile au moment où elle sert.
 
 Deux règles ne dépendent pas de sa bonne volonté, parce que ce sont des hooks
 ([`agents/hooks/artisan-gate.cjs`](agents/hooks/artisan-gate.cjs)) :

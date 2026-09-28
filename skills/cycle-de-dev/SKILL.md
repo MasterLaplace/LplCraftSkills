@@ -10,7 +10,8 @@ description: >-
   franchie sans avoir lance a l'instant la commande qui le prouve ». Delegue aux skills
   explorer-le-code, challenger-le-sujet, cadrer-et-planifier, concevoir-avant-coder, tests-first,
   code-comme-poesie, commencer-ferme, doc-derivee, journal-et-debogueur, trouver-la-cause,
-  mesure-et-telemetrie, rendre-l-etat-visible, se-faire-comprendre et tracer-le-travail.
+  mesure-et-telemetrie, rendre-l-etat-visible, se-faire-comprendre, tracer-le-travail et
+  garder-les-frontieres.
 ---
 
 # Le cycle de développement, et la seule faute qui compte
@@ -129,8 +130,8 @@ chère qui existe, **parce qu'elle a l'air terminée.**
 
 ## Ce que chaque étape charge, et à quel moment
 
-Un skill se charge **au moment où son étape arrive**, jamais tous d'avance : les quinze ensemble
-pèsent environ 85 000 jetons, et une règle lue cinquante appels d'outils avant le geste pèse moins
+Un skill se charge **au moment où son étape arrive**, jamais tous d'avance : les seize ensemble
+pèsent environ 89 000 jetons, et une règle lue cinquante appels d'outils avant le geste pèse moins
 qu'une règle lue juste avant.
 
 | Étape | Charger | Pour |
@@ -146,13 +147,17 @@ qu'une règle lue juste avant.
 | PR | `tracer-le-travail`, `se-faire-comprendre`, `challenger-le-sujet` | la description, l'avant/après, et le relecteur hostile avant le vrai |
 | revue | `challenger-le-sujet` (section 5), puis `tracer-le-travail` | découper chaque remarque en affirmations, puis la clore par un changement ou un argument écrit |
 
-Et trois skills qui ne suivent pas le cycle, parce qu'ils répondent à un événement :
+Et quatre skills qui ne suivent pas le cycle, parce qu'ils répondent à un événement :
 
 | Quand | Charger |
 |---|---|
 | un bug, un test rouge, un comportement inattendu | `trouver-la-cause` |
 | l'information est dans une forme (chronologie, grille, graphe), pas dans une valeur | `rendre-l-etat-visible` |
 | une lenteur, une mesure, un artefact de production | `mesure-et-telemetrie` |
+| une frontière de confiance touchée, une dépendance ou un outil tiers ajouté | `garder-les-frontieres` |
+
+`garder-les-frontieres` a aussi sa question aux portes du cycle : au cadrage, à la revue et au merge,
+*ce changement touche-t-il une frontière de confiance ?* La réponse s'écrit, même quand c'est non.
 
 `challenger-le-sujet` apparaît trois fois, et c'est le seul skill présent au début et à la fin du
 cycle : il questionne la demande à l'entrée, anticipe la revue avant la PR, et juge chaque remarque à la

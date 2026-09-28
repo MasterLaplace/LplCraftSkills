@@ -29,6 +29,7 @@ SKILLS=(
   rendre-l-etat-visible
   se-faire-comprendre
   tracer-le-travail
+  garder-les-frontieres
 )
 
 AGENTS=(

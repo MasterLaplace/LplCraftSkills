@@ -145,7 +145,7 @@ et leur traduction en logiciel, sont dans `references/grilles.md`.
 | **SFDIPOT** (structure, fonction, données, interfaces, plateforme, opérations, temps) | les **dimensions d'un système** | avant de tester, auditer ou modifier un produit |
 | **mots-guides HAZOP** (pas, plus, moins, en plus, en partie, inverse, autre que, tôt, tard, avant, après) | les **déviations** d'un flux ou d'une étape | une entrée, un message, une séquence, une intégration |
 | **ZOMBIES** (zéro, un, plusieurs, bornes, interface, exceptions, simple) | les **cas** d'un comportement | avant d'écrire les tests d'une fonction |
-| **STRIDE** (usurpation, altération, répudiation, fuite, déni de service, élévation) | les **menaces** | toute frontière de confiance : entrée utilisateur, API, fichier reçu |
+| **STRIDE** (usurpation, altération, répudiation, fuite, déni de service, élévation) | les **menaces** | toute frontière de confiance : entrée utilisateur, API, fichier reçu ; le reste du geste est dans `garder-les-frontieres` |
 
 **Deux grilles minimum, d'axes différents.** Une grille ne trouve que ce que son axe peut
 voir ; deux axes différents ont des angles morts différents. C'est la même raison qui fait croiser des

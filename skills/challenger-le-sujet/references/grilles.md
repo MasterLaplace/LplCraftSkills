@@ -178,5 +178,5 @@ aux questions de la direction.
 | **le retour arrière** | comment on annule ? Les données écrites entre-temps survivent-elles au retour arrière ? |
 | **la compatibilité** | qui dépend de l'ancien contrat ? Les anciens clients, les anciennes données, les anciens messages en file ? |
 | **l'observation** | comment saura-t-on que ça marche en production ? Quelle métrique, quelle alerte ? |
-| **la sécurité** | quelles frontières de confiance sont traversées ? (voir STRIDE) |
+| **la sécurité** | quelles frontières de confiance sont traversées ? (voir STRIDE, puis `garder-les-frontieres`) |
 | **l'exploitation** | qui est réveillé quand ça casse, et que lit-il pour comprendre ? |

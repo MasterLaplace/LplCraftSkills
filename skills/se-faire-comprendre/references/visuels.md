@@ -14,10 +14,10 @@ ci-dessous : `focus` pour le sujet, `ctx` pour le contexte nécessaire. Tout le 
 
 ```mermaid
 flowchart LR
-  U["navigateur"]:::ctx --> G["passerelle API"]:::ctx
-  G --> P["service paiement<br/><i>le sujet</i>"]:::focus
-  P --> B["banque"]:::ctx
-  P --> D[("base commandes")]:::ctx
+  U["browser"]:::ctx --> G["API gateway"]:::ctx
+  G --> P["payment service<br/><i>the subject</i>"]:::focus
+  P --> B["bank"]:::ctx
+  P --> D[("orders database")]:::ctx
   classDef focus fill:#1f6feb,color:#ffffff,stroke:#1f6feb,stroke-width:3px
   classDef ctx fill:#f2f2f2,color:#777777,stroke:#cccccc
 ```
@@ -36,13 +36,13 @@ Pour un protocole, un appel entre services, un enchaînement asynchrone. Le temp
 ```mermaid
 sequenceDiagram
   participant C as client
-  participant P as service paiement
-  participant B as banque
+  participant P as payment service
+  participant B as bank
   C->>P: POST /payments
-  P->>B: demande d'autorisation
-  B-->>P: autorisee
+  P->>B: authorization request
+  B-->>P: authorized
   P-->>C: 201 Created
-  Note over P,B: la commande n'est ecrite qu'apres la reponse de la banque
+  Note over P,B: the order is written only after the bank answers
 ```
 
 Piège : dessiner **tous** les participants du système. Une séquence montre les acteurs du scénario, et
@@ -55,11 +55,11 @@ Pour un algorithme, un processus, une règle métier avec des branches.
 
 ```mermaid
 flowchart TD
-  S["demande de remboursement"] --> Q{"moins de 30 jours ?"}
-  Q -->|oui| A["rembourse automatiquement"]
-  Q -->|non| M{"montant sous 50 EUR ?"}
-  M -->|oui| A
-  M -->|non| H["revue manuelle"]:::focus
+  S["refund request"] --> Q{"less than 30 days?"}
+  Q -->|yes| A["refunded automatically"]
+  Q -->|no| M{"amount under 50 EUR?"}
+  M -->|yes| A
+  M -->|no| H["manual review"]:::focus
   classDef focus fill:#1f6feb,color:#ffffff,stroke:#1f6feb
 ```
 
@@ -73,16 +73,16 @@ Pour un cycle de vie (une commande, un ticket, une connexion), et surtout pour m
 
 ```mermaid
 stateDiagram-v2
-  [*] --> Brouillon
-  Brouillon --> Soumise: soumettre
-  Soumise --> Validee: valider
-  Soumise --> Brouillon: renvoyer
-  Validee --> Payee: payer
-  Soumise --> Refusee: refuser
-  Brouillon --> Expiree: 30 jours sans action
-  Payee --> [*]
-  Refusee --> [*]
-  Expiree --> [*]
+  [*] --> Draft
+  Draft --> Submitted: submit
+  Submitted --> Approved: approve
+  Submitted --> Draft: send back
+  Approved --> Paid: pay
+  Submitted --> Rejected: reject
+  Draft --> Expired: 30 days without action
+  Paid --> [*]
+  Rejected --> [*]
+  Expired --> [*]
 ```
 
 Piège : oublier les états d'erreur et d'expiration. Un cycle de vie sans eux décrit le cas heureux, pas
@@ -96,14 +96,14 @@ sur **un** niveau. Les frontières sont des cadres (`subgraph`), pas des phrases
 
 ```mermaid
 flowchart LR
-  subgraph EXT["hors de notre perimetre"]
-    Banque["banque"]:::ctx
-    Mail["service d'e-mail"]:::ctx
+  subgraph EXT["outside our scope"]
+    Banque["bank"]:::ctx
+    Mail["e-mail service"]:::ctx
   end
-  subgraph SYS["notre systeme"]
-    Web["application web"]:::ctx
-    Pay["service paiement"]:::focus
-    Db[("base commandes")]:::ctx
+  subgraph SYS["our system"]
+    Web["web application"]:::ctx
+    Pay["payment service"]:::focus
+    Db[("orders database")]:::ctx
   end
   Web --> Pay --> Db
   Pay --> Banque
@@ -122,9 +122,9 @@ le dessiner (voir `explorer-le-code`, et l'échelle de `doc-derivee`).
 
 ```mermaid
 erDiagram
-  CLIENT ||--o{ COMMANDE : passe
-  COMMANDE ||--|{ LIGNE : contient
-  PRODUIT ||--o{ LIGNE : "apparait dans"
+  CUSTOMER ||--o{ ORDER : places
+  ORDER ||--|{ LINE : contains
+  PRODUCT ||--o{ LINE : "appears in"
 ```
 
 Piège : afficher toutes les colonnes. Le diagramme montre les relations ; les colonnes qui comptent pour
@@ -139,10 +139,10 @@ gantt
   dateFormat HH:mm
   axisFormat %H:%M
   section Incident
-  Deploiement de la v2.3     :done, d1, 14:02, 3m
-  Erreurs 500 en hausse      :crit, e1, 14:05, 22m
-  Alerte recue               :milestone, a1, 14:19, 0m
-  Retour a la v2.2           :done, r1, 14:24, 3m
+  Deploying v2.3             :done, d1, 14:02, 3m
+  500 errors rising          :crit, e1, 14:05, 22m
+  Alert received             :milestone, a1, 14:19, 0m
+  Rollback to v2.2           :done, r1, 14:24, 3m
 ```
 
 Piège : une chronologie sans les écarts qui comptent. Dans un post-mortem, l'information est souvent

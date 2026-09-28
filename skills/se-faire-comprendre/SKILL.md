@@ -126,12 +126,12 @@ Barbara Minto (1985).
 
 ```mermaid
 flowchart TD
-  M["le message<br/><i>une phrase</i>"] --> A1["argument 1"]
+  M["the message<br/><i>one sentence</i>"] --> A1["argument 1"]
   M --> A2["argument 2"]
   M --> A3["argument 3"]
-  A1 --> D1["preuves, details"]
-  A2 --> D2["preuves, details"]
-  A3 --> D3["preuves, details"]
+  A1 --> D1["evidence, details"]
+  A2 --> D2["evidence, details"]
+  A3 --> D3["evidence, details"]
 ```
 
 La pyramide de Minto dit deux choses. **Verticalement**, chaque niveau répond à la question que le

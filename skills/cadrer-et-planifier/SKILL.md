@@ -21,10 +21,10 @@ La methode est reprise de **superpowers** (`github.com/obra/superpowers`, skills
 
 ```mermaid
 flowchart LR
-  D["demande"] --> C["cadrer<br/><i>conception approuvee</i>"]
-  C --> A["criteres d'acceptation<br/><i>falsifiables</i>"]
-  A --> P["plan<br/><i>taches calibrees</i>"]
-  P --> T["tests rouges"]
+  D["request"] --> C["frame<br/><i>approved design</i>"]
+  C --> A["acceptance criteria<br/><i>falsifiable</i>"]
+  A --> P["plan<br/><i>sized tasks</i>"]
+  P --> T["red tests"]
 ```
 
 **Quand ces deux portes ne s'appliquent pas.** Le critere n'est pas la taille du changement, c'est sa

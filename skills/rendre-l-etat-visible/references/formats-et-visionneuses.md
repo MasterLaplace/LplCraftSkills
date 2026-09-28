@@ -150,12 +150,12 @@ qu'il fallait voir.
 
 ```mermaid
 sequenceDiagram
-  Client->>Serveur: JOIN seq=1
-  Serveur->>Client: ACK seq=1
-  Client->>Serveur: MOVE seq=2
-  Note over Client,Serveur: perte de seq=3
-  Client->>Serveur: MOVE seq=4
-  Serveur--xClient: DESYNC
+  Client->>Server: JOIN seq=1
+  Server->>Client: ACK seq=1
+  Client->>Server: MOVE seq=2
+  Note over Client,Server: seq=3 lost
+  Client->>Server: MOVE seq=4
+  Server--xClient: DESYNC
 ```
 
 Généré depuis un journal de paquets, il rend visible l'ordre réel, et il vit dans le dépôt, se diffe, et

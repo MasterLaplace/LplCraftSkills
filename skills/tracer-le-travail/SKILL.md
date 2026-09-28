@@ -199,10 +199,10 @@ un nom d'événement en font partie.
 
 ```mermaid
 flowchart LR
-  I["item de backlog"] --> B["branche"] --> P["pull request"] --> M["merge"]
-  M --> C["CORRECTIF + 1"]
-  S["fin de sprint"] --> N["MINEUR + 1<br/><i>correctif remis a zero</i>"]
-  J["fin de jalon"] --> MA["MAJEUR + 1"]
+  I["backlog item"] --> B["branch"] --> P["pull request"] --> M["merge"]
+  M --> C["PATCH + 1"]
+  S["end of sprint"] --> N["MINOR + 1<br/><i>patch reset to zero</i>"]
+  J["end of milestone"] --> MA["MAJOR + 1"]
 ```
 
 Chaque item fusionné incrémente le correctif ; la fin de sprint incrémente le mineur ; la fin de jalon

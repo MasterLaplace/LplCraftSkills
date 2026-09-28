@@ -102,15 +102,15 @@ On descend d'un cran quand, et seulement quand, le cran actuel ne permet pas le 
 
 ```mermaid
 flowchart TD
-  A["fonction libre dans un namespace anonyme du .cpp<br/><i>invisible hors de l'unite de compilation</i>"]
-  B["membre private static<br/><i>ne touche pas l'etat de l'instance</i>"]
-  C["membre private"]
-  D["membre protected<br/><i>seulement si un derive EXISTE et en a besoin</i>"]
-  E["membre public<br/><i>devient un contrat qu'on ne pourra plus retirer</i>"]
-  A -->|"il faut l'etat de la classe"| B
-  B -->|"il faut l'instance"| C
-  C -->|"un derive en a besoin"| D
-  D -->|"un appelant externe en a besoin"| E
+  A["free function in an anonymous namespace of the .cpp<br/><i>invisible outside the translation unit</i>"]
+  B["private static member<br/><i>does not touch the instance state</i>"]
+  C["private member"]
+  D["protected member<br/><i>only if a subclass EXISTS and needs it</i>"]
+  E["public member<br/><i>becomes a contract you cannot take back</i>"]
+  A -->|"it needs the class state"| B
+  B -->|"it needs the instance"| C
+  C -->|"a subclass needs it"| D
+  D -->|"an outside caller needs it"| E
 ```
 
 Le cran le plus souvent sauté est le premier : **une méthode privée qui ne lit aucun membre n'est pas
@@ -125,10 +125,10 @@ recompilation des appelants, donc du contrat, et elle devient testable sans inst
 
 ```mermaid
 flowchart LR
-  A["constexpr / consteval<br/><i>evalue a la compilation</i>"]
-  B["const<br/><i>fixe apres construction</i>"]
-  C["mutable sur un membre<br/><i>mutation invisible du dehors</i>"]
-  D["non-const<br/><i>mutation observable</i>"]
+  A["constexpr / consteval<br/><i>evaluated at compile time</i>"]
+  B["const<br/><i>fixed after construction</i>"]
+  C["mutable on a member<br/><i>mutation invisible from outside</i>"]
+  D["non-const<br/><i>observable mutation</i>"]
   A --> B --> C --> D
 ```
 

@@ -44,15 +44,15 @@ conversation vide et compte sur ce que le prompt de phase contient déjà.
 
 ```mermaid
 graph TB
-    subgraph "hors cluster"
+    subgraph "outside the cluster"
         GH[GitHub]
     end
     subgraph "cluster"
         ING[Ingress] --> REC[reconciler<br/>Deployment, 1 replica]
-        REC -->|un Job par issue| J1[Job issue-42<br/>forgeron once --write]
+        REC -->|one Job per issue| J1[Job issue-42<br/>forgeron once --write]
         REC -->|...| J2[Job issue-57]
-        REC --- ST[(etat<br/>PVC ou table)]
-        SEC[Secret<br/>cle privee de l'App] --> J1
+        REC --- ST[(state<br/>PVC or table)]
+        SEC[Secret<br/>the App's private key] --> J1
         SEC --> J2
     end
     GH -->|webhook| ING

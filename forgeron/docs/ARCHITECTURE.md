@@ -26,15 +26,15 @@ ailleurs. Trois ports, séparés **par ce qui échoue et comment** :
 
 ```mermaid
 graph LR
-    CLI[cli.py] --> ENG[engine.py<br/>observe, decide, agit]
+    CLI[cli.py] --> ENG[engine.py<br/>observe, decide, act]
     ENG --> ST[states.py<br/>PURE, zero I/O]
-    ENG --> STORE[store.py<br/>un JSON par issue + bail]
+    ENG --> STORE[store.py<br/>one JSON per issue + lease]
     ENG -.port.-> F[Forge]
     ENG -.port.-> W[Workspace]
     ENG -.port.-> A[Agent]
     F --> GH[gh_forge.py<br/>gh CLI]
     F --> FF[FakeForge<br/>tests]
-    W --> GIT[git_workspace.py<br/>un worktree par issue]
+    W --> GIT[git_workspace.py<br/>one worktree per issue]
     W --> FW[FakeWorkspace]
     A --> CL[claude_agent.py<br/>claude -p]
     A --> FA[FakeAgent]

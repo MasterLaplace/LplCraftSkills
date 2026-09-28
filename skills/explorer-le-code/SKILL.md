@@ -37,11 +37,11 @@ usage, mais ils ne s'exécutent pas (section 2).
 
 ```mermaid
 flowchart LR
-  O["s'orienter<br/><i>la premiere heure</i>"] --> F["suivre UN fil<br/><i>de bout en bout</i>"]
-  F --> E["elargir<br/><i>appelants, donnees, dependances</i>"]
-  E --> H["remonter l'histoire<br/><i>quand, pourquoi, quoi d'autre</i>"]
-  H --> C["la carte ecrite<br/><i>chaque affirmation avec sa preuve</i>"]
-  C -.->|"nouvelle question"| F
+  O["get oriented<br/><i>the first hour</i>"] --> F["follow ONE thread<br/><i>end to end</i>"]
+  F --> E["widen<br/><i>callers, data, dependencies</i>"]
+  E --> H["dig into history<br/><i>when, why, what else</i>"]
+  H --> C["the written map<br/><i>each claim with its proof</i>"]
+  C -.->|"new question"| F
 ```
 
 ## 1. La première heure : dans quel ordre, et pourquoi cet ordre
@@ -235,10 +235,10 @@ presque toujours, mais pas dans le code : dans son histoire.
 
 ```mermaid
 flowchart LR
-  L["la ligne"] -->|"git blame"| C["le commit<br/><i>message, diff voisin</i>"]
-  C -->|"gh pr list --state merged --search SHA"| P["la PR<br/><i>discussion, alternatives rejetees</i>"]
-  P --> I["l'issue<br/><i>le probleme d'origine, la repro</i>"]
-  I --> D["la decision<br/><i>ADR, wiki date</i>"]
+  L["the line"] -->|"git blame"| C["the commit<br/><i>message, neighbouring diff</i>"]
+  C -->|"gh pr list --state merged --search SHA"| P["the PR<br/><i>discussion, rejected alternatives</i>"]
+  P --> I["the issue<br/><i>the original problem, the repro</i>"]
+  I --> D["the decision<br/><i>ADR, dated wiki</i>"]
 ```
 
 Chaque maillon répond à une question différente :

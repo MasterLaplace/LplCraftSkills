@@ -309,11 +309,11 @@ pour toutes.
 
 ```mermaid
 flowchart TD
-  L["une ligne de journal"] --> F{"son niveau est-il<br/>au-dessus du PLANCHER<br/>de compilation ?"}
-  F -->|non| X["elle n'existe pas<br/>dans le binaire"]
-  F -->|oui| R{"le NIVEAU D'EXECUTION<br/>l'autorise-t-il ?"}
-  R -->|non| Y["ignoree, cout d'un test"]
-  R -->|oui| Z["ecrite"]
+  L["a log line"] --> F{"is its level<br/>above the compile-time<br/>FLOOR?"}
+  F -->|no| X["it does not exist<br/>in the binary"]
+  F -->|yes| R{"does the RUNTIME LEVEL<br/>allow it?"}
+  R -->|no| Y["ignored, costs one check"]
+  R -->|yes| Z["written"]
 ```
 
 Et la règle qui protège du pire : **le plancher ne retire jamais `WARN`, `ERROR` ni `INFO`.** Retirer

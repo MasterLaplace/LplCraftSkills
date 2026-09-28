@@ -44,11 +44,11 @@ renvoient pour le reste : `concevoir-avant-coder` (le besoin avant la solution),
 
 ```mermaid
 flowchart LR
-  P["poser<br/><i>reformuler, questionner la question</i>"] --> M["cartographier<br/><i>verifie, rapporte, suppose, inconnu</i>"]
-  M --> R["remonter<br/><i>source, date, qui l'a demande</i>"]
-  R --> A["attaquer<br/><i>sa propre conclusion</i>"]
-  A --> E["elaguer<br/><i>le fil minimal</i>"]
-  A -.->|"une hypothese tombe"| M
+  P["frame<br/><i>restate, question the question</i>"] --> M["map<br/><i>verified, reported, assumed, unknown</i>"]
+  M --> R["trace back<br/><i>source, date, who asked</i>"]
+  R --> A["attack<br/><i>your own conclusion</i>"]
+  A --> E["prune<br/><i>the minimal thread</i>"]
+  A -.->|"a hypothesis falls"| M
 ```
 
 Les deux premiers temps **élargissent**, les deux suivants **creusent**, le dernier **resserre**.

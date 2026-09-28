@@ -186,6 +186,9 @@ cd forgeron && ./tests/run.sh
   ne se lisent pas d'affilée : on y va quand le skill y renvoie ;
 - **les schémas sont en Mermaid**, jamais en art ASCII. Les rares blocs de texte qui ressemblent à des
   schémas sont des **exemples de sortie**, c'est le sujet, pas de la décoration ;
+- **le texte des schémas est en anglais**, et la prose autour en français. Sur GitHub, un schéma Mermaid
+  devient une image, que la traduction du navigateur ne traduit pas : un lecteur qui ne lit pas le
+  français comprend la prose traduite, et il doit pouvoir lire le schéma aussi ;
 - **la prose est accentuée, les commentaires dans les blocs de code ne le sont pas** : ces blocs sont
   destinés à être copiés dans des sources et des configurations, où un problème d'encodage coûterait plus
   que le confort de lecture.

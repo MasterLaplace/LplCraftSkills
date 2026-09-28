@@ -11,34 +11,34 @@ Preuve de concept locale. Zéro infrastructure : `gh`, `git`, `claude`, Python 3
 
 ```mermaid
 stateDiagram-v2
-    [*] --> queued : etiquette "claude" posee
+    [*] --> queued : label "claude" added
     queued --> planning
-    planning --> awaiting_answer : le plan a des questions
-    awaiting_answer --> planning : un humain repond
-    planning --> drafted : branche + commit vide + PR brouillon
+    planning --> awaiting_answer : the plan has questions
+    awaiting_answer --> planning : a human answers
+    planning --> drafted : branch + empty commit + draft PR
     drafted --> implementing
     implementing --> implemented
     implemented --> awaiting_checks
-    awaiting_checks --> fixing_checks : CI rouge
-    fixing_checks --> awaiting_checks : correctif pousse
-    awaiting_checks --> resolving : conflit avec la base
-    awaiting_checks --> awaiting_checks : en retard, GitHub rebase
-    resolving --> implemented : conflit resolu, revue redemandee
-    awaiting_checks --> in_review : CI verte, revue demandee
-    in_review --> revising : commentaire / request changes
-    in_review --> fixing_checks : la CI passe au rouge
-    in_review --> resolving : main a bouge, conflit
-    in_review --> in_review : en retard, GitHub fusionne
+    awaiting_checks --> fixing_checks : CI red
+    fixing_checks --> awaiting_checks : fix pushed
+    awaiting_checks --> resolving : conflict with the base
+    awaiting_checks --> awaiting_checks : behind, GitHub rebases
+    resolving --> implemented : conflict resolved, review requested again
+    awaiting_checks --> in_review : CI green, review requested
+    in_review --> revising : comment / request changes
+    in_review --> fixing_checks : CI turns red
+    in_review --> resolving : main moved, conflict
+    in_review --> in_review : behind, GitHub merges
     revising --> revised
     revised --> awaiting_checks
-    in_review --> done : fusionnee par un humain
-    awaiting_checks --> blocked : CI en echec 3 fois, ou trop lente
-    revising --> blocked : plafond de tours ou de depense
-    blocked --> revising : un humain commente
+    in_review --> done : merged by a human
+    awaiting_checks --> blocked : CI failed 3 times, or too slow
+    revising --> blocked : round or spending cap reached
+    blocked --> revising : a human comments
     done --> [*]
     note right of in_review
-        Demander la revue EST la notification :
-        GitHub sait deja te joindre.
+        Requesting the review IS the notification:
+        GitHub already knows how to reach you.
     end note
 ```
 

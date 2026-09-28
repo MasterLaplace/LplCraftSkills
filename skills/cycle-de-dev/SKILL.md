@@ -21,9 +21,9 @@ pouvoir répondre par oui ou non.*
 
 ```mermaid
 flowchart LR
-  BL[backlog] --> CE["comprendre<br/>l'existant"] --> BR[branche] --> TE[test] --> CO[code] --> DO[doc] --> PR[pull request] --> RE[revue]
+  BL[backlog] --> CE["understand<br/>what exists"] --> BR[branch] --> TE[test] --> CO[code] --> DO[doc] --> PR[pull request] --> RE[review]
   RE -.-> BL
-  CE -.->|"si se tromper coute cher"| CA["cadrer + plan"]
+  CE -.->|"if being wrong is costly"| CA["frame + plan"]
   CA -.-> TE
 ```
 

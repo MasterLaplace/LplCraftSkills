@@ -68,12 +68,12 @@ bug.
 
 ```mermaid
 flowchart LR
-  E["etat vivant<br/><i>le programme qui tourne</i>"]
-  S["instantane sur disque<br/><i>capture BRUTE, aucun formatage</i>"]
-  R["rendu PUR<br/><i>fonction de l'instantane</i>"]
-  O["texte ou image"]
+  E["live state<br/><i>the running program</i>"]
+  S["snapshot on disk<br/><i>RAW capture, no formatting</i>"]
+  R["PURE rendering<br/><i>a function of the snapshot</i>"]
+  O["text or image"]
   E -->|capture| S
-  S -->|hors ligne| R --> O
+  S -->|offline| R --> O
 ```
 
 Le rendu prend un instantané et rend une sortie. **Il ne touche jamais au système vivant.** Cette

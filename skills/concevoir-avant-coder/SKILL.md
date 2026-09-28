@@ -122,25 +122,25 @@ est actionnable : on la descend, on s'arrête au premier barreau qui répond, on
 
 ```mermaid
 flowchart TD
-  Q0["est-ce que ça doit exister ?"]
-  Q1["est-ce déjà dans le code du projet ?"]
-  Q2["est-ce dans la bibliothèque standard ?"]
-  Q3["la plateforme le fait-elle nativement ?"]
-  Q4["une dépendance DÉJÀ installée le fait-elle ?"]
-  Q5["est-ce que ça tient en une ligne ?"]
-  Q6["implémentation minimale viable"]
-  Q0 -->|non| S0["ne rien écrire"]
-  Q0 -->|oui| Q1
-  Q1 -->|oui| S1["réutiliser, ne pas réécrire"]
-  Q1 -->|non| Q2
-  Q2 -->|oui| S2["l'utiliser"]
-  Q2 -->|non| Q3
-  Q3 -->|oui| S3["l'utiliser"]
-  Q3 -->|non| Q4
-  Q4 -->|oui| S4["l'utiliser, n'en ajoute pas une"]
-  Q4 -->|non| Q5
-  Q5 -->|oui| S5["écrire cette ligne"]
-  Q5 -->|non| Q6
+  Q0["should it exist at all?"]
+  Q1["is it already in the project code?"]
+  Q2["is it in the standard library?"]
+  Q3["does the platform do it natively?"]
+  Q4["does an ALREADY installed dependency do it?"]
+  Q5["does it fit in one line?"]
+  Q6["minimal viable implementation"]
+  Q0 -->|no| S0["write nothing"]
+  Q0 -->|yes| Q1
+  Q1 -->|yes| S1["reuse, do not rewrite"]
+  Q1 -->|no| Q2
+  Q2 -->|yes| S2["use it"]
+  Q2 -->|no| Q3
+  Q3 -->|yes| S3["use it"]
+  Q3 -->|no| Q4
+  Q4 -->|yes| S4["use it, do not add another"]
+  Q4 -->|no| Q5
+  Q5 -->|yes| S5["write that line"]
+  Q5 -->|no| Q6
 ```
 
 Cette échelle est empruntée à **Ponytail** (`github.com/DietrichGebert/ponytail`), un greffon qui
@@ -296,14 +296,14 @@ Ce qui fait qu'une frontière existe vraiment :
 
 ```mermaid
 flowchart RL
-  CT["contrats<br/><i>zero dependance</i>"]
-  CORE["moteur<br/><i>tout ce qu'un run FAIT</i>"]
-  CLI["point d'entree<br/><i>surface, zero politique</i>"]
-  DEV["outillage<br/><i>verbes de lecture, diagnostics</i>"]
+  CT["contracts<br/><i>zero dependency</i>"]
+  CORE["engine<br/><i>everything a run DOES</i>"]
+  CLI["entry point<br/><i>surface, zero policy</i>"]
+  DEV["tooling<br/><i>read verbs, diagnostics</i>"]
   CORE --> CT
   CLI --> CORE
   DEV --> CORE
-  CLI -.->|"arete a supprimer<br/>ou a rendre conditionnelle"| DEV
+  CLI -.->|"edge to remove<br/>or to make conditional"| DEV
 ```
 
 **Le graphe ne va que dans un sens, et un test le verrouille.** C'est ce qui rend la **porte à double
@@ -432,15 +432,15 @@ jusqu'à ce que l'une réponde. Les deux se ressemblent et ne se gouvernent pas 
 
 ```mermaid
 flowchart TD
-  N["noyau déterministe<br/><i>toujours juste quand il s'applique</i>"]
-  R["couches de rattrapage<br/><i>comblent les trous connus du noyau</i>"]
-  I["couche intelligente<br/><i>heuristique, ou modèle</i>"]
-  A["couche autonome<br/><i>fait tout le travail</i>"]
-  H["un humain, avec un RAPPORT<br/><i>cause nommée, essais, ce qu'il faudrait</i>"]
-  N -->|"ne s'applique pas"| R
-  R -->|"ne suffit pas"| I
-  I -->|"ne suffit pas"| A
-  A -->|"échec"| H
+  N["deterministic core<br/><i>always right when it applies</i>"]
+  R["catch-up layers<br/><i>fill the known gaps of the core</i>"]
+  I["smart layer<br/><i>heuristic, or model</i>"]
+  A["autonomous layer<br/><i>does all the work</i>"]
+  H["a human, with a REPORT<br/><i>named cause, attempts, what it would take</i>"]
+  N -->|"does not apply"| R
+  R -->|"not enough"| I
+  I -->|"not enough"| A
+  A -->|"failure"| H
 ```
 
 **L'invariant qui décide de tout, et sans lui l'échelle est une machine à mentir :**

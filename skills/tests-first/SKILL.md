@@ -42,11 +42,11 @@ Deux pièges de formulation qui coûtent cher plus tard :
 
 ```mermaid
 flowchart LR
-  R["ROUGE<br/>un test minimal qui exprime UN critere<br/><i>et on LIT son echec</i>"]
-  V["VERT<br/>le chemin le plus court<br/>qui rend le test vert"]
-  F["REFACTOR<br/>nommer, extraire, deduire<br/><i>a vert uniquement</i>"]
+  R["RED<br/>a minimal test that expresses ONE criterion<br/><i>and you READ its failure</i>"]
+  V["GREEN<br/>the shortest path<br/>that makes the test pass"]
+  F["REFACTOR<br/>name, extract, derive<br/><i>on green only</i>"]
   R --> V --> F
-  F -.->|"critere suivant"| R
+  F -.->|"next criterion"| R
 ```
 
 **Le rouge n'est pas une formalité, c'est la seule preuve que le test teste.** Un test qu'on n'a

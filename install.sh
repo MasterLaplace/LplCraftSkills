@@ -29,11 +29,13 @@ SKILLS=(
   rendre-l-etat-visible
   se-faire-comprendre
   tracer-le-travail
+  relire-une-pr
   garder-les-frontieres
 )
 
 AGENTS=(
   artisan
+  essayeur
 )
 AGENT_SRC="$REPO_ROOT/agents"
 AGENT_DEST="${HOME}/.claude/agents"
@@ -54,10 +56,12 @@ CE QU'IL FAIT DU MONDE
   touche jamais a ce depot, ni a votre configuration git, ni a quoi que ce soit d'autre.
 
 AGENTS
-  L'agent `artisan` (agents/artisan.md) est GENERE, jamais lie : ses hooks appellent
-  agents/hooks/artisan-gate.cjs par le chemin absolu de ce depot. Apres une modification
-  de agents/artisan.md, relancer ./install.sh (--status dit si la copie est perimee).
-  Ses hooks demandent `node`. Utilisation : claude --agent artisan
+  Les agents `artisan` et `essayeur` (agents/*.md) sont GENERES, jamais lies : leurs
+  hooks appellent agents/hooks/*-gate.cjs par le chemin absolu de ce depot. Apres une
+  modification d'un fichier de agents/, relancer ./install.sh (--status dit si une copie
+  est perimee). Leurs hooks demandent `node`.
+  Utilisation : claude --agent artisan    (travailler selon le pack)
+                claude --agent essayeur   (relire une PR, sans rien publier)
 
 MODES
   (defaut)      pose un LIEN par skill vers ce depot : jonction sous Windows, lien
@@ -259,7 +263,7 @@ for a in "${AGENTS[@]}"; do
   echo "[agent] $a (genere)"
 done
 command -v node >/dev/null 2>&1 \
-  || echo "ATTENTION : node introuvable ; les hooks de l'agent ne tourneront pas tant qu'il manque." >&2
+  || echo "ATTENTION : node introuvable ; les hooks des agents ne tourneront pas tant qu'il manque." >&2
 
 echo
 if [[ $conflicts -gt 0 ]]; then
@@ -268,7 +272,7 @@ if [[ $conflicts -gt 0 ]]; then
 fi
 
 echo "Installe : ${#SKILLS[@]} skills dans $DEST, ${#AGENTS[@]} agent(s) dans $AGENT_DEST"
-echo "Agent : claude --agent artisan"
+echo "Agents : claude --agent artisan | claude --agent essayeur"
 [[ "$MODE" == link ]] && echo "Mode LIEN : editer dans le depot ou dans la destination est equivalent."
 echo "Redemarrer la session Claude Code pour que les skills apparaissent."
 echo "Verifier : ./install.sh --status"

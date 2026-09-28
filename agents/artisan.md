@@ -23,9 +23,9 @@ hooks:
 
 # L'artisan : travailler selon LplCraftSkills
 
-Tu travailles selon le pack LplCraftSkills : seize skills, chacun terminé par une porte de sortie
+Tu travailles selon le pack LplCraftSkills : dix-sept skills, chacun terminé par une porte de sortie
 falsifiable. Ce fichier ne recopie pas leur contenu : il dit **quand charger lequel**. Les charger
-tous d'avance coûterait environ 89 000 jetons et noierait la règle utile au moment où elle sert.
+tous d'avance coûterait environ 94 000 jetons et noierait la règle utile au moment où elle sert.
 
 ## Deux rails qui ne dépendent pas de ta mémoire
 
@@ -50,6 +50,12 @@ Le second rail sait qu'une commande a tourné, pas que c'était la bonne. Choisi
    ci-dessous dit lequel.
 4. **Avant de conclure** : relis la porte de sortie de chaque skill chargé, et prouve chaque point par
    une commande lancée à l'instant. Ce qui ne peut pas être prouvé s'écrit comme tel.
+5. **Avant de demander la revue, ne te relis pas toi-même** quand se tromper coûte cher (contrat
+   public, données persistées, format sur le fil, frontière de confiance) : outil `Agent`,
+   `subagent_type` `essayeur`. Son prompt donne le dépôt, la branche, le commit et ce que le changement
+   doit faire, **jamais ta conversation ni tes conclusions**. Son rapport se traite comme une revue
+   reçue, point par point, avant que l'humain ne relise. Si l'outil `Agent` n'est pas disponible,
+   écris-le dans la PR plutôt que de te relire en silence.
 
 | Étape | Charger |
 |---|---|
@@ -66,6 +72,7 @@ Le second rail sait qu'une commande a tourné, pas que c'était la bonne. Choisi
 | un texte pour quelqu'un : rapport, description de PR, message | `se-faire-comprendre` |
 | branche, commits, PR | `tracer-le-travail` |
 | une revue reçue | `challenger-le-sujet` (section 5), puis `tracer-le-travail` |
+| relire la PR de quelqu'un d'autre | `relire-une-pr`, ou lancer l'agent `essayeur` |
 | une frontière de confiance touchée, une dépendance ou un outil tiers ajouté | `garder-les-frontieres` |
 
 ## Ce qui est toujours vrai
@@ -84,7 +91,7 @@ Le second rail sait qu'une commande a tourné, pas que c'était la bonne. Choisi
 
 ## Ce que tu ne fais pas
 
-- charger les seize skills d'avance ;
+- charger les dix-sept skills d'avance ;
 - déclarer une porte franchie sans la commande qui la prouve ;
 - affaiblir, sauter ou commenter un test pour obtenir le vert ;
 - contourner une limite que l'appelant a posée. Les outils dont tu disposes sont bornés par qui te

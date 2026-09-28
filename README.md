@@ -1,6 +1,6 @@
 # LplCraftSkills
 
-Seize skills [Claude Code](https://claude.com/claude-code) indépendantes du langage, qui encodent une façon
+Dix-sept skills [Claude Code](https://claude.com/claude-code) indépendantes du langage, qui encodent une façon
 de travailler : comprendre avant de décider, décider avant de coder, prouver avant de livrer, et faire
 porter par le code tout ce qui pourrait mentir ailleurs.
 
@@ -13,7 +13,7 @@ déclenchement, et l'agent la charge quand la tâche y correspond. **À la deman
 ```bash
 git clone <ce-depot> LplCraftSkills
 cd LplCraftSkills
-./install.sh          # un lien par skill dans ~/.claude/skills, et l'agent artisan dans ~/.claude/agents
+./install.sh          # un lien par skill dans ~/.claude/skills, les agents artisan et essayeur dans ~/.claude/agents
 ./install.sh --status # verifier
 ```
 
@@ -21,15 +21,15 @@ Puis redémarrer la session Claude Code. Le mode par défaut pose des **liens**,
 liens symboliques ailleurs, donc il n'y a **qu'une source de vérité** : éditer dans le dépôt ou dans
 `~/.claude/skills` est équivalent. Aucun droit administrateur requis.
 
-L'agent `artisan` est la seule exception : il est **généré**, pas lié, parce que ses hooks ont besoin
-du chemin absolu du dépôt. Après une modification de `agents/artisan.md`, relancer `./install.sh` ;
-`--status` dit si la copie installée est périmée.
+Les agents sont la seule exception : ils sont **générés**, pas liés, parce que leurs hooks ont besoin
+du chemin absolu du dépôt. Après une modification d'un fichier de `agents/`, relancer `./install.sh` ;
+`--status` dit si une copie installée est périmée.
 
 Les autres modes (`--copy`, `--uninstall`) et les codes de sortie : `./install.sh --help`. Ils ne sont pas
 listés ici, parce qu'une liste d'options recopiée dans un README finit toujours par mentir, c'est
 précisément ce que dit le skill `doc-derivee`.
 
-## Les seize skills
+## Les dix-sept skills
 
 | Skill | En une phrase |
 |---|---|
@@ -48,6 +48,7 @@ précisément ce que dit le skill `doc-derivee`.
 | [`rendre-l-etat-visible`](skills/rendre-l-etat-visible/SKILL.md) | quand l'information est dans la forme, on la rend visible, et le même artefact habille la doc |
 | [`se-faire-comprendre`](skills/se-faire-comprendre/SKILL.md) | le lecteur, le message en une phrase, la réponse d'abord, l'exemple avant l'explication, le visuel cadré, un lecteur froid |
 | [`tracer-le-travail`](skills/tracer-le-travail/SKILL.md) | backlog, commits, versionnement, changelog, PR, revue, porte de merge |
+| [`relire-une-pr`](skills/relire-une-pr/SKILL.md) | relire la PR d'un autre sans rien publier : la CI avant le diff, la description comme des affirmations, les états que le diff ne montre pas, une passe hostile |
 | [`garder-les-frontieres`](skills/garder-les-frontieres/SKILL.md) | la sécurité comme une question posée quand un changement touche une frontière de confiance, puis l'escalade vers l'équipe sécurité, jamais un feu vert auto-décerné |
 
 ## Le fil rouge, en trois idées
@@ -85,8 +86,9 @@ Deux skills sortent du code et se lisent dès qu'un rapport, un audit, un expos�
 quel que soit ton niveau : **`challenger-le-sujet`** et **`se-faire-comprendre`**. Elles vont par paire :
 on ne choisit bien l'essentiel à dire que parmi tout ce qu'on sait.
 
-Une autre se lit au premier événement qui l'appelle : **`garder-les-frontieres`**, la première fois
-qu'un changement touche une entrée, un secret, une permission ou une dépendance.
+Deux autres se lisent au premier événement qui les appelle : **`relire-une-pr`** la première fois qu'on
+te demande de relire la PR de quelqu'un, **`garder-les-frontieres`** la première fois qu'un changement
+touche une entrée, un secret, une permission ou une dépendance.
 
 Les cinq autres (`cadrer-et-planifier`, `commencer-ferme`, `doc-derivee`, `mesure-et-telemetrie`,
 `rendre-l-etat-visible`) répondent à des problèmes qu'il faut avoir rencontrés pour que la réponse ait du
@@ -109,8 +111,8 @@ claude --agent artisan
 
 L'agent ([`agents/artisan.md`](agents/artisan.md)) ne recopie aucun skill. Il dit quand charger lequel :
 `cycle-de-dev` d'abord, puis le skill de chaque étape au moment où elle arrive, et la porte de sortie de
-chacun prouvée par une commande avant de conclure. Charger les seize d'avance coûterait environ
-89 000 jetons et noierait la règle utile au moment où elle sert.
+chacun prouvée par une commande avant de conclure. Charger les dix-sept d'avance coûterait environ
+94 000 jetons et noierait la règle utile au moment où elle sert.
 
 Deux règles ne dépendent pas de sa bonne volonté, parce que ce sont des hooks
 ([`agents/hooks/artisan-gate.cjs`](agents/hooks/artisan-gate.cjs)) :
@@ -124,6 +126,40 @@ Les hooks demandent `node`. Et l'agent doit vivre au niveau utilisateur, là où
 dans le `.claude/agents/` d'un projet, ses hooks ne se déclenchent pas. C'est mesuré, comme le reste
 de ce que la documentation de Claude Code ne dit pas, par
 [`forgeron/tests/probes/probe_claude_agent.sh`](forgeron/tests/probes/probe_claude_agent.sh).
+
+## L'agent `essayeur` : relire sans rien publier
+
+```bash
+claude --agent essayeur
+```
+
+L'agent ([`agents/essayeur.md`](agents/essayeur.md)) relit une pull request ou un diff et rend un
+rapport. Il n'approuve pas, ne corrige pas et ne publie rien : la décision appartient à l'humain qui
+lit le rapport. Son nom vient du métier : l'essayeur teste l'alliage d'une pièce qu'il n'a pas forgée,
+et ce n'est pas lui qui pose le poinçon.
+
+Il sert de deux façons. **Lancé par une personne**, sur la PR d'un collègue. **Lancé par l'`artisan`**,
+avant la revue humaine, quand se tromper coûte cher : l'auteur ne se relit pas lui-même, parce qu'il
+relit avec son contexte en tête. Le relecteur séparé n'a pas sa conversation, donc il voit ce que ce
+contexte masque.
+
+Ses règles sont tenues par un hook ([`agents/hooks/essayeur-gate.cjs`](agents/hooks/essayeur-gate.cjs)) :
+
+- **aucun outil d'écriture** : ils sont absents de sa liste et refusés s'ils reviennent. Le rapport est
+  sa réponse finale. Une commande peut encore écrire, donc les builds et les linters se lancent dans son
+  worktree ;
+- **aucune publication, aucun changement d'état d'un dépôt** : les commandes `gh` qui ne sont pas des
+  lectures connues, les `gh api` qui écrivent, les commandes git autres que les lectures, `fetch`,
+  `clone`, `init`, `worktree add` et `worktree list`, les envois de données par `curl`, `wget`,
+  `Invoke-RestMethod` ou `Invoke-WebRequest`, et les publications de paquets sont refusés avant de
+  partir. Les listes de lectures permises sont fermées : un verbe inconnu, ou une forme de commande que
+  le rail ne reconnaît pas, est refusé ;
+- **un sous-agent est un essayeur, un skill vient du pack** : un autre type d'agent, ou un skill
+  d'ailleurs, n'aurait pas ces rails.
+
+Le rail attrape l'accident, pas la volonté de le contourner. Et son hook tire aussi quand il tourne en
+**sous-agent**, pas seulement en session : c'est mesuré, avec Claude Code 2.1.259, par
+[`forgeron/tests/probes/probe_claude_subagent.sh`](forgeron/tests/probes/probe_claude_subagent.sh).
 
 ## `forgeron/` — les skills appliquées sans surveillance
 
@@ -158,7 +194,7 @@ Et ces conventions ne sont pas seulement écrites, elles sont **vérifiées** :
 
 ```bash
 ./check.sh   # les portes de sortie, les frontmatters, le tableau ci-dessus, l'absence d'art ASCII,
-             # la carte de l'agent (elle nomme tous les skills) et les tests de ses hooks
+             # la carte des agents (chacun nomme tous les skills) et les tests de leurs hooks
 ```
 
 Il existe parce que trois skills avaient perdu leur porte de sortie sans que personne ne le remarque :

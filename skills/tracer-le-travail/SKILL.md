@@ -332,6 +332,11 @@ Trois règles de conduite :
   ne clôt rien : la même remarque reviendra à la PR suivante, et personne ne saura qu'elle avait déjà
   été tranchée.
 
+Relire la PR de quelqu'un d'autre demande plus que ces trois règles : isoler sa tête dans un worktree,
+lire la CI avant le diff, vérifier les affirmations de la description, rejouer le diff sur les états
+qu'il ne montre pas, et ne rien publier avant qu'un humain l'ait décidé. Le protocole complet, et la
+règle qui arbitre entre ce pack et les conventions du dépôt relu, sont dans `relire-une-pr`.
+
 ### Recevoir une revue, ce qui est un exercice technique et non social
 
 Côté auteur, le réflexe coûteux est l'accord empressé. Le motif qui marche :

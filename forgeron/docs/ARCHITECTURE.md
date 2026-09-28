@@ -120,6 +120,21 @@ sonde [`probe_claude_agent.sh`](../tests/probes/probe_claude_agent.sh)) :
   déclenchent**, et leur entrée porte `agent_type`. D'où l'installation au niveau utilisateur ;
 - des hooks passés par `--settings` se déclenchent aussi, en plus de ceux de l'agent.
 
+Ce que fait un agent lancé en **sous-agent**, par l'outil `Agent` d'une session sans agent (mesuré le
+2026-09-28 avec Claude Code 2.1.259, sonde
+[`probe_claude_subagent.sh`](../tests/probes/probe_claude_subagent.sh)) :
+
+- **les hooks d'un agent de niveau utilisateur se déclenchent aussi en sous-agent** : l'écriture est
+  refusée, et l'entrée du hook porte `agent_type`. C'est ce qui fait tenir les rails de l'`essayeur`
+  quand l'`artisan` le lance ;
+- **un `tools:` qui nomme un outil inconnu ne casse pas l'agent** : l'outil inconnu est ignoré, les
+  autres restent. `PowerShell` peut donc figurer dans la liste de l'`essayeur` hors de Windows ;
+- **un sous-agent dispose de l'outil `Agent`**, donc il peut lancer un sous-agent à son tour. D'où le
+  rail de l'`essayeur`, qui n'accepte qu'un sous-agent de type `essayeur`.
+
+L'`essayeur` déclare un `tools:`, à l'inverse de l'`artisan`. D'après le fait mesuré plus haut, il ne se
+lance donc pas tel quel derrière `--json-schema` : forgeron ne le fait pas, il le laisse à l'`artisan`.
+
 - ⚠ **`--tools`, `--allowedTools` et `--add-dir` sont variadiques.** Un prompt passé en argument
   positionnel après l'un d'eux est avalé comme une valeur de plus, et `claude` sort sur « Input must
   be provided ». **Le prompt part toujours sur stdin.**

@@ -10,8 +10,8 @@ description: >-
   franchie sans avoir lance a l'instant la commande qui le prouve ». Delegue aux skills
   explorer-le-code, challenger-le-sujet, cadrer-et-planifier, concevoir-avant-coder, tests-first,
   code-comme-poesie, commencer-ferme, doc-derivee, journal-et-debogueur, trouver-la-cause,
-  mesure-et-telemetrie, rendre-l-etat-visible, se-faire-comprendre, tracer-le-travail et
-  garder-les-frontieres.
+  mesure-et-telemetrie, rendre-l-etat-visible, se-faire-comprendre, tracer-le-travail,
+  relire-une-pr et garder-les-frontieres.
 ---
 
 # Le cycle de développement, et la seule faute qui compte
@@ -130,8 +130,8 @@ chère qui existe, **parce qu'elle a l'air terminée.**
 
 ## Ce que chaque étape charge, et à quel moment
 
-Un skill se charge **au moment où son étape arrive**, jamais tous d'avance : les seize ensemble
-pèsent environ 89 000 jetons, et une règle lue cinquante appels d'outils avant le geste pèse moins
+Un skill se charge **au moment où son étape arrive**, jamais tous d'avance : les dix-sept ensemble
+pèsent environ 94 000 jetons, et une règle lue cinquante appels d'outils avant le geste pèse moins
 qu'une règle lue juste avant.
 
 | Étape | Charger | Pour |
@@ -144,8 +144,18 @@ qu'une règle lue juste avant.
 | test | `tests-first` | les critères en tests rouges, et les tests qui mentent |
 | code | `code-comme-poesie`, `commencer-ferme` | les noms, les gardes, les qualifieurs, les avertissements au maximum |
 | doc | `doc-derivee`, `se-faire-comprendre` | où l'information vit, et comment l'écrire pour être compris |
-| PR | `tracer-le-travail`, `se-faire-comprendre`, `challenger-le-sujet` | la description, l'avant/après, et le relecteur hostile avant le vrai |
-| revue | `challenger-le-sujet` (section 5), puis `tracer-le-travail` | découper chaque remarque en affirmations, puis la clore par un changement ou un argument écrit |
+| PR | `tracer-le-travail`, `se-faire-comprendre` | la description et l'avant/après ; puis, si se tromper coûte cher, **un relecteur séparé avant le vrai** (voir ci-dessous) |
+| revue reçue | `challenger-le-sujet` (section 5), puis `tracer-le-travail` | découper chaque remarque en affirmations, puis la clore par un changement ou un argument écrit |
+| revue donnée | `relire-une-pr` | relire la PR d'un autre, ou jouer le relecteur séparé, sans rien publier |
+
+**La revue a deux rôles, et ils ne se jouent pas pareil.** Recevoir une revue est le travail de
+l'auteur. En donner une est le travail d'un relecteur qui n'a pas écrit le code : l'auteur relit avec
+son contexte en tête, et ne voit pas ce que ce contexte lui masque. Donc,
+à l'étape PR, **l'auteur ne se relit pas lui-même** : quand se tromper coûte cher (le même critère que
+pour la conception, plus une frontière de confiance), il fait relire son diff par quelqu'un qui n'a pas
+sa conversation, un collègue ou l'agent `essayeur`, puis traite le rapport comme une revue reçue avant
+de demander la revue humaine. Ce relecteur ne remplace pas l'humain : il retire ce qui était facile à
+trouver, pour que l'humain relise le fond.
 
 Et quatre skills qui ne suivent pas le cycle, parce qu'ils répondent à un événement :
 
@@ -159,9 +169,9 @@ Et quatre skills qui ne suivent pas le cycle, parce qu'ils répondent à un év�
 `garder-les-frontieres` a aussi sa question aux portes du cycle : au cadrage, à la revue et au merge,
 *ce changement touche-t-il une frontière de confiance ?* La réponse s'écrit, même quand c'est non.
 
-`challenger-le-sujet` apparaît trois fois, et c'est le seul skill présent au début et à la fin du
-cycle : il questionne la demande à l'entrée, anticipe la revue avant la PR, et juge chaque remarque à la
-sortie.
+`challenger-le-sujet` ouvre et ferme le cycle : il questionne la demande à l'entrée, et juge chaque
+remarque reçue à la sortie. Entre les deux, le relecteur séparé de l'étape PR le charge pour sa passe
+hostile.
 
 **Invoque-les. Ne re-dérive pas leur contenu de mémoire** : c'est exactement le mécanisme par lequel
 une règle se met à diverger de sa propre définition. L'agent `artisan` du pack suit cette table, et

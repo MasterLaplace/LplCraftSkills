@@ -75,6 +75,13 @@ Et si le projet ne se construit pas en suivant le README, **c'est la première t
 contretemps : on la note, avec la commande qui a marché à la place. Le prochain arrivant la paiera
 sinon.
 
+Il arrive aussi que ce soit **ton environnement** qui empêche de construire, et pas le projet : un
+registre privé inaccessible, un jeton expiré, une chaîne de compilation absente. Alors le **journal de
+la CI** sur le même commit devient la preuve, de second rang : il dit ce qui a tourné, avec quel
+résultat, et surtout ce qui n'a pas tourné du tout. On écrit qu'on s'en est servi, et pourquoi. Une
+affirmation fondée sur le journal de quelqu'un d'autre n'a pas le même poids qu'une commande lancée à
+l'instant, et le lecteur doit pouvoir le savoir.
+
 Une précaution : **construire exécute du code du dépôt** (scripts d'installation, tâches de build).
 Pour un dépôt dont on ne connaît pas la provenance, le faire dans un conteneur ou un environnement
 isolé ; les options sont dans `references/commandes.md`.

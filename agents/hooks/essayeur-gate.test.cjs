@@ -120,6 +120,17 @@ test('ce qui change l etat d un depot est refuse', () => {
   assertBlocked('git worktree prune');
 });
 
+test('une redirection du shell ne transforme pas une lecture en ecriture, ni l inverse', () => {
+  assertAllowed('git branch -a --contains abc1234 2>/dev/null');
+  assertAllowed('git -C ../r branch -r --contains abc1234 2>&1');
+  assertAllowed('git branch --list "relecture-*" > branches.txt');
+  assertAllowed('git remote 2>/dev/null');
+  assertAllowed('git tag 2> erreurs.txt');
+  assertBlocked('git branch relecture-12 2>/dev/null');
+  assertBlocked('git branch -D relecture-12 2>&1');
+  assertBlocked('git remote add amont https://example.org/o/r.git 2>/dev/null');
+});
+
 test('une forme de git que le rail ne reconnait pas est refusee par defaut', () => {
   assertBlocked('git -P push origin HEAD');
   assertBlocked('git -p commit -am x');

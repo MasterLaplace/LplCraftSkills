@@ -31,7 +31,8 @@ const GIT_READS_UNDER_CONDITION = {
   stash: (args) => /^\s*(list|show)(\s|$)/.test(args),
   reflog: (args) => !/^\s*(expire|delete)(\s|$)/.test(args),
 };
-const GIT_GLOBAL_OPTIONS = /^(?:\s+(?:-C|-c|--git-dir|--work-tree|--namespace)(?:\s+|=)(?:"[^"]*"|'[^']*'|\S+)|\s+(?:-P|-p|--paginate|--no-pager|--no-optional-locks|--literal-pathspecs|--no-replace-objects|--bare))*/;
+const SHELL_REDIRECTION = /(^|\s)(?:\d*|&)(?:>>?|<)(?:&\d+|\s*(?:"[^"]*"|'[^']*'|[^\s"'<>]+))?/g;
+const GIT_GLOBAL_OPTIONS =/^(?:\s+(?:-C|-c|--git-dir|--work-tree|--namespace)(?:\s+|=)(?:"[^"]*"|'[^']*'|\S+)|\s+(?:-P|-p|--paginate|--no-pager|--no-optional-locks|--literal-pathspecs|--no-replace-objects|--bare))*/;
 
 const BRANCH_LISTING_FLAGS = new Set([
   '--show-current', '--list', '-l', '-a', '--all', '-r', '--remotes', '-v', '-vv', '--verbose',
@@ -134,7 +135,8 @@ function gitRefusal(segment) {
   if (!match) {
     return /^\s*(--version|--help)?\s*$/.test(rest) ? null : `'git${rest}' a une forme que le rail ne reconnait pas`;
   }
-  const [, subcommand, args] = match;
+  const [, subcommand, argsWithRedirections] = match;
+  const args = argsWithRedirections.replace(SHELL_REDIRECTION, ' ');
   if (GIT_READS.has(subcommand)) return null;
   const condition = GIT_READS_UNDER_CONDITION[subcommand];
   if (condition && condition(args)) return null;

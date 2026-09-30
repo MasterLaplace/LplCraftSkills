@@ -1,0 +1,69 @@
+{
+  "defaults": {
+    "labels": {
+      "type:bug": {"color": "d73a4a", "description": "Something does not do what it promises"},
+      "type:feature": {"color": "a2eeef", "description": "A new capability"},
+      "type:docs": {"color": "0075ca", "description": "Documentation only"},
+      "type:chore": {"color": "ededed", "description": "Tooling, CI, repository housekeeping"},
+      "good first issue": {"color": "7057ff", "description": "Small and well scoped: a good first contribution"},
+      "help wanted": {"color": "008672", "description": "The maintainer would welcome a hand"},
+      "dependencies": {"color": "0366d6", "description": "Updates a dependency"},
+      "forgeron": {"color": "5319e7", "description": "Handed to forgeron"},
+      "forgeron:hold": {"color": "b60205", "description": "forgeron no longer touches it"}
+    },
+    "renames": {
+      "bug": "type:bug",
+      "enhancement": "type:feature",
+      "documentation": "type:docs"
+    },
+    "unlisted_labels": "report",
+    "settings": {
+      "allow_squash_merge": true,
+      "allow_merge_commit": false,
+      "allow_rebase_merge": false,
+      "squash_merge_commit_title": "PR_TITLE",
+      "squash_merge_commit_message": "PR_BODY",
+      "delete_branch_on_merge": true,
+      "allow_update_branch": true
+    },
+    "security": {
+      "secret_scanning": true,
+      "secret_scanning_push_protection": true,
+      "dependabot_alerts": true,
+      "dependabot_security_updates": true,
+      "private_vulnerability_reporting": true
+    },
+    "rulesets": [
+      {
+        "name": "main",
+        "target": "branch",
+        "enforcement": "active",
+        "conditions": {"ref_name": {"include": ["~DEFAULT_BRANCH"], "exclude": []}},
+        "rules": [
+          {"type": "deletion"},
+          {"type": "non_fast_forward"},
+          {"type": "pull_request", "parameters": {
+            "required_approving_review_count": 0,
+            "dismiss_stale_reviews_on_push": false,
+            "require_code_owner_review": false,
+            "require_last_push_approval": false,
+            "required_review_thread_resolution": false,
+            "require_extra_approval_for_unattributed_changes": true,
+            "allowed_merge_methods": ["squash"]
+          }}
+        ],
+        "bypass_actors": [{"actor_id": 5, "actor_type": "RepositoryRole", "bypass_mode": "always"}]
+      }
+    ]
+  },
+  "repos": {
+    "OWNER/application": {
+      "labels": {
+        "zone:api": {"color": "c5def5", "description": "The HTTP surface"},
+        "zone:storage": {"color": "c5def5", "description": "What is persisted, and how"}
+      },
+      "required_checks": ["test"]
+    },
+    "SOMEONE-ELSE/shared-library": {}
+  }
+}

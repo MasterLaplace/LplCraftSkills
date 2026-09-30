@@ -19,8 +19,8 @@ from forgeron.states import Limits
 from forgeron.store import Store
 from tests.fakes import FakeAgent, FakeForge, FakeRegenerator, FakeWorkspace
 
-ISSUE = IssueRef(repo="o/r", number=42, title="Ajouter un cache LRU",
-                 body="Les lectures repetees coutent trop cher.", url="https://fake/42",
+ISSUE = IssueRef(repo="o/r", number=42, title="Add an LRU cache",
+                 body="Repeated reads cost too much.", url="https://fake/42",
                  labels=("forgeron",))
 
 
@@ -72,19 +72,19 @@ class FullJourney(unittest.TestCase):
         # 1. the label is the trigger, and planning comes before any code
         self.assertEqual(harness.step(), Phase.DRAFTED.value)
         self.assertEqual(harness.record.branch, "feat/42-cache-lru",
-                         "<type>/<numero>-<slug>, la convention du pack")
+                         "<type>/<number>-<slug>, the pack's convention")
         self.assertEqual(workspace.pushes, ["feat/42-cache-lru"])
-        self.assertTrue(agent.calls[0]["read_only"], "la phase de cadrage doit etre en lecture seule")
-        self.assertFalse(agent.calls[0]["resume"], "le premier run cree la session, il ne la reprend pas")
+        self.assertTrue(agent.calls[0]["read_only"], "the planning phase must be read-only")
+        self.assertFalse(agent.calls[0]["resume"], "the first run creates the session, it does not resume it")
         self.assertEqual(harness.record.pr, 101)
 
         body = forge.bodies("pr-body")[0]
-        self.assertIn("Referme #42", body)
-        self.assertIn("la suite passe deux fois d'affilee", body)
+        self.assertIn("Closes #42", body)
+        self.assertIn("the suite passes twice in a row", body)
 
         # 2. implementation, on the same conversation
         self.assertEqual(harness.step(), Phase.IMPLEMENTED.value)
-        self.assertTrue(agent.calls[1]["resume"], "l'implementation doit reprendre la session du plan")
+        self.assertTrue(agent.calls[1]["resume"], "the implementation must resume the plan's session")
         self.assertFalse(agent.calls[1]["read_only"])
         self.assertEqual(agent.calls[1]["session_id"], agent.calls[0]["session_id"])
 
@@ -92,7 +92,7 @@ class FullJourney(unittest.TestCase):
         forge.ci_pending()
         self.assertEqual(harness.step(), Phase.AWAITING_CHECKS.value)
         self.assertEqual(harness.step(), Phase.AWAITING_CHECKS.value)
-        self.assertEqual(forge.review_requests, [], "on ne derange pas un humain avant la CI")
+        self.assertEqual(forge.review_requests, [], "a human is not disturbed before CI")
 
         # 4. the build is red: the agent is handed the log, not just the name
         forge.ci_red("build")
@@ -106,25 +106,25 @@ class FullJourney(unittest.TestCase):
         self.assertEqual(harness.step(), Phase.IN_REVIEW.value)
         self.assertEqual(forge.review_requests, [(101, ("human",))])
         self.assertEqual(forge.marked_ready, [101])
-        self.assertIn("Integration continue : verte.", forge.bodies("pr")[-1])
+        self.assertIn("Continuous integration: green.", forge.bodies("pr")[-1])
 
         # 6. a real review: an inline comment on a line
-        forge.human_says("Ce nom ne dit pas ce que la fonction fait.",
+        forge.human_says("This name does not say what the function does.",
                          kind=FeedbackKind.INLINE, path="src/cache.py", line=12)
         self.assertEqual(harness.step(), Phase.REVISED.value)
         prompt = agent.prompts[-1]
-        self.assertIn("Ce nom ne dit pas ce que la fonction fait.", prompt)
+        self.assertIn("This name does not say what the function does.", prompt)
         self.assertIn("src/cache.py:12", prompt)
-        self.assertEqual(harness.record.check_fixes, 0, "un tour humain remet le budget de CI a zero")
+        self.assertEqual(harness.record.check_fixes, 0, "a human round resets the CI budget to zero")
 
         # one comment per round, carrying both the answers and the evidence
         answered = forge.bodies("pr")[-1]
-        self.assertIn("Reponses aux remarques", answered)
-        self.assertIn("Renomme.", answered)
+        self.assertIn("Answers to the remarks", answered)
+        self.assertIn("Renamed.", answered)
         self.assertIn("src/cache.py:12", answered)
-        self.assertIn("| tenu | critere | preuve |", answered)
-        round_comments = [body for body in forge.bodies("pr") if "tour 2" in body]
-        self.assertEqual(len(round_comments), 1, "un seul commentaire par tour")
+        self.assertIn("| met | criterion | evidence |", answered)
+        round_comments = [body for body in forge.bodies("pr") if "round 2" in body]
+        self.assertEqual(len(round_comments), 1, "a single comment per round")
 
         # 7. the same comment must never buy a second round
         self.assertEqual(harness.step(), Phase.AWAITING_CHECKS.value)
@@ -132,16 +132,16 @@ class FullJourney(unittest.TestCase):
         rounds_before = harness.record.rounds
         self.assertEqual(harness.step(), Phase.IN_REVIEW.value)
         self.assertEqual(harness.record.rounds, rounds_before,
-                         "un commentaire deja traite ne relance pas de tour")
+                         "a comment already handled does not start a round")
 
         # 8. approved, then merged by a human, and only then does the session close
         forge.approve("feat/42-cache-lru")
-        self.assertEqual(harness.step(), Phase.IN_REVIEW.value, "l'approbation ne fusionne pas")
+        self.assertEqual(harness.step(), Phase.IN_REVIEW.value, "approval does not merge")
         forge.merge("feat/42-cache-lru")
         self.assertEqual(harness.step(), Phase.DONE.value)
         self.assertEqual(workspace.discarded, [harness.record.worktree])
-        self.assertIn("session close", forge.bodies("issue")[-1])
-        self.assertTrue(agent.calls[-1]["read_only"], "la cloture ne doit rien pouvoir modifier")
+        self.assertIn("session closed", forge.bodies("issue")[-1])
+        self.assertTrue(agent.calls[-1]["read_only"], "closing must not be able to modify anything")
 
         # 9. done means done: further passes cost nothing
         calls_before = len(agent.calls)
@@ -160,23 +160,23 @@ class Honesty(unittest.TestCase):
         self.assertTrue(harness.agent.work["pushed"])
         self.assertEqual(harness.events("verdict_overstated")[0]["claimed_pushed"], True)
         self.assertIn("feat/42-cache-lru", harness.workspace.pushes,
-                      "le pilote pousse lui-meme plutot que de croire le verdict")
+                      "the driver pushes itself rather than believe the verdict")
 
     def test_a_blocked_agent_stops_the_loop_and_says_so_on_the_pull_request(self) -> None:
         harness = Harness()
         harness.step()
         harness.agent.work = {"verdict": "blocked", "summary": "s",
-                              "blocked_reason": "la dependance n'existe pas",
+                              "blocked_reason": "the dependency does not exist",
                               "commands_run": [], "acceptance": [], "pushed": False}
         self.assertEqual(harness.step(), Phase.BLOCKED.value)
-        self.assertIn("la dependance n'existe pas", harness.forge.bodies("pr")[-1])
+        self.assertIn("the dependency does not exist", harness.forge.bodies("pr")[-1])
 
     def test_a_failed_run_blocks_instead_of_pretending(self) -> None:
         harness = Harness()
         harness.step()
         harness.agent.fail_next = True
         self.assertEqual(harness.step(), Phase.BLOCKED.value)
-        self.assertIn("budget epuise", harness.record.note)
+        self.assertIn("budget exhausted", harness.record.note)
 
     def test_ci_red_forever_gives_up_and_leaves_the_branch(self) -> None:
         harness = Harness(max_check_fixes=2)
@@ -189,7 +189,7 @@ class Honesty(unittest.TestCase):
         self.assertLessEqual(harness.record.check_fixes, 2)
         self.assertIn("still red", harness.record.note)
         self.assertNotIn(harness.record.worktree, harness.workspace.discarded,
-                         "une branche bloquee se garde : un humain va la reprendre")
+                         "a blocked branch is kept: a human is going to take it over")
 
 
 class WhatTheRunDidNotSay(unittest.TestCase):
@@ -201,8 +201,8 @@ class WhatTheRunDidNotSay(unittest.TestCase):
         harness.workspace.dirty = True
         harness.step()
         event = harness.events("worktree_dirty")
-        self.assertTrue(event, "des fichiers non commites doivent etre signales")
-        self.assertIn("perdus", event[0]["detail"])
+        self.assertTrue(event, "uncommitted files must be reported")
+        self.assertIn("lost", event[0]["detail"])
 
     def test_a_refused_tool_is_never_silent(self) -> None:
         harness = Harness()
@@ -224,19 +224,19 @@ class AsksBeforeBuilding(unittest.TestCase):
     def test_open_questions_stop_before_any_branch_is_pushed(self) -> None:
         harness = Harness()
         harness.agent.plan = dict(harness.agent.plan,
-                                  questions=["Cache par processus ou partage ?"], risk="high")
+                                  questions=["Cache per process or shared?"], risk="high")
         self.assertEqual(harness.step(), Phase.AWAITING_ANSWER.value)
-        self.assertEqual(harness.workspace.pushes, [], "rien n'est pousse avant reponse")
+        self.assertEqual(harness.workspace.pushes, [], "nothing is pushed before an answer")
         self.assertEqual(harness.record.pr, 0)
         asked = harness.forge.bodies("issue")[-1]
-        self.assertIn("Cache par processus ou partage ?", asked)
+        self.assertIn("Cache per process or shared?", asked)
 
         # answering restarts the framing, on the same conversation
-        harness.forge.human_says("Par processus.", kind=FeedbackKind.ISSUE, state="")
+        harness.forge.human_says("Per process.", kind=FeedbackKind.ISSUE, state="")
         harness.agent.plan = dict(harness.agent.plan, questions=[])
         self.assertEqual(harness.step(), Phase.DRAFTED.value)
         self.assertTrue(harness.agent.calls[-1]["resume"])
-        self.assertIn("Par processus.", harness.agent.prompts[-1])
+        self.assertIn("Per process.", harness.agent.prompts[-1])
 
 
 class HumanControl(unittest.TestCase):
@@ -248,7 +248,7 @@ class HumanControl(unittest.TestCase):
             labels=("forgeron", "forgeron:hold"))
         calls_before = len(harness.agent.calls)
         self.assertEqual(harness.step(), Phase.DRAFTED.value)
-        self.assertEqual(len(harness.agent.calls), calls_before, "rien ne tourne sous hold")
+        self.assertEqual(len(harness.agent.calls), calls_before, "nothing runs under hold")
 
     def test_closing_the_issue_abandons_and_cleans_up(self) -> None:
         harness = Harness()
@@ -260,7 +260,7 @@ class HumanControl(unittest.TestCase):
     def test_an_unlabelled_issue_is_never_adopted(self) -> None:
         harness = Harness()
         harness.forge._issues[("o/r", 43)] = IssueRef(
-            repo="o/r", number=43, title="autre", body="", url="u", labels=())
+            repo="o/r", number=43, title="other", body="", url="u", labels=())
         harness.engine.pass_once()
         self.assertIsNone(harness.store.load("o/r", 43))
 
@@ -282,7 +282,7 @@ class ChecksGrace(unittest.TestCase):
         harness.forge.failing = ()
         self.assertEqual(harness.step(), Phase.AWAITING_CHECKS.value)
         self.assertEqual(harness.forge.review_requests, [],
-                         "un rollup vide juste apres un push n'est pas une absence de CI")
+                         "an empty rollup right after a push is not an absence of CI")
 
     def test_the_same_empty_rollup_later_is_read_as_no_ci_at_all(self) -> None:
         harness = Harness()
@@ -333,7 +333,7 @@ class Crashes(unittest.TestCase):
         calls_before = len(harness.agent.calls)
         self.assertEqual(harness.step(), Phase.DRAFTED.value)
         self.assertEqual(len(harness.agent.calls), calls_before,
-                         "une pull request deja ouverte doit court-circuiter le cadrage")
+                         "a pull request already open must short-circuit the planning")
 
     def test_a_lease_stops_a_second_driver(self) -> None:
         harness = Harness()

@@ -104,11 +104,11 @@ class GitWorkspace:
         return False, conflicted
 
     def commit_messages(self, worktree: str, base: str) -> list[tuple[str, str]]:
-        """Les commits que cette branche ajoute, en (sha court, message complet).
+        """The commits this branch adds, as (short sha, full message).
 
-        Separateurs de contrôle plutôt qu'un saut de ligne : un message de commit
-        contient des sauts de ligne, donc découper dessus fusionnerait un corps
-        avec le commit suivant et le contrôle porterait sur du texte inventé.
+        Control separators rather than a newline: a commit message contains
+        newlines, so splitting on them would merge a body with the next commit
+        and the check would run on made-up text.
         """
         raw = self._git(worktree, ["log", "--format=%h%x1f%B%x1e", f"origin/{base}..HEAD"],
                         check=False)

@@ -70,7 +70,7 @@ function parseInput(raw) {
 
 function decide(mode, input) {
   if (mode !== 'pre') {
-    process.stderr.write(`essayeur-gate : mode inconnu '${mode}'. Attendu : pre.\n`);
+    process.stderr.write(`essayeur-gate: unknown mode '${mode}'. Expected: pre.\n`);
     return NOT_CHECKED;
   }
   const toolInput = input.tool_input || {};
@@ -88,15 +88,15 @@ function refuse(message) {
 }
 
 function writeRefusal() {
-  return `L'essayeur ne modifie aucun fichier : il relit, il ne corrige pas. Le rapport est ta reponse `
-    + `finale ; un correctif se propose dans le rapport, en esquisse. Un script de travail s'ecrit dans `
-    + `le dossier temporaire, par une commande.`;
+  return `The essayeur modifies no file: it reviews, it does not fix. The report is your final `
+    + `answer; a fix is proposed in the report, as a sketch. A working script is written in `
+    + `the temporary directory, through a command.`;
 }
 
 function agentRefusal(subagentType) {
   if (isSelf(subagentType)) return null;
-  return `Un sous-agent de l'essayeur est un essayeur : relance avec subagent_type '${SELF}'. Un autre `
-    + `type (${subagentType ? `'${subagentType}'` : 'absent, donc general-purpose'}) n'aurait pas ses rails.`;
+  return `A subagent of the essayeur is an essayeur: launch again with subagent_type '${SELF}'. Another `
+    + `type (${subagentType ? `'${subagentType}'` : 'missing, so general-purpose'}) would not have its rails.`;
 }
 
 function isSelf(name) {
@@ -106,16 +106,16 @@ function isSelf(name) {
 function skillRefusal(skill) {
   const name = typeof skill === 'string' ? skill.split(':').pop() : '';
   if (name && fs.existsSync(path.join(PACK_SKILLS_DIR, name, 'SKILL.md'))) return null;
-  return `L'essayeur ne charge que les skills du pack (${PACK_SKILLS_DIR}) : '${skill}' n'en est pas, et `
-    + `un skill d'ailleurs peut publier ou ecrire par un chemin que ce rail ne voit pas.`;
+  return `The essayeur loads only the pack's skills (${PACK_SKILLS_DIR}): '${skill}' is not one of them, and `
+    + `a skill from elsewhere can publish or write through a path this rail does not see.`;
 }
 
 function commandRefusal(command) {
   const refused = segments(command).map(refusalOf).find((reason) => reason !== null);
   if (!refused) return null;
-  return `Refuse par le rail de l'essayeur : ${refused}. Une revue reste locale jusqu'a ce qu'un humain `
-    + `decide de la publier, et elle ne change l'etat d'aucun depot. Si tu cherchais seulement du texte, `
-    + `passe par l'outil Grep plutot que par une commande qui le contient.`;
+  return `Refused by the essayeur's rail: ${refused}. A review stays local until a human `
+    + `decides to publish it, and it changes the state of no repository. If you were only looking for text, `
+    + `go through the Grep tool rather than through a command that contains it.`;
 }
 
 function segments(command) {
@@ -133,14 +133,14 @@ function gitRefusal(segment) {
   const rest = afterGit.slice(afterGit.match(GIT_GLOBAL_OPTIONS)[0].length);
   const match = rest.match(/^\s+([a-z][a-z-]*)(.*)$/);
   if (!match) {
-    return /^\s*(--version|--help)?\s*$/.test(rest) ? null : `'git${rest}' a une forme que le rail ne reconnait pas`;
+    return /^\s*(--version|--help)?\s*$/.test(rest) ? null : `'git${rest}' has a form the rail does not recognise`;
   }
   const [, subcommand, argsWithRedirections] = match;
   const args = argsWithRedirections.replace(SHELL_REDIRECTION, ' ');
   if (GIT_READS.has(subcommand)) return null;
   const condition = GIT_READS_UNDER_CONDITION[subcommand];
   if (condition && condition(args)) return null;
-  return `'git ${subcommand}${args.trim() ? ` ${args.trim().split(/\s+/)[0]}` : ''}' change l'etat d'un depot`;
+  return `'git ${subcommand}${args.trim() ? ` ${args.trim().split(/\s+/)[0]}` : ''}' changes the state of a repository`;
 }
 
 function isBranchListing(args) {
@@ -169,19 +169,19 @@ function ghRefusal(segment) {
   if (group === 'auth' && verb === 'status') return null;
   if (group === 'repo' && verb === 'clone') return null;
   if (verb && GH_READ_VERBS.has(verb)) return null;
-  return `'gh ${group}${verb ? ` ${verb}` : ''}' n'est pas une lecture connue de la forge`;
+  return `'gh ${group}${verb ? ` ${verb}` : ''}' is not a known read of the forge`;
 }
 
 function ghApiRefusal(args) {
   const method = (args.match(/(?:-X\s*|--method(?:\s+|=))([A-Za-z]+)/) || [])[1];
   if (method) {
-    return method.toUpperCase() === 'GET' ? null : `'gh api' en ${method.toUpperCase()} ecrit sur la forge`;
+    return method.toUpperCase() === 'GET' ? null : `'gh api' with ${method.toUpperCase()} writes on the forge`;
   }
   if (/(^|\s)graphql(\s|$)/.test(args)) {
-    return /\bmutation\b/.test(args) ? `'gh api graphql' avec une mutation ecrit sur la forge` : null;
+    return /\bmutation\b/.test(args) ? `'gh api graphql' with a mutation writes on the forge` : null;
   }
   return /(^|\s)(-f|-F|--field|--raw-field|--input)(\s|=)/.test(args)
-    ? `'gh api' avec des champs passe en POST, donc ecrit sur la forge`
+    ? `'gh api' with fields switches to POST, so it writes on the forge`
     : null;
 }
 
@@ -189,21 +189,21 @@ function networkRefusal(segment) {
   if (/(^|\s)curl(\s|$)/.test(segment)
       && (/(-X|--request)\s*(POST|PUT|PATCH|DELETE)\b/i.test(segment)
         || /(^|\s)(-d|--data|--data-raw|--data-binary|--data-urlencode|--json|-F|--form|-T|--upload-file)(\s|=|@|$)/.test(segment))) {
-    return `'curl' envoie des donnees`;
+    return `'curl' sends data`;
   }
   if (/(^|\s)wget(\s|$)/.test(segment) && /--(method=(POST|PUT|PATCH|DELETE)|post-data|post-file|body-data|body-file)/i.test(segment)) {
-    return `'wget' envoie des donnees`;
+    return `'wget' sends data`;
   }
   if (/(^|\s|\()(Invoke-RestMethod|Invoke-WebRequest|irm|iwr)(\s|$)/i.test(segment)
       && /-Method\s+(Post|Put|Patch|Delete)\b|(^|\s)-Body(\s|$)/i.test(segment)) {
-    return `'Invoke-RestMethod' ou 'Invoke-WebRequest' envoie des donnees`;
+    return `'Invoke-RestMethod' or 'Invoke-WebRequest' sends data`;
   }
   return null;
 }
 
 function publisherRefusal(segment) {
   const publisher = PUBLISHERS.find((pattern) => pattern.test(segment));
-  return publisher ? `'${segment.match(publisher)[0]}' publie un artefact` : null;
+  return publisher ? `'${segment.match(publisher)[0]}' publishes an artifact` : null;
 }
 
 main();

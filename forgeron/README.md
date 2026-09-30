@@ -100,6 +100,22 @@ Le reste des options : `python3 -m forgeron --help`. Elles ne sont pas recopié
 liste d'options dans un README finit toujours par mentir — c'est ce que dit le skill
 [`doc-derivee`](../skills/doc-derivee/SKILL.md).
 
+## Poser la config d'un dépôt : `forgeron etabli`
+
+Un second verbe, qui ne code rien : il lit une config déclarée (étiquettes, réglages, sécurité,
+règles de branche), la compare à chaque dépôt, et affiche le plan. `--write` l'applique, puis relit le
+dépôt pour vérifier qu'il ne reste rien. Il suit la section 2 du skill
+[`tenir-la-forge`](../skills/tenir-la-forge/SKILL.md), et part de
+[`etabli.example.json`](etabli.example.json).
+
+```bash
+python3 -m forgeron etabli --file ~/.forgeron/etabli.json            # le plan, rien n'est écrit
+python3 -m forgeron etabli --file ~/.forgeron/etabli.json --write    # applique, puis relit
+```
+
+Ce qu'il refuse, ce qu'il ne fait pas encore (le board) et pourquoi pas une autre solution :
+**[docs/ETABLI.md](docs/ETABLI.md)**.
+
 ## Comment tu t'en sers, côté humain
 
 1. tu ouvres une issue et tu lui mets l'étiquette `forgeron` ;
@@ -127,8 +143,8 @@ Pour reprendre la main sans rien casser : étiquette `forgeron:hold`. Pour tout
 
 ## Ce qui est vérifié, et ce qui ne l'est pas
 
-Vérifié hors ligne, à chaque `./tests/run.sh` : **129 tests** dont le trajet complet issue → fusion
-avec un build rouge et un tour de revue au milieu, plus **22 sondes de mutation** qui cassent une
+Vérifié hors ligne, à chaque `./tests/run.sh` : **202 tests** dont le trajet complet issue → fusion
+avec un build rouge et un tour de revue au milieu, plus **38 sondes de mutation** qui cassent une
 règle chacune et vérifient que la suite s'en aperçoit. Une suite verte au premier coup ne prouve
 rien ; c'est la sonde qui prouve qu'elle *pouvait* échouer.
 
@@ -155,7 +171,7 @@ disparaître la sortie structurée, et ses hooks ne se déclenchent qu'au niveau
 
 Sous Windows natif, **4 tests échouent** parce qu'ils supposent un shell POSIX : un script de hook
 lancé directement, et un `;` qui n'est pas un séparateur pour `cmd.exe`. forgeron vise Linux et WSL, où
-ils passent ; les 125 autres passent aussi sous Windows.
+ils passent ; les 198 autres passent aussi sous Windows.
 
 **Pas encore vérifié de bout en bout**, et c'est dit à chaque fois dans les fichiers concernés :
 le chemin d'**écriture** sur la forge (créer le brouillon, le passer prêt, commenter), qui demande un
@@ -170,12 +186,14 @@ ou `node`.
 
 ## Lire la suite
 
-- [docs/INSTALLATION.md](docs/INSTALLATION.md) — installer et configurer les quatre outils
+- [docs/INSTALLATION.md](docs/INSTALLATION.md) : installer et configurer les quatre outils
   obligatoires, puis Docker et Kubernetes en local si tu veux les apprendre ; l'authentification de
   `claude` sur abonnement, et les pièges propres à WSL2 ;
-- [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) — les coutures, la machine à états, et les faits
+- [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) : les coutures, la machine à états, et les faits
   mesurés sur `claude -p` et `gh` qui ont décidé de la forme du code ;
-- [docs/GITHUB.md](docs/GITHUB.md) — jeton, GitHub App, webhooks : ce qui est nécessaire quand, et
+- [docs/ETABLI.md](docs/ETABLI.md) : poser la config déclarée d'un dépôt, ce que le verbe refuse, et
+  les faits mesurés sur l'API ;
+- [docs/GITHUB.md](docs/GITHUB.md) : jeton, GitHub App et webhooks, ce qui est nécessaire quand, et
   les commandes exactes ;
-- [docs/CLUSTER.md](docs/CLUSTER.md) — ce qui change en Kubernetes, et pourquoi la réponse n'est pas
+- [docs/CLUSTER.md](docs/CLUSTER.md) : ce qui change en Kubernetes, et pourquoi la réponse n'est pas
   un volume partagé.

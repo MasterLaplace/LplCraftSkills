@@ -1,9 +1,9 @@
-# Faire tourner forgeron en conteneur, en local.
+# Run forgeron in a container, locally.
 #
-# NON TESTE : ni docker ni kubectl sur la machine ou ce fichier a ete ecrit.
+# NOT TESTED: neither docker nor kubectl on the machine this file was written on.
 #
-# Lancer :   docker compose -f docker/compose.yaml run --rm forgeron doctor
-# La boucle : docker compose -f docker/compose.yaml up -d
+# Run:      docker compose -f docker/compose.yaml run --rm forgeron doctor
+# The loop: docker compose -f docker/compose.yaml up -d
 services:
   forgeron:
     build:
@@ -11,8 +11,8 @@ services:
       dockerfile: forgeron/docker/Dockerfile
     image: forgeron:0.1.0
 
-    # Le token d'abonnement et le token GitHub, depuis un fichier en 600. JAMAIS en
-    # `environment:` ici : ce fichier est versionne.
+    # The subscription token and the GitHub token, from a file in 600. NEVER in
+    # `environment:` here: this file is versioned.
     env_file:
       - ${HOME}/.forgeron/secrets.env
 
@@ -21,17 +21,17 @@ services:
       GIT_AUTHOR_EMAIL: forgeron@localhost.invalid
 
     volumes:
-      # l'etat du pilote : c'est la seule chose qui doit survivre au conteneur
+      # the driver's state: it is the only thing that must outlive the container
       - ${HOME}/.forgeron:/home/forgeron/.forgeron
-      # le clone dont les worktrees sont tires. En lecture-ecriture : un worktree
-      # ecrit dans le .git du clone, donc un montage en ro casserait `worktree add`.
+      # the clone the worktrees are taken from. Read-write: a worktree
+      # writes into the clone's .git, so a ro mount would break `worktree add`.
       - ${HOME}/forgeron-sandbox:/repos/forgeron-sandbox
 
     command: ["run", "--write", "--interval", "60",
               "--config", "/home/forgeron/.forgeron/config.json"]
     restart: unless-stopped
 
-    # Un agent qui compile peut manger la machine. Des bornes, meme genereuses,
-    # valent mieux qu'un OOM killer qui choisit a ta place ce qui meurt.
+    # An agent that compiles can eat the machine. Bounds, even generous ones,
+    # are better than an OOM killer choosing for you what dies.
     cpus: 4.0
     mem_limit: 8g

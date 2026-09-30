@@ -216,7 +216,7 @@ class Engine:
         record = record.with_(spent_usd=record.spent_usd + result.cost_usd,
                               seen_feedback=record.seen_feedback + tuple(f.ident for f in answers))
         if not result.ok:
-            self._forge.comment_on_issue(record.repo, record.issue, _failure_note("cadrage", result))
+            self._forge.comment_on_issue(record.repo, record.issue, _failure_note("planning", result))
             return record.with_(phase=Phase.BLOCKED, note=f"plan: {result.detail}")
 
         plan = result.verdict
@@ -226,9 +226,9 @@ class Engine:
             self._forge.comment_on_issue(record.repo, record.issue, _questions_note(plan))
             self._journal.emit("asked_human", key=record.key, questions=len(plan["questions"]))
             return record.with_(phase=Phase.AWAITING_ANSWER,
-                                note="questions posees, en attente de reponse")
+                                note="questions asked, waiting for an answer")
 
-        # <type>/<numero>-<slug>, exactly what tracer-le-travail prescribes. The
+        # <type>/<number>-<slug>, exactly what tracer-le-travail prescribes. The
         # number is not decoration: it is what lets anyone holding a branch name
         # find the discussion that justifies it, without searching.
         branch = f"{plan.get('kind', repo.branch_prefix)}/{record.issue}-{plan['branch_slug']}"
@@ -242,7 +242,7 @@ class Engine:
         if not self._workspace.has_commits_ahead(record.worktree, repo.base):
             self._workspace.commit_empty(
                 record.worktree,
-                f"chore({plan['branch_slug']}): amorce pour #{record.issue}",
+                f"chore({plan['branch_slug']}): bootstrap for #{record.issue}",
             )
         self._workspace.push(record.worktree, branch)
         pull = self._forge.create_draft_pull_request(
@@ -257,7 +257,7 @@ class Engine:
         """Fill the issue's "Development" section, the way GitHub's own button does.
 
         The web button creates that link AND imposes its own name
-        (`42-titre-de-l-issue`). The mutation behind it takes a name, so the link
+        (`42-title-of-the-issue`). The mutation behind it takes a name, so the link
         and the convention stop being an either/or: the branch is named the way the
         pack prescribes, and the issue still shows it.
 
@@ -347,7 +347,7 @@ class Engine:
                            state=obs.checks.value,
                            head=obs.pr.head_sha if obs.pr else "-")
         return record.with_(phase=Phase.AWAITING_CHECKS, checks_since=stamp,
-                            note="en attente de l'integration continue")
+                            note="waiting for continuous integration")
 
     def _do_fix_checks(self, record: Record, repo: RepoConfig, obs: Observation,
                        decision: Decision) -> Record:
@@ -391,7 +391,7 @@ class Engine:
         even have to exist on this machine.
         """
         if obs.pr is None:
-            return record.with_(phase=Phase.BLOCKED, note="rien a mettre a jour")
+            return record.with_(phase=Phase.BLOCKED, note="nothing to update")
 
         method = sync_method(obs, self._config.limits)
         updated = self._forge.update_branch(record.repo, obs.pr, method)
@@ -402,12 +402,12 @@ class Engine:
             # Either a conflict appeared between the observation and the call, or
             # the head moved and the lease refused. Both are answered by looking
             # again next pass rather than by forcing anything.
-            return record.with_(note="mise a jour refusee, nouvelle observation au tour suivant")
+            return record.with_(note="update refused, observing again on the next pass")
 
         # A new head means CI has to run again, so the wait restarts. Forgetting this
         # would let the previous head's timeout expire the new one.
         return record.with_(phase=decision.phase, syncs=record.syncs + 1,
-                            checks_since="", note=f"branche mise a jour par {method.lower()}")
+                            checks_since="", note=f"branch updated by {method.lower()}")
 
     def _do_resolve_conflict(self, record: Record, repo: RepoConfig, obs: Observation,
                              decision: Decision) -> Record:
@@ -429,7 +429,7 @@ class Engine:
             # merge commit, git replays commits one at a time. No agent needed.
             self._push_after_sync(record, method)
             return record.with_(phase=Phase.IMPLEMENTED, checks_since="",
-                                note=f"mis a jour par {method.lower()}, sans conflit reel")
+                                note=f"updated by {method.lower()}, no real conflict")
 
         landed = tuple(self._forge.base_commits_since(
             record.repo, repo.base, obs.pr.head_sha if obs.pr else ""))
@@ -453,32 +453,32 @@ class Engine:
         remaining = self._workspace.conflicted(record.worktree)
         if remaining or not result.ok or result.verdict.get("verdict") == "blocked":
             self._workspace.abort_sync(record.worktree)
-            reason = (f"conflits non resolus : {', '.join(remaining)}" if remaining
+            reason = (f"unresolved conflicts: {', '.join(remaining)}" if remaining
                       else result.verdict.get("blocked_reason") or result.detail)
             if record.pr:
                 self._forge.comment_on_pull_request(record.repo, record.pr, "\n".join([
-                    f"**forgeron n'a pas su resoudre le conflit avec `{repo.base}`.**",
+                    f"**forgeron could not resolve the conflict with `{repo.base}`.**",
                     "", reason, "",
-                    "L'operation a ete annulee : la branche est telle qu'elle etait avant la "
-                    "tentative, rien n'a ete pousse. Un commentaire relance un tour.",
+                    "The operation was aborted: the branch is as it was before the "
+                    "attempt, nothing was pushed. A comment starts a new round.",
                 ]))
-            return record.with_(phase=Phase.BLOCKED, note=f"conflit: {reason[:200]}")
+            return record.with_(phase=Phase.BLOCKED, note=f"conflict: {reason[:200]}")
 
         self._push_after_sync(record, method)
         if record.pr:
             self._forge.comment_on_pull_request(record.repo, record.pr, "\n".join([
-                f"### forgeron · conflit avec `{repo.base}` resolu ({method.lower()})",
+                f"### forgeron · conflict with `{repo.base}` resolved ({method.lower()})",
                 "",
                 attribution.strip(result.verdict.get("summary", "")).strip(),
                 "",
-                "⚠ **Cette resolution n'a ete relue par personne.** Fusionner deux changements "
-                "peut produire quelque chose qui compile et qui est faux, donc la revue est "
-                "redemandee meme si la pull request etait deja approuvee.",
+                "⚠ **Nobody has reviewed this resolution.** Merging two changes "
+                "can produce something that compiles and is wrong, so review is "
+                "requested again even if the pull request was already approved.",
             ]))
         # Back to the CI gate, and therefore back through a review request. A merge
         # of two changes is new code, and it has never been read by anyone.
         return record.with_(phase=Phase.IMPLEMENTED, checks_since="",
-                            note=f"conflit resolu par {method.lower()}")
+                            note=f"conflict resolved by {method.lower()}")
 
     def _push_after_sync(self, record: Record, method: str) -> None:
         """A rebase rewrote the branch, so the push has to overwrite. A merge did not."""
@@ -490,26 +490,26 @@ class Engine:
     def _do_request_review(self, record: Record, repo: RepoConfig, obs: Observation,
                            decision: Decision) -> Record:
         if obs.pr is None:
-            return record.with_(phase=Phase.BLOCKED, note="pas de pull request a soumettre")
+            return record.with_(phase=Phase.BLOCKED, note="no pull request to submit")
         if obs.pr.is_draft:
             self._forge.mark_ready(record.repo, obs.pr.number)
         self._forge.request_review(record.repo, obs.pr.number, repo.reviewers)
         self._forge.comment_on_pull_request(record.repo, obs.pr.number, "\n".join([
-            "**Prete pour relecture.**",
+            "**Ready for review.**",
             "",
             {
-                CheckState.SUCCESS: "Integration continue : verte.",
-                CheckState.NONE: "Integration continue : aucun check sur ce depot, "
-                                 "rien n'a donc ete verifie automatiquement.",
-            }.get(obs.checks, f"Integration continue : {obs.checks.value}."),
+                CheckState.SUCCESS: "Continuous integration: green.",
+                CheckState.NONE: "Continuous integration: no check on this repository, "
+                                 "so nothing was verified automatically.",
+            }.get(obs.checks, f"Continuous integration: {obs.checks.value}."),
             "",
-            f"Tours de travail : {record.rounds} · correctifs de CI : {record.check_fixes} · "
-            f"depense : {record.spent_usd:.2f} USD.",
+            f"Work rounds: {record.rounds} · CI fixes: {record.check_fixes} · "
+            f"spent: {record.spent_usd:.2f} USD.",
             "",
-            "Relire normalement. Chaque commentaire, *request changes* ou reponse relance un tour ; "
-            "une approbation laisse la fusion a un humain.",
+            "Review as usual. Every comment, *request changes* or reply starts a round; "
+            "an approval leaves the merge to a human.",
         ]))
-        self._notify(f"revue demandee : {record.repo}#{record.issue}", obs.pr.url)
+        self._notify(f"review requested: {record.repo}#{record.issue}", obs.pr.url)
         self._journal.emit("review_requested", key=record.key, pr=obs.pr.number,
                            reviewers=",".join(repo.reviewers) or "-")
         return record.with_(phase=Phase.IN_REVIEW, note="")
@@ -531,29 +531,29 @@ class Engine:
             self._forge.comment_on_issue(record.repo, record.issue,
                                          _wrap_note(result.verdict, record))
         self._workspace.discard(record.worktree, repo.path)
-        self._notify(f"fusionnee : {record.repo}#{record.issue}",
+        self._notify(f"merged: {record.repo}#{record.issue}",
                      obs.pr.url if obs.pr else "")
         self._journal.emit("closed", key=record.key, rounds=record.rounds,
                            spent=round(record.spent_usd, 4))
-        return record.with_(phase=Phase.DONE, note="fusionnee et cloturee")
+        return record.with_(phase=Phase.DONE, note="merged and closed")
 
     def _do_block(self, record: Record, repo: RepoConfig, obs: Observation,
                   decision: Decision) -> Record:
         target = record.pr or record.issue
         note = "\n".join([
-            "**forgeron s'arrete et rend la main.**",
+            "**forgeron stops and hands back control.**",
             "",
-            f"Raison : {decision.reason}",
-            f"Tours effectues : {record.rounds} · depense : {record.spent_usd:.2f} USD",
+            f"Reason: {decision.reason}",
+            f"Rounds done: {record.rounds} · spent: {record.spent_usd:.2f} USD",
             "",
-            f"La branche `{record.branch}` reste en place, telle quelle. Retirer l'etiquette "
-            f"`{repo.hold_label}` et commenter relance le tour suivant.",
+            f"The branch `{record.branch}` stays in place, as it is. Removing the label "
+            f"`{repo.hold_label}` and commenting starts the next round.",
         ])
         if record.pr:
             self._forge.comment_on_pull_request(record.repo, record.pr, note)
         else:
             self._forge.comment_on_issue(record.repo, record.issue, note)
-        self._notify(f"bloquee : {record.repo}#{record.issue}", decision.reason)
+        self._notify(f"blocked: {record.repo}#{record.issue}", decision.reason)
         return record.with_(phase=Phase.BLOCKED, note=decision.reason)
 
     def _do_abandon(self, record: Record, repo: RepoConfig, obs: Observation,
@@ -575,7 +575,7 @@ class Engine:
         if not result.ok:
             if record.pr:
                 self._forge.comment_on_pull_request(record.repo, record.pr,
-                                                    _failure_note("travail", result))
+                                                    _failure_note("work", result))
             return record.with_(phase=Phase.BLOCKED, note=f"run: {result.detail}")
 
         if getattr(result, "denials", ()):
@@ -591,10 +591,10 @@ class Engine:
             if record.pr:
                 self._forge.comment_on_pull_request(
                     record.repo, record.pr,
-                    f"**forgeron est bloque.**\n\n{reason}\n\n"
-                    f"Un commentaire de ta part relance le tour suivant.",
+                    f"**forgeron is blocked.**\n\n{reason}\n\n"
+                    f"A comment from you starts the next round.",
                 )
-            return record.with_(phase=Phase.BLOCKED, note=f"agent bloque: {reason[:200]}")
+            return record.with_(phase=Phase.BLOCKED, note=f"agent blocked: {reason[:200]}")
 
         # Uncommitted files are about to be destroyed with the worktree, and the
         # agent is the only one who knew they mattered. Reported rather than
@@ -602,14 +602,14 @@ class Engine:
         # put something in the history nobody can review.
         if self._workspace.is_dirty(record.worktree):
             self._journal.emit("worktree_dirty", key=record.key,
-                               detail="des fichiers non commites seront perdus au nettoyage")
+                               detail="uncommitted files will be lost at cleanup")
 
         tainted = self._attributed_commits(record, repo)
         if tainted:
             if record.pr:
                 self._forge.comment_on_pull_request(record.repo, record.pr, _tainted_note(tainted))
             return record.with_(phase=Phase.BLOCKED,
-                                note=f"attribution IA dans {len(tainted)} commit(s)")
+                                note=f"AI attribution in {len(tainted)} commit(s)")
 
         if not self._workspace.is_synced(record.worktree, record.branch):
             self._journal.emit("verdict_overstated", key=record.key,
@@ -630,20 +630,20 @@ class Engine:
         return record.with_(phase=phase_ok, note="")
 
     def _verify_visuals(self, record: Record, verdict: dict):
-        """Ne garde que les visuels dont la commande reproduit reellement le fichier.
+        """Keep only the visuals whose command really reproduces the file.
 
-        Le refus est RAPPORTE et non silencieux : un agent qui a produit une image
-        et se la voit ecarter doit pouvoir lire pourquoi, et un relecteur doit
-        savoir qu'il manque quelque chose plutot que de croire qu'il n'y avait
-        rien a montrer.
+        The refusal is REPORTED, not silent: an agent that produced an image
+        and sees it set aside must be able to read why, and a reviewer must
+        know that something is missing rather than believe there was
+        nothing to show.
         """
         declared = verdict.get("visuals") or []
         if not declared:
             return (), ()
         if self._regenerator is None:
-            return (), (("(tous)", "aucun verificateur de regeneration n'est cable"),)
+            return (), (("(all)", "no regeneration verifier is wired"),)
         if not self._forge.supports_attachments():
-            return (), (("(tous)", "gh est trop ancien pour --attach, il faut 2.99.0"),)
+            return (), (("(all)", "gh is too old for --attach, 2.99.0 is required"),)
 
         accepted: list[Visual] = []
         refused: list[tuple[str, str]] = []
@@ -659,16 +659,16 @@ class Engine:
                 refused.append((visual.path, outcome.reason))
 
         for entry in declared[MAX_VISUALS:]:
-            refused.append((entry.get("path", "?"), f"au-dela du plafond de {MAX_VISUALS}"))
+            refused.append((entry.get("path", "?"), f"beyond the ceiling of {MAX_VISUALS}"))
         return tuple(accepted), tuple(refused)
 
     def _attributed_commits(self, record: Record, repo: RepoConfig):
-        """Les commits de la branche qui portent une attribution IA.
+        """The branch's commits that carry an AI attribution.
 
-        Une troisième couche derrière le réglage et le hook, et elle existe parce
-        que les deux premières ont chacune un trou : `git commit --no-verify`
-        saute le hook, et un conteneur neuf n'en a aucun. Celle-ci ne prévient
-        rien et n'est contournable par rien, puisqu'elle regarde le résultat.
+        A third layer behind the setting and the hook, and it exists because
+        the first two each have a hole: `git commit --no-verify` skips the
+        hook, and a fresh container has none. This one prevents nothing and
+        cannot be bypassed by anything, since it looks at the result.
         """
         tainted = []
         for sha, message in self._workspace.commit_messages(record.worktree, repo.base):
@@ -707,32 +707,32 @@ class Engine:
 # something the model can improvise.
 
 def _pr_body(plan: dict, record: Record, config: Config) -> str:
-    criteria = "\n".join(f"- [ ] {item}" for item in plan.get("acceptance", ())) or "- [ ] (aucun)"
-    files = "\n".join(f"- `{item}`" for item in plan.get("files_expected", ())) or "- (a decouvrir)"
+    criteria = "\n".join(f"- [ ] {item}" for item in plan.get("acceptance", ())) or "- [ ] (none)"
+    files = "\n".join(f"- `{item}`" for item in plan.get("files_expected", ())) or "- (to be discovered)"
     return "\n".join([
         plan.get("pr_body", "").strip(),
         "",
         "---",
         "",
-        f"Referme #{record.issue}.",
+        f"Closes #{record.issue}.",
         "",
-        "## Criteres d'acceptation",
+        "## Acceptance criteria",
         "",
         criteria,
         "",
-        "## Fichiers attendus",
+        "## Expected files",
         "",
         files,
         "",
-        "## Conduite de cette pull request",
+        "## How this pull request runs",
         "",
-        f"Ouverte en brouillon par **forgeron** avant la premiere ligne de code : le plan est "
-        f"lisible maintenant, pendant que l'implementation tourne. Risque estime : "
+        f"Opened as a draft by **forgeron** before the first line of code: the plan is "
+        f"readable now, while the implementation runs. Estimated risk: "
         f"`{plan.get('risk', '?')}`.",
         "",
-        f"Relire normalement : commentaires en ligne, *request changes*, *approve*. Chaque retour "
-        f"declenche un tour de revision (plafond : {config.limits.max_rounds} tours, "
-        f"{config.limits.max_spend_usd:.0f} USD). La fusion reste manuelle.",
+        f"Review as usual: inline comments, *request changes*, *approve*. Every piece of feedback "
+        f"triggers a revision round (ceiling: {config.limits.max_rounds} rounds, "
+        f"{config.limits.max_spend_usd:.0f} USD). The merge stays manual.",
     ])
 
 
@@ -743,24 +743,24 @@ def _work_note(verdict: dict, record: Record, answered: tuple[Feedback, ...] = (
                visuals: tuple[Visual, ...] = (),
                refused: tuple[tuple[str, str], ...] = ()) -> str:
     rows = "\n".join(
-        f"| {'oui' if item.get('met') else 'NON'} | {item.get('criterion', '')} | "
+        f"| {'yes' if item.get('met') else 'NO'} | {item.get('criterion', '')} | "
         f"{_cell(item.get('evidence', ''))} |"
         for item in verdict.get("acceptance", ())
-    ) or "| - | (aucun critere) | - |"
-    commands = "\n".join(f"    {command}" for command in verdict.get("commands_run", ())) or "    (aucune)"
+    ) or "| - | (no criterion) | - |"
+    commands = "\n".join(f"    {command}" for command in verdict.get("commands_run", ())) or "    (none)"
     answers = _answers_note(verdict, answered) if answered else ""
     return "\n".join([
-        f"### forgeron · tour {record.rounds}",
+        f"### forgeron · round {record.rounds}",
         "",
         attribution.strip(verdict.get("summary", "")).strip(),
         "",
         answers,
         "",
-        "| tenu | critere | preuve |",
+        "| met | criterion | evidence |",
         "|---|---|---|",
         rows,
         "",
-        "<details><summary>Commandes lancees</summary>",
+        "<details><summary>Commands run</summary>",
         "",
         "```",
         commands,
@@ -773,20 +773,20 @@ def _work_note(verdict: dict, record: Record, answered: tuple[Feedback, ...] = (
 
 def _visual_block(visuals: tuple[Visual, ...],
                   refused: tuple[tuple[str, str], ...]) -> str:
-    """Chaque image publiee avec, juste dessous, la commande qui la regenere.
+    """Every published image with, right below it, the command that regenerates it.
 
-    C'est la regle de `rendre-l-etat-visible` rendue visible pour le lecteur :
-    sans cette ligne, ce qu'il voit est une capture d'ecran, et il n'a aucun moyen
-    de savoir si elle decrit encore le code qu'il relit.
+    It is the rule of `rendre-l-etat-visible` made visible to the reader:
+    without this line, what they see is a screenshot, and they have no way
+    to know whether it still describes the code they are reviewing.
     """
     if not visuals and not refused:
         return ""
-    lines = ["", "#### Visuels", ""]
+    lines = ["", "#### Visuals", ""]
     for visual in visuals:
         lines += [f"![{visual.caption}]({visual.path})", "",
-                  f"Regenerer : `{visual.command}`", ""]
+                  f"Regenerate: `{visual.command}`", ""]
     for path, reason in refused:
-        lines.append(f"- `{path}` **ecarte** : {reason}")
+        lines.append(f"- `{path}` **set aside**: {reason}")
     return "\n".join(lines)
 
 
@@ -797,11 +797,11 @@ def _answers_note(verdict: dict, feedback: tuple[Feedback, ...]) -> str:
     and a mis-keyed answer would be attached to the wrong remark - worse than an
     unanswered one, which at least looks unanswered.
     """
-    lines = ["**Reponses aux remarques :**", ""]
+    lines = ["**Answers to the remarks:**", ""]
     answers = verdict.get("answers") or []
     for index, item in enumerate(feedback):
         answer = attribution.strip(answers[index]) if index < len(answers) \
-            else "_(sans reponse explicite)_"
+            else "_(no explicit answer)_"
         head = f"**@{item.author}"
         head += f" · {item.path}:{item.line}**" if item.path else "**"
         lines += [f"{index + 1}. {head} — {answer}"]
@@ -811,28 +811,28 @@ def _answers_note(verdict: dict, feedback: tuple[Feedback, ...]) -> str:
 def _questions_note(plan: dict) -> str:
     questions = "\n".join(f"{index}. {text}" for index, text in enumerate(plan["questions"], 1))
     return "\n".join([
-        "**forgeron a cadre le sujet et s'arrete avant de coder.**",
+        "**forgeron framed the subject and stops before coding.**",
         "",
-        f"Risque estime : `{plan.get('risk', '?')}`. Ce qui suit changerait ce qui est construit, "
-        "donc rien n'est construit avant reponse :",
+        f"Estimated risk: `{plan.get('risk', '?')}`. What follows would change what gets built, "
+        "so nothing is built before an answer:",
         "",
         questions,
         "",
-        "Repondre en commentaire relance le cadrage. Aucune branche n'a ete poussee.",
+        "Answering in a comment restarts the framing. No branch was pushed.",
     ])
 
 
 def _wrap_note(verdict: dict, record: Record) -> str:
-    followups = "\n".join(f"- {item}" for item in verdict.get("followups", ())) or "- (aucune)"
+    followups = "\n".join(f"- {item}" for item in verdict.get("followups", ())) or "- (none)"
     return "\n".join([
-        f"### forgeron · session close",
+        f"### forgeron · session closed",
         "",
         attribution.strip(verdict.get("summary", "")).strip(),
         "",
-        f"Pull request #{record.pr} fusionnee en {record.rounds} tour(s), "
-        f"{record.spent_usd:.2f} USD. Worktree supprime, branche conservee.",
+        f"Pull request #{record.pr} merged in {record.rounds} round(s), "
+        f"{record.spent_usd:.2f} USD. Worktree deleted, branch kept.",
         "",
-        "**Suites reperees, a ouvrir en issues si elles valent la peine :**",
+        "**Follow-ups spotted, to open as issues if they are worth it:**",
         "",
         followups,
     ])
@@ -841,26 +841,26 @@ def _wrap_note(verdict: dict, record: Record) -> str:
 def _tainted_note(tainted: tuple[tuple[str, str], ...]) -> str:
     listing = "\n".join(f"- `{sha}` — `{line.strip()}`" for sha, line in tainted)
     return "\n".join([
-        "**forgeron refuse d'avancer : un commit porte une attribution IA.**",
+        "**forgeron refuses to proceed: a commit carries an AI attribution.**",
         "",
         listing,
         "",
-        "L'auteur de ce depot ne veut pas de cette ligne dans son historique, et le refus est "
-        "mecanique plutot que confie a la vigilance de l'agent. Trois couches devaient l'empecher : "
-        "le reglage `attribution`, le hook `commit-msg`, et ce controle. Les deux premieres ont "
-        "ete contournees, par `--no-verify` ou par leur absence.",
+        "The author of this repository does not want this line in their history, and the refusal is "
+        "mechanical rather than left to the agent's vigilance. Three layers were meant to prevent it: "
+        "the `attribution` setting, the `commit-msg` hook, and this check. The first two were "
+        "bypassed, by `--no-verify` or by being absent.",
         "",
-        "Reecrire le ou les messages sans la ligne, puis republier la branche.",
+        "Rewrite the message or messages without the line, then publish the branch again.",
     ])
 
 
 def _failure_note(phase: str, result) -> str:
     return "\n".join([
-        f"**forgeron a echoue en phase de {phase}.**",
+        f"**forgeron failed in the {phase} phase.**",
         "",
         f"    {result.detail}",
         "",
-        f"Depense sur ce run : {result.cost_usd:.2f} USD. Rien n'a ete pousse par cette tentative.",
+        f"Spent on this run: {result.cost_usd:.2f} USD. Nothing was pushed by this attempt.",
     ])
 
 

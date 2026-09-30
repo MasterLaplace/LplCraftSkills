@@ -1,14 +1,13 @@
-"""Vérifie qu'une commande reproduit bien le fichier qu'elle prétend produire.
+"""Checks that a command really reproduces the file it claims to produce.
 
-Un port à une seule méthode, et son nom dit ce qu'il fait plutôt que ce qu'il
-utilise. « Lancer une commande » serait une capacité bien plus large à confier à
-un agent ; « vérifier que cette commande reproduit ce fichier » est bornée par sa
-propre signature.
+A port with a single method, and its name says what it does rather than what it
+uses. "Run a command" would be a much broader capability to hand to an agent;
+"check that this command reproduces this file" is bounded by its own signature.
 
-Le geste qui compte est le déplacement : le fichier est écarté AVANT de relancer,
-et il doit revenir. Sans ça, une commande qui ne fait rien du tout passe le
-contrôle, puisque le fichier était déjà là. C'est le piège que ce dépôt a payé
-cinq fois, une vérification incapable d'échouer.
+The move that matters is setting the file aside: the file is moved away BEFORE
+the command runs again, and it has to come back. Without that, a command that
+does nothing at all passes the check, since the file was already there. That is
+the trap this repository paid for five times, a check unable to fail.
 """
 
 from __future__ import annotations
@@ -18,9 +17,9 @@ import hashlib
 import os
 import subprocess
 
-# GitHub ne rend que ça dans un commentaire. Une extension hors liste est refusée
-# plutôt qu'envoyée : un fichier qui ne s'affiche pas est un lien mort au milieu
-# d'une revue, et l'auteur ne le verra pas puisqu'il ne relit pas sa propre PR.
+# GitHub renders only these in a comment. An extension outside the list is refused
+# rather than sent: a file that does not display is a dead link in the middle of
+# a review, and the author will not see it since they do not reread their own PR.
 RENDERABLE = (".png", ".jpg", ".jpeg", ".gif", ".webp", ".mp4", ".webm", ".mov")
 
 
@@ -28,7 +27,7 @@ RENDERABLE = (".png", ".jpg", ".jpeg", ".gif", ".webp", ".mp4", ".webm", ".mov")
 class Reproduction:
     ok: bool
     reason: str = ""
-    identical: bool = False   # les octets sont-ils les mêmes, donc le rendu est-il déterministe
+    identical: bool = False   # are the bytes the same, so is the render deterministic
 
 
 class ShellRegenerator:
@@ -37,26 +36,26 @@ class ShellRegenerator:
         self._max_bytes = max_bytes
 
     def reproduce(self, worktree: str, path: str, command: str) -> Reproduction:
-        """Écarte le fichier, relance la commande, exige qu'il revienne.
+        """Set the file aside, run the command again, require that it comes back.
 
-        Restaure l'original quoi qu'il arrive : un contrôle qui détruit l'artefact
-        qu'il examine transforme un refus en perte de travail.
+        Restores the original whatever happens: a check that destroys the artifact
+        it examines turns a refusal into lost work.
         """
         root = os.path.realpath(worktree)
         target = os.path.realpath(os.path.join(root, path))
 
-        # Le chemin vient de l'agent et le fichier part sur une forge. Un chemin
-        # qui sort du worktree publierait ce que personne n'a proposé de publier.
+        # The path comes from the agent and the file goes to a forge. A path that
+        # leaves the worktree would publish what nobody offered to publish.
         if os.path.commonpath([root, target]) != root:
-            return Reproduction(False, f"chemin hors du worktree : {path}")
+            return Reproduction(False, f"path outside the worktree: {path}")
         if os.path.splitext(target)[1].lower() not in RENDERABLE:
-            return Reproduction(False, f"extension non rendue par la forge : {path}")
+            return Reproduction(False, f"extension not rendered by the forge: {path}")
         if not os.path.isfile(target):
-            return Reproduction(False, f"fichier absent : {path}")
+            return Reproduction(False, f"file missing: {path}")
 
         size = os.path.getsize(target)
         if size > self._max_bytes:
-            return Reproduction(False, f"{size} octets, au-dessus du plafond de {self._max_bytes}")
+            return Reproduction(False, f"{size} bytes, above the ceiling of {self._max_bytes}")
 
         before = _digest(target)
         aside = target + ".forgeron-aside"
@@ -66,7 +65,7 @@ class ShellRegenerator:
                                   text=True, timeout=self._timeout)
         except subprocess.TimeoutExpired:
             os.replace(aside, target)
-            return Reproduction(False, f"la commande a depasse {self._timeout} s")
+            return Reproduction(False, f"the command exceeded {self._timeout} s")
         except Exception as failure:
             os.replace(aside, target)
             return Reproduction(False, f"{type(failure).__name__}: {failure}")
@@ -74,19 +73,19 @@ class ShellRegenerator:
         if done.returncode != 0:
             os.replace(aside, target)
             detail = (done.stderr or done.stdout).strip().splitlines()
-            return Reproduction(False, f"la commande sort en {done.returncode} : "
-                                       f"{detail[-1][:160] if detail else 'aucune sortie'}")
+            return Reproduction(False, f"the command exits with {done.returncode}: "
+                                       f"{detail[-1][:160] if detail else 'no output'}")
 
         if not os.path.isfile(target):
             os.replace(aside, target)
-            return Reproduction(False, "la commande a reussi sans reproduire le fichier")
+            return Reproduction(False, "the command succeeded without reproducing the file")
 
-        # Le fichier est revenu : la commande le produit bel et bien. L'identité
-        # des octets est une information de PLUS, pas la condition — un encodeur
-        # qui date ses images reste un producteur légitime.
+        # The file came back: the command does produce it. Identical bytes are
+        # EXTRA information, not the condition - an encoder that timestamps its
+        # images is still a legitimate producer.
         identical = _digest(target) == before
         os.remove(aside)
-        return Reproduction(True, "reproduit" + ("" if identical else " (octets differents)"),
+        return Reproduction(True, "reproduced" + ("" if identical else " (different bytes)"),
                             identical)
 
 

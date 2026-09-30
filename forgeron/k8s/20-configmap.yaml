@@ -1,9 +1,9 @@
-# La configuration du pilote, montee en fichier. Un ConfigMap et pas un Secret :
-# rien la-dedans n'est sensible, et les melanger ferait relire un Secret a chaque
-# fois qu'on veut changer un intervalle.
+# The driver's configuration, mounted as a file. A ConfigMap and not a Secret:
+# nothing in there is sensitive, and mixing them would mean rereading a Secret every
+# time one wants to change an interval.
 #
-# ATTENTION : le `path` d'un depot est celui VU DEPUIS LE POD, pas depuis l'hote.
-# C'est la premiere chose qui casse quand on recopie une config locale telle quelle.
+# WARNING: a repository's `path` is the one SEEN FROM THE POD, not from the host.
+# It is the first thing that breaks when a local config is copied as it is.
 apiVersion: v1
 kind: ConfigMap
 metadata:

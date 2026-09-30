@@ -29,7 +29,7 @@ function parseInput(raw) {
 
 function decide(mode, input) {
   if (mode !== 'pre' && mode !== 'stop') {
-    process.stderr.write(`artisan-gate : mode inconnu '${mode}'. Attendu : pre ou stop.\n`);
+    process.stderr.write(`artisan-gate: unknown mode '${mode}'. Expected: pre or stop.\n`);
     return NOT_CHECKED;
   }
   if (mode === 'pre' && !WRITE_TOOLS.has(input.tool_name)) return ALLOW;
@@ -37,8 +37,8 @@ function decide(mode, input) {
 
   const toolUses = readToolUses(input.transcript_path);
   if (toolUses === null) {
-    process.stderr.write(`artisan-gate : transcript introuvable ou illisible (${input.transcript_path}). `
-      + `Le rail '${mode}' n'a pas ete verifie pour cet appel.\n`);
+    process.stderr.write(`artisan-gate: transcript not found or unreadable (${input.transcript_path}). `
+      + `The '${mode}' rail was not checked for this call.\n`);
     return NOT_CHECKED;
   }
   return mode === 'pre' ? mapLoadedBeforeWriting(toolUses) : provedAfterLastWrite(toolUses);
@@ -47,9 +47,9 @@ function decide(mode, input) {
 function mapLoadedBeforeWriting(toolUses) {
   const loaded = toolUses.some((use) => use.name === 'Skill' && isMapSkill(use.input && use.input.skill));
   if (loaded) return ALLOW;
-  process.stderr.write(`Avant d'ecrire le moindre fichier, charge la carte : outil Skill, skill `
-    + `'${MAP_SKILL}'. Elle dit quel skill charger a chaque etape du travail. Lire et explorer `
-    + `restent permis sans elle.\n`);
+  process.stderr.write(`Before writing any file, load the map: Skill tool, skill `
+    + `'${MAP_SKILL}'. It says which skill to load at each step of the work. Reading and exploring `
+    + `stay allowed without it.\n`);
   return BLOCK;
 }
 
@@ -62,9 +62,9 @@ function provedAfterLastWrite(toolUses) {
   if (lastWrite < 0) return ALLOW;
   const lastCommand = findLastIndex(toolUses, (use) => COMMAND_TOOLS.has(use.name));
   if (lastCommand > lastWrite) return ALLOW;
-  process.stderr.write(`Des fichiers ont ete modifies apres ta derniere commande. Avant de conclure, `
-    + `lance a l'instant la commande qui prouve ce que tu vas affirmer (tests, build, verification), `
-    + `puis relis la porte de sortie de chaque skill charge dans cette session.\n`);
+  process.stderr.write(`Files were modified after your last command. Before concluding, `
+    + `run right now the command that proves what you are about to claim (tests, build, check), `
+    + `then reread the exit gate (the 'porte de sortie' section) of every skill loaded in this session.\n`);
   return BLOCK;
 }
 

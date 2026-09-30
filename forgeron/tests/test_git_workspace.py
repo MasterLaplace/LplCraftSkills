@@ -61,21 +61,21 @@ class RealGit(unittest.TestCase):
             handle.write("written by the agent\n")
         self.assertEqual(git(self.clone, "rev-parse", "--abbrev-ref", "HEAD"), before)
         self.assertEqual(git(self.clone, "status", "--porcelain"), "",
-                         "le checkout de l'humain doit rester propre")
+                         "the human's checkout must stay clean")
         self.assertFalse(os.path.exists(os.path.join(self.clone, "new.txt")))
 
     def test_preparing_twice_reuses_the_worktree(self) -> None:
         self.workspace.prepare(self.clone, self.worktree, "forgeron/issue-3", "main")
-        self.workspace.commit_empty(self.worktree, "chore: amorce")
+        self.workspace.commit_empty(self.worktree, "chore: bootstrap")
         head = self.workspace.head(self.worktree)
         self.workspace.prepare(self.clone, self.worktree, "forgeron/issue-3", "main")
         self.assertEqual(self.workspace.head(self.worktree), head,
-                         "re-entrer apres un crash ne doit pas jeter le travail")
+                         "re-entering after a crash must not throw the work away")
 
     def test_rename_then_push_then_sync_reports_the_truth(self) -> None:
         self.workspace.prepare(self.clone, self.worktree, "forgeron/issue-4", "main")
         self.workspace.rename_branch(self.worktree, "feat/cache-lru")
-        self.workspace.commit_empty(self.worktree, "chore(cache-lru): amorce pour #4")
+        self.workspace.commit_empty(self.worktree, "chore(cache-lru): bootstrap for #4")
         self.assertTrue(self.workspace.has_commits_ahead(self.worktree, "main"))
 
         # Not pushed yet: the claim "pushed" would be a lie, and this is what catches it.
@@ -88,13 +88,13 @@ class RealGit(unittest.TestCase):
         with open(os.path.join(self.worktree, "cache.py"), "w", encoding="utf-8") as handle:
             handle.write("cache = {}\n")
         git(self.worktree, "add", "-A")
-        git(self.worktree, "commit", "-m", "feat(cache): un cache")
+        git(self.worktree, "commit", "-m", "feat(cache): a cache")
         self.assertFalse(self.workspace.is_synced(self.worktree, "feat/cache-lru"))
 
     def test_an_already_pushed_branch_is_tracked_rather_than_restarted(self) -> None:
         first = os.path.join(self.root, "wt", "resume-a")
         self.workspace.prepare(self.clone, first, "feat/resume-me", "main")
-        self.workspace.commit_empty(first, "chore: travail deja pousse")
+        self.workspace.commit_empty(first, "chore: work already pushed")
         self.workspace.push(first, "feat/resume-me")
         pushed_head = self.workspace.head(first)
         self.workspace.discard(first, self.clone)
@@ -106,41 +106,41 @@ class RealGit(unittest.TestCase):
 
     def test_discard_removes_the_worktree_and_keeps_the_branch(self) -> None:
         self.workspace.prepare(self.clone, self.worktree, "feat/keep-me", "main")
-        self.workspace.commit_empty(self.worktree, "chore: amorce")
+        self.workspace.commit_empty(self.worktree, "chore: bootstrap")
         self.workspace.push(self.worktree, "feat/keep-me")
         self.workspace.discard(self.worktree, self.clone)
         self.assertFalse(os.path.isdir(self.worktree))
         self.assertIn("feat/keep-me", git(self.clone, "ls-remote", "--heads", "origin"),
-                      "la branche est le seul instantane qui survit a la machine")
+                      "the branch is the only snapshot that outlives the machine")
 
 
 class RealConflict(RealGit):
-    """Un vrai conflit, avec de vrais marqueurs, contre un vrai depot.
+    """A real conflict, with real markers, against a real repository.
 
-    C'est le chemin dont tout le reste depend et le seul que des fakes ne peuvent
-    pas prouver : `sync_with_base` doit laisser l'operation EN COURS pour que
-    l'agent voie les marqueurs, et `conflicted` doit dire non tant qu'elle ne l'est
-    pas. Une resolution crue sur parole est exactement ce qui pousse une branche a
-    moitie rebasee.
+    It is the path everything else depends on and the only one fakes cannot
+    prove: `sync_with_base` must leave the operation IN PROGRESS so that
+    the agent sees the markers, and `conflicted` must say no as long as it is
+    not resolved. A resolution taken at its word is exactly what pushes a
+    half-rebased branch.
     """
 
     def _branch_that_fights_with_base(self, name: str) -> None:
-        """Fabrique le cas : la base et la branche changent la MEME ligne."""
-        # Le contenu est unique par test : la classe partage un depot, et deux
-        # tests qui ecrivent la meme chose sur main donnent "rien a commiter" au
-        # second - un echec qui ressemble a un bug de git et n'en est pas un.
+        """Builds the case: the base and the branch change the SAME line."""
+        # The content is unique per test: the class shares a repository, and two
+        # tests that write the same thing on main give "nothing to commit" to the
+        # second - a failure that looks like a git bug and is not one.
         marque = name.replace("/", "-")
         self.workspace.prepare(self.clone, self.worktree, name, "main")
-        self._write(self.worktree, "partage.txt", f"la version de la branche {marque}\n")
+        self._write(self.worktree, "shared.txt", f"the branch version {marque}\n")
         git(self.worktree, "add", "-A")
-        git(self.worktree, "commit", "-m", f"feat: version de la branche {marque}")
+        git(self.worktree, "commit", "-m", f"feat: branch version {marque}")
 
-        # pendant ce temps, quelqu'un d'autre pousse sur main
+        # meanwhile, somebody else pushes to main
         git(self.clone, "checkout", "main", "--quiet")
         git(self.clone, "pull", "--quiet", "origin", "main")
-        self._write(self.clone, "partage.txt", f"la version de main {marque}\n")
+        self._write(self.clone, "shared.txt", f"the main version {marque}\n")
         git(self.clone, "add", "-A")
-        git(self.clone, "commit", "-m", f"feat: version de main {marque}")
+        git(self.clone, "commit", "-m", f"feat: main version {marque}")
         git(self.clone, "push", "origin", "main")
 
     @staticmethod
@@ -149,44 +149,44 @@ class RealConflict(RealGit):
             handle.write(content)
 
     def test_a_rebase_that_conflicts_reports_the_files_and_stays_in_progress(self) -> None:
-        self._branch_that_fights_with_base("feat/1-conflit")
+        self._branch_that_fights_with_base("feat/1-conflict")
         clean, conflicted = self.workspace.sync_with_base(self.worktree, "main", "REBASE")
 
         self.assertFalse(clean)
-        self.assertEqual(conflicted, ["partage.txt"])
-        self.assertEqual(self.workspace.conflicted(self.worktree), ["partage.txt"],
-                         "la question doit pouvoir etre reposee, c'est elle qui verifie l'agent")
-        with open(os.path.join(self.worktree, "partage.txt"), encoding="utf-8") as handle:
+        self.assertEqual(conflicted, ["shared.txt"])
+        self.assertEqual(self.workspace.conflicted(self.worktree), ["shared.txt"],
+                         "the question must be askable again, it is the one that checks the agent")
+        with open(os.path.join(self.worktree, "shared.txt"), encoding="utf-8") as handle:
             body = handle.read()
-        self.assertIn("<<<<<<<", body, "les marqueurs sont la matiere de la resolution")
-        self.assertIn("la version de main", body)
-        self.assertIn("la version de la branche", body)
+        self.assertIn("<<<<<<<", body, "the markers are the material of the resolution")
+        self.assertIn("the main version", body)
+        self.assertIn("the branch version", body)
         self.workspace.abort_sync(self.worktree)
 
     def test_resolving_then_continuing_clears_it_and_the_push_overwrites(self) -> None:
-        self._branch_that_fights_with_base("feat/2-resolu")
+        self._branch_that_fights_with_base("feat/2-resolved")
         self.workspace.sync_with_base(self.worktree, "main", "REBASE")
 
-        self._write(self.worktree, "partage.txt", "les deux versions, tenues ensemble\n")
-        git(self.worktree, "add", "partage.txt")
+        self._write(self.worktree, "shared.txt", "both versions, held together\n")
+        git(self.worktree, "add", "shared.txt")
         subprocess.run(["git", "-C", self.worktree, "-c", "core.editor=true",
                         "rebase", "--continue"], capture_output=True, check=True)
 
         self.assertEqual(self.workspace.conflicted(self.worktree), [])
-        self.workspace.push(self.worktree, "feat/2-resolu")
-        self.assertTrue(self.workspace.is_synced(self.worktree, "feat/2-resolu"))
+        self.workspace.push(self.worktree, "feat/2-resolved")
+        self.assertTrue(self.workspace.is_synced(self.worktree, "feat/2-resolved"))
 
     def test_a_rebased_branch_needs_the_forced_push_and_a_plain_one_is_refused(self) -> None:
         self._branch_that_fights_with_base("feat/3-force")
-        self.workspace.push(self.worktree, "feat/3-force")     # publiee telle quelle
+        self.workspace.push(self.worktree, "feat/3-force")     # published as it is
         self.workspace.sync_with_base(self.worktree, "main", "REBASE")
-        self._write(self.worktree, "partage.txt", "les deux, ensemble\n")
-        git(self.worktree, "add", "partage.txt")
+        self._write(self.worktree, "shared.txt", "both, together\n")
+        git(self.worktree, "add", "shared.txt")
         subprocess.run(["git", "-C", self.worktree, "-c", "core.editor=true",
                         "rebase", "--continue"], capture_output=True, check=True)
 
-        # L'historique a ete reecrit : un push ordinaire DOIT etre refuse, sinon le
-        # push force n'aurait aucune raison d'exister et personne ne le verifierait.
+        # History was rewritten: an ordinary push MUST be refused, otherwise the
+        # forced push would have no reason to exist and nobody would check it.
         from forgeron.git_workspace import GitError
         with self.assertRaises(GitError):
             self.workspace.push(self.worktree, "feat/3-force")
@@ -194,7 +194,7 @@ class RealConflict(RealGit):
         self.assertTrue(self.workspace.is_synced(self.worktree, "feat/3-force"))
 
     def test_abort_puts_the_branch_back_exactly_as_it_was(self) -> None:
-        self._branch_that_fights_with_base("feat/4-annule")
+        self._branch_that_fights_with_base("feat/4-aborted")
         before = self.workspace.head(self.worktree)
         self.workspace.sync_with_base(self.worktree, "main", "REBASE")
         self.workspace.abort_sync(self.worktree)
@@ -203,15 +203,15 @@ class RealConflict(RealGit):
         self.assertEqual(self.workspace.conflicted(self.worktree), [])
 
     def test_a_merge_conflicts_on_the_same_case_without_rewriting_history(self) -> None:
-        self._branch_that_fights_with_base("feat/5-fusion")
+        self._branch_that_fights_with_base("feat/5-merge")
         before = self.workspace.head(self.worktree)
         clean, conflicted = self.workspace.sync_with_base(self.worktree, "main", "MERGE")
 
         self.assertFalse(clean)
-        self.assertEqual(conflicted, ["partage.txt"])
+        self.assertEqual(conflicted, ["shared.txt"])
         self.workspace.abort_sync(self.worktree)
         self.assertEqual(self.workspace.head(self.worktree), before,
-                         "une fusion annulee ne deplace pas la branche non plus")
+                         "an aborted merge does not move the branch either")
 
 
 if __name__ == "__main__":

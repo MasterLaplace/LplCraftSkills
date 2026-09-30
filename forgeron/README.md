@@ -11,7 +11,7 @@ Preuve de concept locale. Zéro infrastructure : `gh`, `git`, `claude`, Python 
 
 ```mermaid
 stateDiagram-v2
-    [*] --> queued : label "claude" added
+    [*] --> queued : label "forgeron" added
     queued --> planning
     planning --> awaiting_answer : the plan has questions
     awaiting_answer --> planning : a human answers
@@ -102,7 +102,7 @@ liste d'options dans un README finit toujours par mentir — c'est ce que dit le
 
 ## Comment tu t'en sers, côté humain
 
-1. tu ouvres une issue et tu lui mets l'étiquette `claude` ;
+1. tu ouvres une issue et tu lui mets l'étiquette `forgeron` ;
 2. quelques secondes plus tard une **pull request en brouillon** apparaît, avec le plan et des
    critères d'acceptation cochables. Si le cadrage a buté sur une ambiguïté, tu reçois **des
    questions sur l'issue et aucune branche** : rien n'est construit avant réponse ;
@@ -123,7 +123,7 @@ liste d'options dans un README finit toujours par mentir — c'est ce que dit le
 5. tu fusionnes. Toujours toi : `approve` ne fusionne pas ;
 6. il poste un résumé, supprime son worktree, et ferme la session.
 
-Pour reprendre la main sans rien casser : étiquette `claude:hold`. Pour tout arrêter : ferme l'issue.
+Pour reprendre la main sans rien casser : étiquette `forgeron:hold`. Pour tout arrêter : ferme l'issue.
 
 ## Ce qui est vérifié, et ce qui ne l'est pas
 

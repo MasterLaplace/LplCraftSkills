@@ -157,9 +157,9 @@ PY
 git add -A && git commit -m "chore: amorce du bac a sable" && git push
 
 # 2. une issue etiquetee, et l'etiquette de pause pour pouvoir reprendre la main
-gh label create claude --color 5319e7 --description "confie a forgeron"
-gh label create claude:hold --color b60205 --description "forgeron ne touche plus"
-gh issue create --label claude \
+gh label create forgeron --color 5319e7 --description "Handed to forgeron"
+gh label create forgeron:hold --color b60205 --description "forgeron no longer touches it"
+gh issue create --label forgeron \
   --title "Ajouter un cache LRU borne dans src/cache.py" \
   --body "Les lectures repetees coutent trop cher. Il faut un cache LRU a capacite fixe,
 avec une eviction du moins recemment utilise, et des tests qui couvrent l'eviction."

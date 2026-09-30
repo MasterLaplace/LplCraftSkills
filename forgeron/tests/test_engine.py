@@ -21,7 +21,7 @@ from tests.fakes import FakeAgent, FakeForge, FakeRegenerator, FakeWorkspace
 
 ISSUE = IssueRef(repo="o/r", number=42, title="Ajouter un cache LRU",
                  body="Les lectures repetees coutent trop cher.", url="https://fake/42",
-                 labels=("claude",))
+                 labels=("forgeron",))
 
 
 class Harness:
@@ -30,7 +30,7 @@ class Harness:
         self.config = Config(
             home=self.home,
             repos=(RepoConfig(slug="o/r", path="/nowhere", base="main",
-                              labels=("claude",), hold_label="claude:hold",
+                              labels=("forgeron",), hold_label="forgeron:hold",
                               reviewers=("human",)),),
             limits=Limits(**limits) if limits else Limits(),
             max_concurrent=5,
@@ -245,7 +245,7 @@ class HumanControl(unittest.TestCase):
         harness.step()
         harness.forge._issues[("o/r", 42)] = IssueRef(
             repo="o/r", number=42, title=ISSUE.title, body=ISSUE.body, url=ISSUE.url,
-            labels=("claude", "claude:hold"))
+            labels=("forgeron", "forgeron:hold"))
         calls_before = len(harness.agent.calls)
         self.assertEqual(harness.step(), Phase.DRAFTED.value)
         self.assertEqual(len(harness.agent.calls), calls_before, "rien ne tourne sous hold")

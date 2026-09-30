@@ -57,7 +57,7 @@ flowchart LR
 | **les automatismes de la plateforme** | le statut qui passe à « fait » quand la PR est fusionnée | les réglages de la plateforme | un humain, une fois, puis on copie |
 | **le travail** | une issue, une PR, une revue, un statut qui avance | la forge | ceux qui travaillent, humains ou bots |
 
-Trois règles :
+Quatre règles :
 
 - **un réglage a une seule source.** Un réglage changé à la main alors qu'un fichier le déclare est une
   dérive : l'outil la montre dans son plan, et on corrige soit le réglage, soit le fichier. C'est
@@ -67,7 +67,12 @@ Trois règles :
   chose, l'outil et la plateforme ne sont pas d'accord sur l'état, et c'est un défaut de l'outil ;
 - **ce que la plateforme n'expose pas se règle à la main, une fois, et s'écrit.** Certains automatismes
   n'ont pas d'API. On règle un projet de référence, on le copie pour les suivants, et la procédure
-  manuelle vit à côté du fichier, avec la date de sa dernière vérification.
+  manuelle vit à côté du fichier, avec la date de sa dernière vérification ;
+- **un automatisme se prouve en le regardant agir.** Une condition qui ne peut jamais être vraie ne
+  produit aucune erreur. Sur un dépôt réel, la fusion automatique des mises à jour de dépendances
+  attendait l'étiquette `github-actions`, que le robot écrit `github_actions` : dix PR sur dix ont été
+  fusionnées à la main, et rien ne l'a signalé. On regarde donc chaque automatisme agir une fois, et on
+  le revérifie quand une étiquette ou un nom change.
 
 ## 3. Les étiquettes : un ensemble, et un vocabulaire fermé
 
@@ -174,7 +179,7 @@ on retire ce qui suppose un deuxième humain.
 | Règle | Ce qu'elle protège | Le piège |
 |---|---|---|
 | une PR obligatoire | chaque changement passe par la CI et laisse une trace qu'on peut relire | un auteur ne peut pas approuver sa propre PR : seul, on garde la PR obligatoire avec zéro approbation requise, et aucun contournement pour un push direct |
-| les checks de la CI requis | rien n'atterrit rouge | un job renommé bloque toutes les PR ; et sans CI, aucun check ne peut être requis, donc il faut écrire la CI d'abord |
+| les checks de la CI requis | rien n'atterrit rouge | un job renommé bloque toutes les PR ; sans CI, aucun check ne peut être requis, donc il faut écrire la CI d'abord ; et un check ne prouve que ce qu'il lit. Un contrôle des messages de commit qui ne lit que le dernier commit laisse passer les autres, et sur une PR, le dernier commit est souvent le commit de fusion que la plateforme fabrique. Chaque check requis se voit échouer une fois |
 | ni force-push ni suppression | l'histoire publiée ne se réécrit pas | aucun |
 | une seule méthode de fusion | `tracer-le-travail`, section 9 | la règle et les réglages du dépôt doivent dire la même méthode |
 | l'histoire linéaire | une histoire sans commits de fusion | incompatible avec le commit de fusion, que `tracer-le-travail` recommande pour des commits tenus |
@@ -185,7 +190,8 @@ Deux pièges hors des règles :
 
 - **un workflow qui pousse sur la branche principale** (un bump de version, un changelog régénéré)
   casse le jour où la PR devient obligatoire. La forme qui survit, c'est la PR de version : le workflow
-  ouvre une PR, et la fusionner publie ;
+  ouvre une PR qui montre le numéro et les notes qu'elle publiera, et la fusionner publie. Le numéro se
+  dérive des commits, pas d'une étiquette posée à la main ;
 - **modifier une règle par l'API remplace toute la liste des contournements.** L'outil envoie donc la
   règle complète, et son plan montre les contournements. Sinon une mise à jour retire l'accès admin sans
   que rien ne le dise.
@@ -197,7 +203,7 @@ Deux pièges hors des règles :
 - **la détection de secrets et la protection au push**, pour qu'un jeton poussé soit refusé au lieu
   d'être découvert après coup. Un secret déjà poussé se change, il ne se retire pas (`garder-les-frontieres`,
   section 3) ;
-- **les alertes de dépendances et leurs mises à jour de sécurité** ;
+- **les alertes de dépendances et leurs mises à jour**, y compris pour les actions de CI et les sous-modules, qui sont aussi du code tiers ;
 - **le signalement privé d'une faille**, et un `SECURITY.md` qui y renvoie. Sans lui, une faille arrive
   dans une issue publique ;
 - **l'analyse statique de la plateforme** quand le langage est couvert, lue à la porte de merge
@@ -216,7 +222,7 @@ Deux pièges hors des règles :
 | `README` | ce que c'est, comment le lancer, son état (actif, naissant, legacy) | non |
 | `LICENSE` | ce qu'on a le droit d'en faire. Sans licence, personne n'a le droit de le réutiliser | non, jamais |
 | `CONTRIBUTING` | le flux de `tracer-le-travail` : issue, branche, commits, PR, changelog | oui, pour le flux ; les commandes de build et de test restent dans le dépôt |
-| `CODE_OF_CONDUCT` | comment on se parle, et à qui signaler | oui |
+| `CODE_OF_CONDUCT` | comment on se parle, et à qui signaler, en privé : un signalement public expose celui qui signale | oui |
 | `SECURITY` | où signaler une faille, en privé | oui |
 | `SUPPORT` | où poser une question qui n'est pas un défaut | oui |
 | gabarits d'issue et de PR | les questions que l'auteur remplit | oui, mais par dossier entier |
@@ -285,6 +291,9 @@ Trois règles :
 - **le jeton qui ouvre tout.** Signature : un jeton aux droits sur tous les dépôts, rangé en secret dans
   chacun pour alimenter un board ;
 - **la case obligatoire.** Signature : un gabarit de bug qui exige d'avoir lu le code de conduite ;
+- **la faille signalée en public.** Signature : un `SECURITY.md` qui renvoie vers les issues ;
+- **l'automatisme qui n'a jamais agi.** Signature : un workflow vert à chaque passage, et le travail
+  qu'il devait faire fait à la main ;
 - **l'état écrit à la main.** Signature : un dépôt archivé présenté comme actif sur le site du projet.
 
 ## La porte de sortie

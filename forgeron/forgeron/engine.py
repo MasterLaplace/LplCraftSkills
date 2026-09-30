@@ -714,7 +714,7 @@ def _pr_body(plan: dict, record: Record, config: Config) -> str:
         "",
         "---",
         "",
-        f"Addresses #{record.issue}.",
+        f"Closes #{record.issue}.",
         "",
         "## Acceptance criteria",
         "",

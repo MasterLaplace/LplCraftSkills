@@ -92,6 +92,7 @@ autre interpréteur passerait. C'est un garde-fou, pas une frontière de sécuri
 | une performance affirmée | `mesure-et-telemetrie` |
 | un visuel qui prétend montrer un état | `rendre-l-etat-visible` |
 | la description, la branche, les commits | `tracer-le-travail` |
+| un réglage de dépôt, une étiquette, un gabarit, une règle de branche, un workflow de board | `tenir-la-forge` |
 | l'étape du cycle que la PR prétend avoir franchie | `cycle-de-dev` |
 | rédiger le rapport pour qu'il soit compris | `se-faire-comprendre` |
 

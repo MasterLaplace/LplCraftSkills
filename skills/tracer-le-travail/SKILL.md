@@ -77,6 +77,9 @@ Deux pièges propres aux issues, parce que la plateforme ne les empêche pas :
   autorisée, vérifiée automatiquement, remplace le vocabulaire fermé que le fichier imposait par
   construction.
 
+Le vocabulaire d'étiquettes lui-même, les champs du board et ce que la plateforme automatise sont dans
+`tenir-la-forge`.
+
 ### La forme d'un item, dans les deux cas
 
 ```markdown
@@ -130,7 +133,8 @@ refactor/ITEM-090-extraire-calcul-anciennete
 relire, et **en annuler une moitié**.
 
 Partir de la branche d'intégration du projet, jamais d'une autre branche de fonctionnalité, sinon on
-hérite de code non relu et on ne peut plus livrer indépendamment.
+hérite de code non relu et on ne peut plus livrer indépendamment. Seule exception : une pile que la
+plateforme tient elle-même (section 9.3).
 
 **Et pour travailler sur deux choses à la fois, un plan de travail lié bat un remisage.**
 `git worktree add ../projet-item-142 -b feat/ITEM-142-...` donne un second répertoire sur le même
@@ -525,6 +529,17 @@ Trois sorties, dans cet ordre de préférence :
    propres à B ;
 3. en dernier recours, refaire B à partir de la base et y reporter son diff.
 
+**Une pile tenue par la plateforme n'a plus ce piège.** GitHub empile nativement depuis 2026, en
+préversion : la pile se fusionne par le bas, et la plateforme rebase et recible elle-même les PR du
+dessus, donc aucun commit déjà fusionné n'est rejoué. C'est la bonne forme quand un travail se découpe
+en PR qui dépendent l'une de l'autre, puisqu'une petite PR se relit mieux qu'une grosse (section 6).
+Ses limites : toutes les branches vivent dans le même dépôt, donc un contributeur qui passe par un
+fork ne peut pas empiler ; la fusion automatique n'est pas prise en charge ; et chaque PR squashée
+donne son propre commit. Les sources sont dans `tenir-la-forge`, `references/github.md`.
+
+La règle devient donc : **on n'empile pas à la main.** Soit chaque branche part de la base, soit c'est
+la plateforme qui tient la pile.
+
 ### 9.4 Ce que la plateforme fait déjà, et qu'il est inutile de réécrire
 
 - **mettre une branche à jour sans checkout** : GitHub sait fusionner **ou rebaser** côté serveur
@@ -548,7 +563,7 @@ Ces sept réponses doivent exister, du backlog jusqu'au merge :
 1. l'item porte les **quatre réponses** : ce qui a été demandé, ce qui est vrai aujourd'hui, ce qui
    manque, et comment on saura que c'est fini ;
 2. la branche se résume **en une phrase sans « et »**, elle est nommée `<type>/<id>-<slug>`, et elle part
-   de la branche d'intégration et non d'une autre branche de fonctionnalité ;
+   de la branche d'intégration, ou de l'étage du dessous d'une pile que la plateforme tient ;
 3. chaque commit est **annulable seul**, et son message dit pourquoi plutôt que quoi ;
 4. la pull request dit **quoi, pourquoi, comment vérifier**, et ce qui n'est délibérément pas dedans ;
 5. la porte de merge est franchie par des **critères automatiques** : zéro avertissement nouveau, suite

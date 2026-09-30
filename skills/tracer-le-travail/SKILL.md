@@ -537,8 +537,8 @@ Ses limites : toutes les branches vivent dans le même dépôt, donc un contrib
 fork ne peut pas empiler ; la fusion automatique n'est pas prise en charge ; et chaque PR squashée
 donne son propre commit. Les sources sont dans `tenir-la-forge`, `references/github.md`.
 
-La règle devient donc : **on n'empile pas à la main.** Soit chaque branche part de la base, soit c'est
-la plateforme qui tient la pile.
+La règle devient donc : **là où la plateforme tient la pile, on n'empile plus à la main.** Ailleurs,
+chaque branche part de la base, et les trois sorties ci-dessus restent vraies.
 
 ### 9.4 Ce que la plateforme fait déjà, et qu'il est inutile de réécrire
 

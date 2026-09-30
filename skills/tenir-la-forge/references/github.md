@@ -36,8 +36,8 @@ file de fusion https://docs.github.com/en/repositories/configuring-branches-and-
   expose `ProjectV2Workflow` en lecture (`name`, `number`, `enabled`), et la seule mutation est
   `deleteProjectV2Workflow`. Source : le schéma GraphQL et son journal 2026,
   https://docs.github.com/en/graphql/overview/changelog/2026 ;
-- **copier un projet garde les vues, les champs, les workflows configurés, sauf l'ajout automatique**,
-  les graphiques, et les brouillons si on le demande. Ni les items, ni les collaborateurs, ni les liens
+- **copier un projet garde les vues, les champs, les graphiques, les workflows configurés sauf
+  l'ajout automatique**, et les brouillons si on le demande. Ni les items, ni les collaborateurs, ni les liens
   vers les dépôts. `copyProjectV2` accepte un compte personnel comme destination (`gh project copy`).
   Source : https://docs.github.com/en/issues/planning-and-tracking-with-projects/creating-projects/copying-an-existing-project ;
 - **les vues se créent par l'API depuis 2026**, en REST depuis le 2026-01-15, avec filtre, tri et
@@ -88,9 +88,16 @@ file de fusion https://docs.github.com/en/repositories/configuring-branches-and-
   https://docs.github.com/en/pull-requests/collaborating-with-pull-requests/reviewing-changes-in-pull-requests/approving-a-pull-request-with-required-reviews ;
   l'identifiant 5 n'est pas écrit dans la doc de l'API, il se lit dans l'export JSON d'un ruleset créé
   dans l'interface ;
-- **un `PUT` sur un ruleset remplace toute la liste `bypass_actors`**, donc on envoie la règle complète ;
-- **un commit non signé sur la branche d'une PR bloque la fusion, même en squash**, alors que GitHub
-  signerait le commit final. Source :
+- **un `PUT` sur un ruleset remplace la règle en entier**, contournements et paramètres compris.
+  C'est rapporté par des outils qui l'ont payé (https://github.com/rjwalters/loom/pull/8271), la doc de
+  l'API n'en dit rien. On envoie donc toujours la règle complète, et on relit avant d'écrire les
+  paramètres que la forge porte sans qu'on les ait déclarés : une réponse réelle en contient que l'OpenAPI
+  ne décrit pas (`require_extra_approval_for_unattributed_changes`, lu sur `vercel/next.js`) ;
+- **un commit non signé sur la branche d'une PR peut bloquer la fusion, même en squash**, alors que
+  GitHub signerait le commit final ; la première sortie documentée est de réécrire et signer ces commits.
+  Les commits qu'un bot ou une App crée par l'API, sans auteur ni signature fournis, sont signés par
+  GitHub, voir aussi
+  https://docs.github.com/en/authentication/managing-commit-signature-verification/about-commit-signature-verification . Source :
   https://docs.github.com/en/repositories/configuring-branches-and-merges-in-your-repository/managing-protected-branches/about-protected-branches ;
 - `gh ruleset` ne sait que lister, afficher et vérifier : la création passe par
   `gh api repos/{owner}/{repo}/rulesets`, avec le rôle admin sur le dépôt.
@@ -125,7 +132,7 @@ https://docs.github.com/en/repositories/managing-your-repositorys-settings-and-f
 | Réglage | Lecture | Écriture |
 |---|---|---|
 | détection de secrets, protection au push | `GET /repos/{o}/{r}`, champ `security_and_analysis` | `PATCH /repos/{o}/{r}` avec `security_and_analysis` |
-| alertes Dependabot | `GET /repos/{o}/{r}/vulnerability-alerts` (204 actif, 404 inactif) | `PUT` au même chemin |
+| alertes Dependabot | `GET /repos/{o}/{r}/vulnerability-alerts` (204 actif ; 404 avec « Vulnerability alerts are disabled » inactif ; tout autre 404 ne dit rien) | `PUT` au même chemin |
 | mises à jour de sécurité Dependabot | `GET /repos/{o}/{r}/automated-security-fixes` | `PUT` au même chemin |
 | signalement privé d'une faille | `GET /repos/{o}/{r}/private-vulnerability-reporting` | `PUT` au même chemin |
 

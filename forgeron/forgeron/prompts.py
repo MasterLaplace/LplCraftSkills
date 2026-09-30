@@ -17,52 +17,52 @@ from typing import Any
 from .model import Feedback, FeedbackKind, IssueRef, Record
 
 CONTRACT = """\
-Tu es lance SANS SURVEILLANCE par un orchestrateur (forgeron). Personne ne repondra
-a une question posee dans ta reponse finale : le seul canal vers l'humain est la
-forge (issue, pull request), et le seul canal vers l'orchestrateur est le JSON
-final impose par le schema.
+You are launched UNATTENDED by an orchestrator (forgeron). Nobody will answer
+a question asked in your final answer: the only channel to the human is the
+forge (issue, pull request), and the only channel to the orchestrator is the final
+JSON required by the schema.
 
-Autorisations, strictement bornees :
-- tu peux commiter et pousser SUR LA BRANCHE {branch} et sur elle seule ;
-- tu ne pousses JAMAIS sur {base}, tu ne fais JAMAIS de push --force, tu ne merges
-  JAMAIS, tu ne fermes JAMAIS l'issue, tu ne modifies JAMAIS .github/workflows/ ;
-- tu restes dans {worktree}. C'est un git worktree dedie : le checkout de l'humain
-  est ailleurs et ne doit pas etre touche ;
-- pas de `git rebase`, pas de `git reset --hard` sur du deja pousse : un humain lit
-  ce diff au fur et a mesure, et reecrire l'historique sous ses yeux annule sa revue.
+Permissions, strictly bounded:
+- you may commit and push ON THE BRANCH {branch} and on it alone;
+- you NEVER push to {base}, you NEVER push --force, you NEVER merge,
+  you NEVER close the issue, you NEVER modify .github/workflows/;
+- you stay in {worktree}. It is a dedicated git worktree: the human's checkout
+  is elsewhere and must not be touched;
+- no `git rebase`, no `git reset --hard` on anything already pushed: a human reads
+  this diff as it goes, and rewriting history under their eyes cancels their review.
 
-Methode, non negociable :
-- invoque le skill `cycle-de-dev` (outil Skill) avant d'ecrire une ligne, et suis
-  ses portes de sortie. Il delegue aux autres skills, laisse-le faire ;
-- une affirmation se prouve : tu ne declares pas une porte franchie sans avoir lance
-  a l'instant la commande qui le montre, et tu recopies cette commande dans
-  `commands_run`. « ca devrait marcher » n'est pas un resultat ;
-- aucun avertissement nouveau ne franchit un commit ;
-- si tu es bloque (ambiguite, dependance absente, acces refuse), tu reponds
-  verdict="blocked" avec `blocked_reason`. Deviner coute plus cher que demander.
+Method, non-negotiable:
+- invoke the `cycle-de-dev` skill (Skill tool) before writing a line, and follow
+  its exit gates. It delegates to the other skills, let it;
+- a claim is proved: you do not declare a gate passed without having just run
+  the command that shows it, and you copy that command into
+  `commands_run`. "it should work" is not a result;
+- no new warning gets past a commit;
+- if you are blocked (ambiguity, missing dependency, access denied), you answer
+  verdict="blocked" with `blocked_reason`. Guessing costs more than asking.
 
-Commits : Conventional Commits, en francais, sans ligne Co-Authored-By et sans
-mention d'un outil d'IA. L'auteur du depot est MasterLaplace.
+Commits: Conventional Commits, in English, with no Co-Authored-By line and no
+mention of an AI tool. The repository's author is MasterLaplace.
 """
 
 PLAN_SCHEMA: dict[str, Any] = {
     "type": "object",
     "properties": {
-        "branch_slug": {"type": "string", "description": "kebab-case, 2 a 5 mots, sans prefixe"},
+        "branch_slug": {"type": "string", "description": "kebab-case, 2 to 5 words, no prefix"},
         "kind": {"type": "string", "enum": ["feat", "fix", "refactor", "docs", "test", "chore", "perf"]},
         "pr_title": {"type": "string"},
-        "pr_body": {"type": "string", "description": "markdown : contexte, approche, criteres, hors-perimetre"},
+        "pr_body": {"type": "string", "description": "markdown: context, approach, criteria, out of scope"},
         "acceptance": {
             "type": "array",
             "items": {"type": "string"},
-            "description": "criteres falsifiables, chacun verifiable par une commande",
+            "description": "falsifiable criteria, each one checkable by a command",
         },
         "files_expected": {"type": "array", "items": {"type": "string"}},
         "risk": {"type": "string", "enum": ["low", "medium", "high"]},
         "questions": {
             "type": "array",
             "items": {"type": "string"},
-            "description": "vide si et seulement si rien ne bloque le codage",
+            "description": "empty if and only if nothing blocks the coding",
         },
     },
     "required": ["branch_slug", "kind", "pr_title", "pr_body", "acceptance", "risk", "questions"],
@@ -73,7 +73,7 @@ WORK_SCHEMA: dict[str, Any] = {
     "type": "object",
     "properties": {
         "verdict": {"type": "string", "enum": ["ready_for_review", "blocked", "no_change_needed"]},
-        "summary": {"type": "string", "description": "un paragraphe, en francais"},
+        "summary": {"type": "string", "description": "one paragraph, in English"},
         "commands_run": {"type": "array", "items": {"type": "string"}},
         "acceptance": {
             "type": "array",
@@ -82,7 +82,7 @@ WORK_SCHEMA: dict[str, Any] = {
                 "properties": {
                     "criterion": {"type": "string"},
                     "met": {"type": "boolean"},
-                    "evidence": {"type": "string", "description": "la sortie ou la commande qui le prouve"},
+                    "evidence": {"type": "string", "description": "the output or the command that proves it"},
                 },
                 "required": ["criterion", "met", "evidence"],
                 "additionalProperties": False,
@@ -91,13 +91,13 @@ WORK_SCHEMA: dict[str, Any] = {
         "pushed": {"type": "boolean"},
         "visuals": {
             "type": "array",
-            "description": "vide sauf si le changement se voit mieux qu'il ne se lit",
+            "description": "empty unless the change is better seen than read",
             "items": {
                 "type": "object",
                 "properties": {
-                    "path": {"type": "string", "description": "chemin RELATIF au worktree"},
-                    "caption": {"type": "string", "description": "ce que le lecteur regarde"},
-                    "command": {"type": "string", "description": "la commande qui produit ce fichier"},
+                    "path": {"type": "string", "description": "path RELATIVE to the worktree"},
+                    "caption": {"type": "string", "description": "what the reader is looking at"},
+                    "command": {"type": "string", "description": "the command that produces this file"},
                 },
                 "required": ["path", "caption", "command"],
                 "additionalProperties": False,
@@ -107,7 +107,7 @@ WORK_SCHEMA: dict[str, Any] = {
         "answers": {
             "type": "array",
             "items": {"type": "string"},
-            "description": "une reponse par remarque de revue traitee, dans l'ordre recu",
+            "description": "one answer per review remark handled, in the order received",
         },
     },
     "required": ["verdict", "summary", "commands_run", "acceptance", "pushed"],
@@ -121,7 +121,7 @@ WRAP_SCHEMA: dict[str, Any] = {
         "followups": {
             "type": "array",
             "items": {"type": "string"},
-            "description": "ce qui reste et qui merite sa propre issue",
+            "description": "what is left and deserves its own issue",
         },
     },
     "required": ["summary", "followups"],
@@ -136,182 +136,182 @@ def contract(record: Record, base: str, exception: str = "") -> str:
     single exception are read together and the exception cannot outlive the phase
     that needed it.
     """
-    text = CONTRACT.format(branch=record.branch or "(a creer)", base=base,
+    text = CONTRACT.format(branch=record.branch or "(to be created)", base=base,
                            worktree=record.worktree)
     if exception:
-        text += "\nEXCEPTION, valable UNIQUEMENT pour ce tour :\n" + exception
+        text += "\nEXCEPTION, valid ONLY for this round:\n" + exception
     return text
 
 
 def plan_prompt(issue: IssueRef, answers: tuple[Feedback, ...] = ()) -> str:
     parts = [
-        "PHASE 1 sur 4 : CADRER. Tu ne modifies AUCUN fichier dans cette phase.",
+        "PHASE 1 of 4: FRAME. You modify NO file in this phase.",
         "",
-        f"Issue {issue.repo}#{issue.number} : {issue.title}",
-        f"URL : {issue.url}",
+        f"Issue {issue.repo}#{issue.number}: {issue.title}",
+        f"URL: {issue.url}",
         "",
-        "Corps de l'issue :",
-        _quote(issue.body or "(vide)"),
+        "Issue body:",
+        _quote(issue.body or "(empty)"),
         "",
-        "Invoque le skill `cadrer-et-planifier`, explore le depot pour te fonder sur le code reel,",
-        "et rends le plan au format impose.",
+        "Invoke the `cadrer-et-planifier` skill, explore the repository to ground yourself in the real code,",
+        "and return the plan in the required format.",
         "",
-        "Deux regles qui decident du reste :",
-        "- `acceptance` ne contient que des criteres FALSIFIABLES, chacun verifiable par une commande.",
-        "  « le code est propre » n'en est pas un, « la suite passe deux fois d'affilee » en est un ;",
-        "- `questions` n'est PAS un endroit ou etre poli : tu n'y mets que ce qui, sans reponse,",
-        "  te ferait construire potentiellement la mauvaise chose. Si tu en mets une, aucun code ne",
-        "  sera ecrit et un humain sera interroge. Une liste vide est la reponse normale.",
+        "Two rules that decide the rest:",
+        "- `acceptance` holds only FALSIFIABLE criteria, each one checkable by a command.",
+        "  \"the code is clean\" is not one, \"the suite passes twice in a row\" is one;",
+        "- `questions` is NOT a place to be polite: put there only what, left unanswered,",
+        "  could make you build the wrong thing. If you put one there, no code will be",
+        "  written and a human will be asked. An empty list is the normal answer.",
     ]
     if answers:
-        parts += ["", "Un humain a repondu depuis ta derniere tentative :", _feedback_block(answers)]
+        parts += ["", "A human has answered since your last attempt:", _feedback_block(answers)]
     return "\n".join(parts)
 
 
 VISUAL_CONTRACT = [
     "",
-    "Si le changement se VOIT mieux qu'il ne se lit, `visuals` te permet de joindre une image ou",
-    "une video a la pull request. Invoque `rendre-l-etat-visible` avant d'en produire une : un",
-    "visuel n'est utile que quand l'information est dans la FORME et pas dans une valeur. Partout",
-    "ailleurs un tableau de nombres bat une capture d'ecran.",
+    "If the change is better SEEN than read, `visuals` lets you attach an image or",
+    "a video to the pull request. Invoke `rendre-l-etat-visible` before producing one: a",
+    "visual is only useful when the information is in the SHAPE and not in a value. Everywhere",
+    "else a table of numbers beats a screenshot.",
     "",
-    "La contrainte est stricte, et elle est VERIFIEE et non crue : `command` doit REPRODUIRE",
-    "`path`. L'orchestrateur ecarte le fichier, relance ta commande, et n'attache le visuel que",
-    "s'il revient. Un fichier qui ne se regenere pas est une capture d'ecran, et une capture",
-    "d'ecran ment en silence des que le code bouge, puisqu'une image ne casse aucun build.",
+    "The constraint is strict, and it is CHECKED, not believed: `command` must REPRODUCE",
+    "`path`. The orchestrator sets the file aside, runs your command again, and attaches the visual",
+    "only if it comes back. A file that does not regenerate is a screenshot, and a screenshot",
+    "lies silently as soon as the code moves, since an image breaks no build.",
 ]
 
 
 def implement_prompt(issue: IssueRef, plan: dict[str, Any], pr_url: str) -> str:
-    criteria = "\n".join(f"- {item}" for item in plan.get("acceptance", ())) or "- (aucun)"
+    criteria = "\n".join(f"- {item}" for item in plan.get("acceptance", ())) or "- (none)"
     return "\n".join([
-        "PHASE 2 sur 4 : IMPLEMENTER. La pull request en brouillon est deja ouverte,",
-        f"un humain peut la lire pendant que tu travailles : {pr_url}",
+        "PHASE 2 of 4: IMPLEMENT. The draft pull request is already open,",
+        f"a human can read it while you work: {pr_url}",
         "",
-        f"Issue {issue.repo}#{issue.number} : {issue.title}",
+        f"Issue {issue.repo}#{issue.number}: {issue.title}",
         "",
-        "Criteres d'acceptation, tires de TON plan et deja publies dans la pull request :",
+        "Acceptance criteria, taken from YOUR plan and already published in the pull request:",
         criteria,
         "",
-        "Invoque `cycle-de-dev` et suis-le : test rouge d'abord quand le sujet s'y prete, code ensuite,",
-        "doc derivee, et une porte de sortie prouvee par une commande a chaque etape.",
+        "Invoke `cycle-de-dev` and follow it: a red test first when the subject lends itself to it, code next,",
+        "derived docs, and an exit gate proved by a command at every step.",
         "",
-        "Termine par des commits Conventional Commits et un `git push` sur ta branche.",
-        "`pushed` doit dire la verite : l'orchestrateur le verifie contre l'etat de git.",
+        "Finish with Conventional Commits commits and a `git push` on your branch.",
+        "`pushed` must tell the truth: the orchestrator checks it against the state of git.",
         *VISUAL_CONTRACT,
     ])
 
 
 def revise_prompt(issue: IssueRef, feedback: tuple[Feedback, ...], round_number: int) -> str:
     return "\n".join([
-        f"PHASE 3 sur 4 : REVISER, tour {round_number}.",
-        f"Un humain a relu ta pull request pour {issue.repo}#{issue.number} et a laisse ceci :",
+        f"PHASE 3 of 4: REVISE, round {round_number}.",
+        f"A human reviewed your pull request for {issue.repo}#{issue.number} and left this:",
         "",
         _feedback_block(feedback),
         "",
-        "Pour CHAQUE remarque, dans l'ordre : soit tu la traites, soit tu expliques pourquoi tu ne le",
-        "fais pas. Une remarque sautee en silence est la seule reponse interdite.",
+        "For EACH remark, in order: either you handle it, or you explain why you do not.",
+        "A remark skipped silently is the only forbidden answer.",
         "",
-        "Invoque `trouver-la-cause` si la remarque signale un bug : pas de correctif sans cause racine,",
-        "et un correctif qui masque le symptome sera renvoye par la revue suivante.",
+        "Invoke `trouver-la-cause` if the remark reports a bug: no fix without a root cause,",
+        "and a fix that masks the symptom will be sent back by the next review.",
         "",
-        "Remplis `answers` avec une ligne par remarque, dans l'ordre recu : ces lignes sont publiees",
-        "telles quelles sur la pull request, c'est ta reponse au relecteur.",
-        "Puis commite et pousse sur ta branche.",
+        "Fill `answers` with one line per remark, in the order received: these lines are published",
+        "as they are on the pull request, they are your answer to the reviewer.",
+        "Then commit and push on your branch.",
         *VISUAL_CONTRACT,
     ])
 
 
 def fix_checks_prompt(issue: IssueRef, failing: tuple, logs: str, attempt: int,
                       max_attempts: int) -> str:
-    names = ", ".join(f"`{run.name}`" for run in failing) or "(inconnu)"
+    names = ", ".join(f"`{run.name}`" for run in failing) or "(unknown)"
     return "\n".join([
-        f"PHASE 3b : L'INTEGRATION CONTINUE EST ROUGE. Tentative {attempt} sur {max_attempts}.",
-        f"Issue {issue.repo}#{issue.number}. Jobs en echec : {names}.",
+        f"PHASE 3b: CONTINUOUS INTEGRATION IS RED. Attempt {attempt} of {max_attempts}.",
+        f"Issue {issue.repo}#{issue.number}. Failing jobs: {names}.",
         "",
-        "Voici les journaux, tronques par la fin (donc l'erreur y est, la mise en route non) :",
+        "Here are the logs, trimmed from the start (so the error is there, the setup is not):",
         "",
         "```",
-        logs.strip() or "(aucun journal recuperable)",
+        logs.strip() or "(no log retrievable)",
         "```",
         "",
-        "Invoque `trouver-la-cause`. Lis le message d'erreur EN ENTIER avant de toucher quoi que",
-        "ce soit : un correctif pose sur la premiere ligne rouge repare le symptome et laisse la",
-        "cause en place, et le job repassera rouge au tour suivant.",
+        "Invoke `trouver-la-cause`. Read the error message IN FULL before touching anything:",
+        "a fix placed on the first red line repairs the symptom and leaves the",
+        "cause in place, and the job will turn red again on the next round.",
         "",
-        "Trois pieges a nommer explicitement si tu les rencontres, plutot qu'a contourner :",
-        "- si le job echoue pour une raison d'ENVIRONNEMENT (secret absent, quota, runner),",
-        "  ce n'est pas ton code : reponds verdict=\"blocked\" en le disant ;",
-        "- si tu ne peux pas reproduire l'echec localement, dis-le dans `summary` plutot que de",
-        "  pousser un correctif a l'aveugle et de laisser la CI trancher a ta place ;",
-        "- desactiver, sauter ou rendre tolerant un test qui echoue n'est PAS un correctif. Si le",
-        "  test a raison, corrige le code ; s'il a tort, corrige le test et explique pourquoi.",
+        "Three traps to name explicitly if you meet them, rather than work around:",
+        "- if the job fails for an ENVIRONMENT reason (missing secret, quota, runner),",
+        "  it is not your code: answer verdict=\"blocked\" and say so;",
+        "- if you cannot reproduce the failure locally, say so in `summary` rather than",
+        "  push a blind fix and let CI decide in your place;",
+        "- disabling, skipping or making tolerant a failing test is NOT a fix. If the",
+        "  test is right, fix the code; if it is wrong, fix the test and explain why.",
         "",
-        "Tu ne modifies JAMAIS .github/workflows/ : le jeton n'en a pas le droit et le push",
-        "serait refuse. Puis commite et pousse.",
+        "You NEVER modify .github/workflows/: the token has no right to, and the push",
+        "would be refused. Then commit and push.",
     ])
 
 
 CONFLICT_EXCEPTION = """\
-- tu peux lancer `git rebase --continue`, `git merge --continue`, `git add` sur les fichiers
-  que tu resous, et `git rebase --abort` si tu renonces. La reecriture d'historique est
-  autorisee ICI et nulle part ailleurs, parce que c'est la seule facon de rejouer ta branche
-  sur une base qui a bouge ;
-- tu ne pousses PAS toi-meme. L'orchestrateur pousse, avec --force-with-lease, et seulement
-  apres avoir verifie qu'il ne reste aucun fichier en conflit. Un push force par toi passerait
-  a cote de cette verification.
+- you may run `git rebase --continue`, `git merge --continue`, `git add` on the files
+  you resolve, and `git rebase --abort` if you give up. Rewriting history is
+  allowed HERE and nowhere else, because it is the only way to replay your branch
+  onto a base that has moved;
+- you do NOT push yourself. The orchestrator pushes, with --force-with-lease, and only
+  after checking that no conflicted file is left. A force push by you would go
+  around that check.
 """
 
 
 def resolve_conflict_prompt(issue: IssueRef, base: str, method: str,
                             conflicted: tuple[str, ...], landed: tuple[str, ...],
                             attempt: int, max_attempts: int) -> str:
-    files = "\n".join(f"- `{path}`" for path in conflicted) or "- (aucun ?)"
-    commits = "\n".join(f"- {line}" for line in landed) or "- (inconnu)"
-    verb = "rebase" if method.upper() == "REBASE" else "fusion"
+    files = "\n".join(f"- `{path}`" for path in conflicted) or "- (none?)"
+    commits = "\n".join(f"- {line}" for line in landed) or "- (unknown)"
+    verb = "rebase" if method.upper() == "REBASE" else "merge"
     return "\n".join([
-        f"PHASE 3c : CONFLIT AVEC `{base}`. Tentative {attempt} sur {max_attempts}.",
-        f"Issue {issue.repo}#{issue.number}. Un {verb} de `{base}` sur ta branche est EN COURS",
-        "et s'est arrete sur des conflits.",
+        f"PHASE 3c: CONFLICT WITH `{base}`. Attempt {attempt} of {max_attempts}.",
+        f"Issue {issue.repo}#{issue.number}. A {verb} of `{base}` onto your branch is IN PROGRESS",
+        "and stopped on conflicts.",
         "",
-        "Fichiers en conflit :",
+        "Conflicted files:",
         files,
         "",
-        f"Ce qui a atterri sur `{base}` pendant que tu travaillais, du plus recent au plus ancien :",
+        f"What landed on `{base}` while you were working, newest first:",
         commits,
         "",
-        "**La regle qui compte : un conflit se resout en comprenant les DEUX intentions, pas en**",
-        "**choisissant un cote.** Pour chaque bloc :",
-        "1. lis ce que TON changement voulait faire (ton diff, tes commits, l'issue) ;",
-        "2. lis ce que l'AUTRE changement voulait faire (la liste ci-dessus, et `git log -p` sur",
-        f"   les commits de `{base}` qui touchent ce fichier) ;",
-        "3. ecris la version qui tient les deux. Si elles sont vraiment incompatibles, c'est une",
-        "   decision de conception et non un conflit de texte : reponds verdict=\"blocked\" en",
-        "   expliquant laquelle des deux intentions doit ceder, et pourquoi.",
+        "**The rule that counts: a conflict is resolved by understanding BOTH intentions, not by**",
+        "**picking a side.** For each hunk:",
+        "1. read what YOUR change meant to do (your diff, your commits, the issue);",
+        "2. read what the OTHER change meant to do (the list above, and `git log -p` on",
+        f"   the commits of `{base}` that touch this file);",
+        "3. write the version that holds both. If they are truly incompatible, it is a",
+        "   design decision and not a text conflict: answer verdict=\"blocked\",",
+        "   explaining which of the two intentions must give way, and why.",
         "",
-        "⚠ `git checkout --ours` et `--theirs` sont interdits en aveugle. Ils ne resolvent rien :",
-        "ils jettent la moitie du travail de quelqu'un, et le resultat compile, donc personne ne le",
-        "voit avant que la fonctionnalite perdue ne manque a quelqu'un.",
+        "⚠ `git checkout --ours` and `--theirs` are forbidden blindly. They resolve nothing:",
+        "they throw away half of someone's work, and the result compiles, so nobody sees it",
+        "until someone misses the lost feature.",
         "",
-        "Quand tout est resolu : `git add` les fichiers, puis termine l'operation",
+        "When everything is resolved: `git add` the files, then finish the operation",
         f"(`git {'rebase' if method.upper() == 'REBASE' else 'merge'} --continue`).",
-        "Verifie ensuite que la suite passe : une resolution qui compile n'est pas une resolution",
-        "qui marche, et c'est exactement la classe de bug qu'un conflit produit.",
+        "Then check that the suite passes: a resolution that compiles is not a resolution",
+        "that works, and that is exactly the class of bug a conflict produces.",
         "",
-        "Dans `summary`, dis pour chaque fichier ce que tu as garde de chaque cote. C'est publie",
-        "tel quel sur la pull request : c'est la seule trace que le relecteur aura de ton arbitrage.",
+        "In `summary`, say for each file what you kept from each side. It is published",
+        "as it is on the pull request: it is the only trace the reviewer will have of your arbitration.",
     ])
 
 
 def wrap_prompt(issue: IssueRef, pr: int) -> str:
     return "\n".join([
-        "PHASE 4 sur 4 : CLOTURER. La pull request "
-        f"#{pr} a ete APPROUVEE ET FUSIONNEE par l'humain. Le travail est accepte.",
+        "PHASE 4 of 4: CLOSE. The pull request "
+        f"#{pr} was APPROVED AND MERGED by the human. The work is accepted.",
         "",
-        "Tu ne modifies plus rien et tu ne pousses plus rien. Deux choses seulement :",
-        "- `summary` : ce qui a ete livre, en un paragraphe, tel qu'on l'ecrirait dans un changelog ;",
-        "- `followups` : ce que tu as vu passer et qui merite SA PROPRE issue. Rien d'invente pour",
-        "  remplir la liste ; une liste vide est une reponse.",
+        "You modify nothing more and push nothing more. Two things only:",
+        "- `summary`: what was delivered, in one paragraph, as it would be written in a changelog;",
+        "- `followups`: what you saw go by and deserves ITS OWN issue. Nothing invented to",
+        "  fill the list; an empty list is an answer.",
     ])
 
 
@@ -320,7 +320,7 @@ def _feedback_block(items: tuple[Feedback, ...]) -> str:
     for index, item in enumerate(items, start=1):
         where = f" ({item.path}:{item.line})" if item.kind is FeedbackKind.INLINE else ""
         state = f" [{item.state}]" if item.state else ""
-        lines.append(f"{index}. @{item.author}{state}{where} :")
+        lines.append(f"{index}. @{item.author}{state}{where}:")
         lines.append(_quote(item.body))
     return "\n".join(lines)
 

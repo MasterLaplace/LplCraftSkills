@@ -1,9 +1,9 @@
-"""Le vérificateur, contre un vrai disque. Aucun fake ici, et c'est délibéré.
+"""The verifier, against a real disk. No fake here, and that is deliberate.
 
-Ce qu'il promet est qu'une commande reproduit un fichier. Le prouver contre un
-double reviendrait à demander au double de confirmer, et la panne qu'on veut
-attraper est précisément celle qui a l'air d'aller : une commande qui ne fait
-rien, devant un fichier déjà présent.
+What it promises is that a command reproduces a file. Proving it against a
+double would amount to asking the double to confirm, and the failure we want to
+catch is precisely the one that looks fine: a command that does
+nothing, in front of a file already present.
 """
 
 from __future__ import annotations
@@ -19,7 +19,7 @@ class RealDisk(unittest.TestCase):
     def setUp(self) -> None:
         self.root = tempfile.mkdtemp()
         self.regenerator = ShellRegenerator(timeout_seconds=2)
-        self.write("rendu.png", b"PIXELS")
+        self.write("render.png", b"PIXELS")
 
     def write(self, name: str, content: bytes) -> str:
         path = os.path.join(self.root, name)
@@ -34,72 +34,72 @@ class RealDisk(unittest.TestCase):
     def reproduce(self, name: str, command: str):
         return self.regenerator.reproduce(self.root, name, command)
 
-    # -- le cas qui doit passer ---------------------------------------------
+    # -- the case that must pass ---------------------------------------------
 
     def test_a_command_that_rebuilds_the_file_is_accepted(self) -> None:
-        outcome = self.reproduce("rendu.png", "printf 'PIXELS' > rendu.png")
+        outcome = self.reproduce("render.png", "printf 'PIXELS' > render.png")
         self.assertTrue(outcome.ok, outcome.reason)
-        self.assertTrue(outcome.identical, "memes octets, donc rendu deterministe")
-        self.assertEqual(self.read("rendu.png"), b"PIXELS")
+        self.assertTrue(outcome.identical, "same bytes, so a deterministic render")
+        self.assertEqual(self.read("render.png"), b"PIXELS")
 
     def test_a_producer_that_is_not_byte_stable_is_still_accepted(self) -> None:
-        # Un encodeur qui date ses images reste un producteur legitime : ce qui est
-        # exige est la reproductibilite, pas le determinisme. La difference est
-        # rapportee plutot que refusee.
-        outcome = self.reproduce("rendu.png", "printf 'PIXELS-%s' $$ > rendu.png")
+        # An encoder that timestamps its images is still a legitimate producer: what is
+        # required is reproducibility, not determinism. The difference is
+        # reported rather than refused.
+        outcome = self.reproduce("render.png", "printf 'PIXELS-%s' $$ > render.png")
         self.assertTrue(outcome.ok, outcome.reason)
         self.assertFalse(outcome.identical)
-        self.assertIn("octets differents", outcome.reason)
+        self.assertIn("different bytes", outcome.reason)
 
-    # -- les cas qui doivent echouer, et l'original doit survivre ------------
+    # -- the cases that must fail, and the original must survive ------------
 
     def test_a_command_that_does_nothing_is_refused(self) -> None:
-        # LE test. Sans la mise a l'ecart, le fichier est deja la et la commande
-        # la plus inutile du monde passe le controle.
-        outcome = self.reproduce("rendu.png", "true")
+        # THE test. Without setting the file aside, the file is already there and the
+        # most useless command in the world passes the check.
+        outcome = self.reproduce("render.png", "true")
         self.assertFalse(outcome.ok)
-        self.assertIn("sans reproduire", outcome.reason)
-        self.assertEqual(self.read("rendu.png"), b"PIXELS", "l'original est restaure")
+        self.assertIn("without reproducing", outcome.reason)
+        self.assertEqual(self.read("render.png"), b"PIXELS", "the original is restored")
 
     def test_a_failing_command_is_refused_and_the_file_survives(self) -> None:
-        outcome = self.reproduce("rendu.png", "rm rendu.png; echo 'boum' >&2; exit 3")
+        outcome = self.reproduce("render.png", "rm render.png; echo 'boom' >&2; exit 3")
         self.assertFalse(outcome.ok)
-        self.assertIn("sort en 3", outcome.reason)
-        self.assertIn("boum", outcome.reason)
-        self.assertEqual(self.read("rendu.png"), b"PIXELS")
+        self.assertIn("exits with 3", outcome.reason)
+        self.assertIn("boom", outcome.reason)
+        self.assertEqual(self.read("render.png"), b"PIXELS")
 
     def test_a_command_that_hangs_is_refused_and_the_file_survives(self) -> None:
-        outcome = self.reproduce("rendu.png", "sleep 30")
+        outcome = self.reproduce("render.png", "sleep 30")
         self.assertFalse(outcome.ok)
-        self.assertIn("depasse", outcome.reason)
-        self.assertEqual(self.read("rendu.png"), b"PIXELS")
+        self.assertIn("exceeded", outcome.reason)
+        self.assertEqual(self.read("render.png"), b"PIXELS")
 
-    # -- ce qui ne doit meme pas etre tente ----------------------------------
+    # -- what must not even be attempted ----------------------------------
 
     def test_a_path_leaving_the_worktree_is_refused(self) -> None:
-        # Le chemin vient de l'agent et le fichier part sur une forge : publier
-        # hors du worktree publierait ce que personne n'a propose de publier.
+        # The path comes from the agent and the file goes to a forge: publishing
+        # outside the worktree would publish what nobody offered to publish.
         outcome = self.reproduce("../../secret.png", "true")
         self.assertFalse(outcome.ok)
-        self.assertIn("hors du worktree", outcome.reason)
+        self.assertIn("outside the worktree", outcome.reason)
 
     def test_an_extension_the_forge_does_not_render_is_refused(self) -> None:
         self.write("notes.txt", b"x")
         outcome = self.reproduce("notes.txt", "true")
         self.assertFalse(outcome.ok)
-        self.assertIn("non rendue", outcome.reason)
+        self.assertIn("not rendered", outcome.reason)
 
     def test_a_missing_file_is_refused(self) -> None:
-        outcome = self.reproduce("jamais-ecrit.png", "true")
+        outcome = self.reproduce("never-written.png", "true")
         self.assertFalse(outcome.ok)
-        self.assertIn("absent", outcome.reason)
+        self.assertIn("missing", outcome.reason)
 
     def test_a_file_above_the_ceiling_is_refused(self) -> None:
         small = ShellRegenerator(timeout_seconds=2, max_bytes=4)
-        outcome = small.reproduce(self.root, "rendu.png", "true")
+        outcome = small.reproduce(self.root, "render.png", "true")
         self.assertFalse(outcome.ok)
-        self.assertIn("plafond", outcome.reason)
-        self.assertEqual(self.read("rendu.png"), b"PIXELS")
+        self.assertIn("ceiling", outcome.reason)
+        self.assertEqual(self.read("render.png"), b"PIXELS")
 
 
 if __name__ == "__main__":

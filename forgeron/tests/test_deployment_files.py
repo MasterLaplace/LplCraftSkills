@@ -1,13 +1,13 @@
-"""Le Dockerfile et les manifestes, verifies contre le code qu'ils deploient.
+"""The Dockerfile and the manifests, checked against the code they deploy.
 
-Ni docker ni kubectl ne sont installes ici, donc rien ne peut etre construit ni
-applique. Mais deux classes d'erreurs sont verifiables hors ligne, et ce sont
-justement celles qui coutent le plus cher a decouvrir dans un pod :
+Neither docker nor kubectl is installed here, so nothing can be built or
+applied. But two classes of errors can be checked offline, and they are
+precisely the ones that cost the most to discover in a pod:
 
-- une configuration que `config.load()` refuserait. Un JSON casse dans un ConfigMap
-  ne se voit qu'au demarrage du conteneur, apres le build et le push ;
-- un chemin ou un nom d'image qui ne concorde plus entre le Dockerfile, le compose
-  et le Job. C'est de la duplication : trois fichiers nomment la meme image.
+- a configuration that `config.load()` would refuse. A broken JSON in a ConfigMap
+  only shows at container startup, after the build and the push;
+- a path or an image name that no longer matches between the Dockerfile, the compose
+  file and the Job. It is duplication: three files name the same image.
 """
 
 from __future__ import annotations
@@ -52,7 +52,7 @@ class ConfigMap(unittest.TestCase):
         self.assertIn(f"mountPath: {raw['home']}", job)
         for repo in raw["repos"]:
             self.assertTrue(repo["path"].startswith("/repos/"),
-                            "un chemin de depot doit etre celui vu du pod")
+                            "a repository path must be the one seen from the pod")
 
     def test_the_cluster_configuration_rebuilds_context_rather_than_resuming(self) -> None:
         # A claude session is filed under a slug of its working directory, so a pod
@@ -83,14 +83,14 @@ class ImageNaming(unittest.TestCase):
         dockerfile = next(line.split(":", 1)[1].strip() for line in compose.splitlines()
                           if line.strip().startswith("dockerfile:"))
         root = (ROOT / "docker" / context).resolve()
-        self.assertTrue((root / "install.sh").is_file(), f"{root} n'est pas la racine du depot")
+        self.assertTrue((root / "install.sh").is_file(), f"{root} is not the repository root")
         self.assertEqual((root / dockerfile).resolve(), (ROOT / "docker" / "Dockerfile").resolve())
 
     def test_the_tag_matches_the_package_version(self) -> None:
         from forgeron import __version__
         compose = (ROOT / "docker" / "compose.yaml").read_text(encoding="utf-8")
         self.assertIn(f"forgeron:{__version__}", compose,
-                      "l'etiquette d'image doit suivre la version du paquet")
+                      "the image tag must follow the package version")
 
 
 class Dockerfile(unittest.TestCase):
@@ -110,9 +110,9 @@ class Dockerfile(unittest.TestCase):
                 self.assertNotIn(forbidden, self.text)
 
     def test_it_installs_the_commit_msg_hook(self) -> None:
-        # Le hook du poste de l'auteur ne suit pas dans l'image. Sans cette ligne
-        # la couche qui previent manque exactement la ou l'agent est le moins
-        # surveille, et il ne reste que la verification apres coup.
+        # The hook on the author's workstation does not follow into the image. Without
+        # this line the layer that prevents is missing exactly where the agent is the
+        # least watched, and only the after-the-fact check is left.
         self.assertIn("forgeron hook --install", self.text)
         self.assertIn("core.hooksPath", self.text)
 
@@ -138,7 +138,7 @@ class Entrypoint(unittest.TestCase):
 
     def test_it_refuses_to_start_without_any_claude_credential(self) -> None:
         self.assertIn("exit 3", self.text)
-        self.assertIn("aucune authentification claude", self.text)
+        self.assertIn("no claude authentication", self.text)
 
     def test_it_never_prints_a_credential(self) -> None:
         # Saying WHICH mode is active is useful; printing the value is the classic

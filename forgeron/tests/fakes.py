@@ -34,7 +34,7 @@ class FakeForge:
         self.merge_state_value: MergeState = MergeState.CLEAN
         self.updates: list[tuple[int, str]] = []
         self.update_succeeds = True
-        self.landed = ["abc1234 feat: un changement arrive sur main"]
+        self.landed = ["abc1234 feat: a change landed on main"]
         self.links: list[tuple[str, str]] = []
         self.attachments: list[tuple[str, str]] = []
         self.attachments_supported = True
@@ -174,8 +174,8 @@ class FakeWorkspace:
         self.syncs: list[tuple[str, str]] = []
         self.forced_pushes: list[str] = []
         self.aborts = 0
-        # (sha, message) des commits que la branche ajoute. Propres par defaut :
-        # le cas courant ne doit rien couter aux tests qui ne parlent pas d'attribution.
+        # (sha, message) of the commits the branch adds. Clean by default:
+        # the common case must cost nothing to the tests that are not about attribution.
         self.branch_commits: list[tuple[str, str]] = []
 
     def prepare(self, repo_path: str, worktree: str, branch: str, base: str) -> None:
@@ -249,16 +249,16 @@ class FakeAgent:
         self.cost = cost
         self.plan: dict[str, Any] = {
             "branch_slug": "cache-lru", "kind": "feat", "pr_title": "feat: cache LRU",
-            "pr_body": "Un cache LRU borne.", "acceptance": ["la suite passe deux fois d'affilee"],
+            "pr_body": "A bounded LRU cache.", "acceptance": ["the suite passes twice in a row"],
             "files_expected": ["src/cache.py"], "risk": "low", "questions": [],
         }
         self.work: dict[str, Any] = {
-            "verdict": "ready_for_review", "summary": "Cache ajoute.",
+            "verdict": "ready_for_review", "summary": "Cache added.",
             "commands_run": ["pytest -q"],
-            "acceptance": [{"criterion": "la suite passe", "met": True, "evidence": "12 passed"}],
-            "pushed": True, "answers": ["Renomme."],
+            "acceptance": [{"criterion": "the suite passes", "met": True, "evidence": "12 passed"}],
+            "pushed": True, "answers": ["Renamed."],
         }
-        self.wrap: dict[str, Any] = {"summary": "Livre.", "followups": []}
+        self.wrap: dict[str, Any] = {"summary": "Delivered.", "followups": []}
         self.fail_next = False
 
     def run(self, *, cwd, session_id, prompt, schema, resume, read_only, contract="") -> FakeResult:
@@ -266,7 +266,7 @@ class FakeAgent:
                            "session_id": session_id, "cwd": cwd, "contract": contract})
         if self.fail_next:
             self.fail_next = False
-            return FakeResult(False, {}, self.cost, "budget epuise")
+            return FakeResult(False, {}, self.cost, "budget exhausted")
         if "branch_slug" in schema.get("properties", {}):
             return FakeResult(True, dict(self.plan), self.cost, "ok")
         if "followups" in schema.get("properties", {}):
@@ -286,12 +286,12 @@ class FakeReproduction:
 
 
 class FakeRegenerator:
-    """Rejoue un verdict scripte par chemin, et enregistre ce qu'on lui a demande.
+    """Replays a verdict scripted per path, and records what it was asked.
 
-    Le vrai vérificateur écarte le fichier et relance une commande ; le fake ne
-    peut pas le simuler honnêtement, donc il ne prétend pas le faire. Ce qu'il
-    exerce est la décision du pilote autour du verdict, et c'est
-    `test-regenerator` qui exerce le verdict lui-même, contre un vrai disque.
+    The real verifier sets the file aside and runs a command again; the fake
+    cannot simulate that honestly, so it does not pretend to. What it
+    exercises is the driver's decision around the verdict, and it is
+    `test-regenerator` that exercises the verdict itself, against a real disk.
     """
 
     def __init__(self) -> None:
@@ -302,4 +302,4 @@ class FakeRegenerator:
         self.calls.append((path, command))
         if path in self.refuse:
             return FakeReproduction(False, self.refuse[path])
-        return FakeReproduction(True, "reproduit")
+        return FakeReproduction(True, "reproduced")

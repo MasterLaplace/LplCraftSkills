@@ -24,7 +24,7 @@ function transcript(entries, { garbage = false } = {}) {
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'artisan-gate-'));
   const file = path.join(dir, 'session.jsonl');
   const lines = entries.map((entry) => JSON.stringify(entry));
-  if (garbage) lines.splice(1, 0, '{ ceci nest pas du json');
+  if (garbage) lines.splice(1, 0, '{ this is not json');
   fs.writeFileSync(file, lines.join('\n') + '\n');
   return file;
 }
@@ -35,90 +35,90 @@ function run(mode, input) {
 }
 
 
-test('une ecriture sans la carte chargee est bloquee, et le message nomme le skill', () => {
-  const file = transcript([userText('ajoute X'), bash()]);
+test('a write without the map loaded is blocked, and the message names the skill', () => {
+  const file = transcript([userText('add X'), bash()]);
   const { code, stderr } = run('pre', { tool_name: 'Write', transcript_path: file });
   assert.equal(code, 2);
   assert.match(stderr, /cycle-de-dev/);
   assert.match(stderr, /Skill/);
 });
 
-test('Edit est une ecriture comme Write', () => {
-  const file = transcript([userText('corrige Y')]);
+test('Edit is a write like Write', () => {
+  const file = transcript([userText('fix Y')]);
   assert.equal(run('pre', { tool_name: 'Edit', transcript_path: file }).code, 2);
 });
 
-test('une ecriture apres le chargement de la carte passe', () => {
-  const file = transcript([userText('ajoute X'), loadMap(), bash()]);
+test('a write after the map is loaded passes', () => {
+  const file = transcript([userText('add X'), loadMap(), bash()]);
   assert.equal(run('pre', { tool_name: 'Write', transcript_path: file }).code, 0);
 });
 
-test('lire ne demande pas la carte : explorer vient avant', () => {
-  const file = transcript([userText('ajoute X')]);
+test('reading does not require the map: exploring comes first', () => {
+  const file = transcript([userText('add X')]);
   for (const tool of ['Read', 'Grep', 'Glob', 'Bash']) {
     assert.equal(run('pre', { tool_name: tool, transcript_path: file }).code, 0, tool);
   }
 });
 
-test('un skill venu d un greffon, prefixe par son espace de noms, compte aussi', () => {
+test('a skill from a plugin, prefixed by its namespace, counts too', () => {
   const file = transcript([toolUse('Skill', { skill: 'craft:cycle-de-dev' })]);
   assert.equal(run('pre', { tool_name: 'Write', transcript_path: file }).code, 0);
 });
 
-test('un AUTRE skill ne remplace pas la carte', () => {
+test('ANOTHER skill does not replace the map', () => {
   const file = transcript([toolUse('Skill', { skill: 'tests-first' })]);
   assert.equal(run('pre', { tool_name: 'Write', transcript_path: file }).code, 2);
 });
 
-test('une ligne illisible dans le transcript est sautee, pas fatale', () => {
+test('an unreadable line in the transcript is skipped, not fatal', () => {
   const file = transcript([userText('x'), loadMap()], { garbage: true });
   assert.equal(run('pre', { tool_name: 'Write', transcript_path: file }).code, 0);
 });
 
-test('un transcript introuvable donne une erreur BRUYANTE et non bloquante', () => {
-  const { code, stderr } = run('pre', { tool_name: 'Write', transcript_path: '/nulle/part/session.jsonl' });
+test('a transcript that cannot be found gives a LOUD, non-blocking error', () => {
+  const { code, stderr } = run('pre', { tool_name: 'Write', transcript_path: '/nowhere/at-all/session.jsonl' });
   assert.equal(code, 1);
-  assert.match(stderr, /introuvable|illisible/);
-  assert.match(stderr, /\/nulle\/part\/session\.jsonl/);
+  assert.match(stderr, /not found|unreadable/);
+  assert.match(stderr, /\/nowhere\/at-all\/session\.jsonl/);
 });
 
 
-test('modifier un fichier apres la derniere commande bloque l arret', () => {
+test('modifying a file after the last command blocks the stop', () => {
   const file = transcript([loadMap(), bash(), edit()]);
   const { code, stderr } = run('stop', { stop_hook_active: false, transcript_path: file });
   assert.equal(code, 2);
-  assert.match(stderr, /commande/);
-  assert.match(stderr, /porte de sortie/);
+  assert.match(stderr, /command/);
+  assert.match(stderr, /exit gate/);
 });
 
-test('une commande apres la derniere ecriture laisse s arreter', () => {
+test('a command after the last write lets the session stop', () => {
   const file = transcript([loadMap(), write(), bash()]);
   assert.equal(run('stop', { stop_hook_active: false, transcript_path: file }).code, 0);
 });
 
-test('PowerShell compte comme une commande, au meme titre que Bash', () => {
+test('PowerShell counts as a command, just like Bash', () => {
   const file = transcript([loadMap(), write(), powershell()]);
   assert.equal(run('stop', { stop_hook_active: false, transcript_path: file }).code, 0);
 });
 
-test('une session sans aucune ecriture s arrete librement', () => {
-  const file = transcript([userText('explique-moi X'), toolUse('Read', { file_path: 'a' })]);
+test('a session without any write stops freely', () => {
+  const file = transcript([userText('explain X to me'), toolUse('Read', { file_path: 'a' })]);
   assert.equal(run('stop', { stop_hook_active: false, transcript_path: file }).code, 0);
 });
 
-test('le deuxieme arret passe toujours : le hook relance une fois, jamais en boucle', () => {
+test('the second stop always passes: the hook sends back once, never in a loop', () => {
   const file = transcript([loadMap(), bash(), edit()]);
   assert.equal(run('stop', { stop_hook_active: true, transcript_path: file }).code, 0);
 });
 
-test('un transcript introuvable a l arret donne une erreur bruyante et non bloquante', () => {
-  const { code } = run('stop', { stop_hook_active: false, transcript_path: '/nulle/part/s.jsonl' });
+test('a transcript that cannot be found at stop gives a loud, non-blocking error', () => {
+  const { code } = run('stop', { stop_hook_active: false, transcript_path: '/nowhere/at-all/s.jsonl' });
   assert.equal(code, 1);
 });
 
-test('un mode inconnu est une erreur d appel, pas un laisser-passer silencieux', () => {
+test('an unknown mode is a calling error, not a silent pass', () => {
   const file = transcript([]);
-  const { code, stderr } = run('ailleurs', { transcript_path: file });
+  const { code, stderr } = run('elsewhere', { transcript_path: file });
   assert.equal(code, 1);
   assert.match(stderr, /pre|stop/);
 });

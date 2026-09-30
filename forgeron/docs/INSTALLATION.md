@@ -207,7 +207,7 @@ cd ~/LplCraftSkills && ./install.sh          # les skills ET l'agent artisan, au
 cd forgeron && ./tests/run.sh && python3 -m forgeron doctor
 ```
 
-À voir : `OK` à la fin de la suite, `N/N mutations detectees` avec le même N des deux côtés, puis
+À voir : `OK` à la fin de la suite, `N/N mutations detected` avec le même N des deux côtés, puis
 `doctor` avec les vérifications requises passées, dont `agent artisan`. Les nombres ne sont pas écrits
 ici : ils changent à chaque garde ajoutée, et un nombre recopié dans un guide finit par mentir. Les deux lignes `note` (portées `admin:repo_hook` et `workflow`) sont normales :
 ce sont des absences voulues.
@@ -567,7 +567,7 @@ docker run --rm forgeron:0.1.0 --version
 docker run --rm --entrypoint python3 forgeron:0.1.0 -m forgeron --help | head -3
 ```
 
-À voir : le premier échoue avec `ERREUR : aucune authentification claude` **et c'est le résultat
+À voir : le premier échoue avec `ERROR: no claude authentication.` **et c'est le résultat
 attendu** — l'entrypoint vérifie avant d'agir. Le second contourne l'entrypoint et doit afficher
 l'aide.
 
@@ -584,7 +584,7 @@ cat ~/.forgeron/secrets.env
 docker run --rm --env-file ~/.forgeron/secrets.env forgeron:0.1.0 --version
 ```
 
-À voir : `[entrypoint] claude : token d'abonnement (CLAUDE_CODE_OAUTH_TOKEN)` puis `forgeron 0.1.0`.
+À voir : `[entrypoint] claude: subscription token (CLAUDE_CODE_OAUTH_TOKEN)` puis `forgeron 0.1.0`.
 
 ⚠ `--env-file` et **jamais** `-e CLAUDE_CODE_OAUTH_TOKEN=sk-...` : la seconde forme met le token dans
 l'historique de ton shell et dans la table des processus, où n'importe quel programme de la machine
@@ -745,7 +745,7 @@ gh auth status 2>&1 | grep -E 'Logged in|Token scopes' || echo 'ABSENT  session 
 systemctl is-active docker 2>/dev/null | sed 's/^/docker daemon : /'
 kubectl get nodes --no-headers 2>/dev/null | wc -l | sed 's/^/noeuds kube  : /'
 echo
-cd ~/LplCraftSkills/forgeron && ./tests/run.sh 2>&1 | grep -E 'Ran |^OK|mutations detectees'
+cd ~/LplCraftSkills/forgeron && ./tests/run.sh 2>&1 | grep -E 'Ran |^OK|mutations detected'
 python3 -m forgeron doctor
 ```
 

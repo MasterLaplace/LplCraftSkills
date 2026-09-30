@@ -69,7 +69,7 @@ class TheDoctorCheck(unittest.TestCase):
         with tempfile.TemporaryDirectory() as agents:
             ok, detail = cli._agent_installed("", agents)
         self.assertTrue(ok)
-        self.assertIn("sans agent", detail)
+        self.assertIn("no agent", detail)
 
 
 if __name__ == "__main__":

@@ -31,6 +31,7 @@ SKILLS=(
   tracer-le-travail
   relire-une-pr
   garder-les-frontieres
+  tenir-la-forge
 )
 
 AGENTS=(

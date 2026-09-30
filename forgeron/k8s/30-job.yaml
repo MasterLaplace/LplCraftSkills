@@ -1,28 +1,28 @@
-# UNE action de forgeron, une fois. Un Job et pas un Deployment : une action est
-# bornee (un run d'agent), alors qu'une issue vit des jours - le Deployment, s'il y
-# en a un un jour, c'est le reconciliateur qui decide, pas celui qui execute.
+# ONE forgeron action, once. A Job and not a Deployment: an action is
+# bounded (one agent run), whereas an issue lives for days - the Deployment, if there
+# is ever one, is the reconciler that decides, not the one that executes.
 #
-# NON TESTE : ni docker ni kubectl sur la machine ou ce fichier a ete ecrit.
+# NOT TESTED: neither docker nor kubectl on the machine this file was written on.
 #
-# Avant d'appliquer, DEUX choses qui ne vont pas de soi :
+# Before applying, TWO things that are not obvious:
 #
-# 1. l'image locale n'existe pas pour le cluster. Les noeuds k3d sont des conteneurs
-#    avec leur propre stockage d'images, donc une image construite sur l'hote leur
-#    est invisible. Il faut l'y pousser :
+# 1. the local image does not exist for the cluster. k3d nodes are containers
+#    with their own image storage, so an image built on the host is
+#    invisible to them. It has to be pushed there:
 #        k3d image import forgeron:0.1.0 -c forgeron
-#    Sans ca : le pod reste en ErrImagePull, ce qui ressemble a un probleme de
-#    reseau et n'en est pas un.
+#    Without that: the pod stays in ErrImagePull, which looks like a network
+#    problem and is not one.
 #
-# 2. `continuity: "rebuild"` dans le ConfigMap, et ce n'est pas un detail : une
-#    session claude est rangee sous un slug du repertoire de travail, donc un pod
-#    ne peut pas reprendre une conversation creee ailleurs. Voir docs/CLUSTER.md.
+# 2. `continuity: "rebuild"` in the ConfigMap, and it is not a detail: a
+#    claude session is filed under a slug of the working directory, so a pod
+#    cannot resume a conversation created elsewhere. See docs/CLUSTER.md.
 apiVersion: batch/v1
 kind: Job
 metadata:
   name: forgeron-une-passe
   namespace: forgeron
 spec:
-  backoffLimit: 1              # une action idempotente se reprend, elle ne se rejoue pas six fois
+  backoffLimit: 1              # an idempotent action is resumed, it is not replayed six times
   ttlSecondsAfterFinished: 3600
   template:
     spec:
@@ -34,11 +34,11 @@ spec:
       containers:
         - name: forgeron
           image: forgeron:0.1.0
-          imagePullPolicy: IfNotPresent   # sinon il cherchera l'image sur un registre distant
+          imagePullPolicy: IfNotPresent   # otherwise it will look for the image on a remote registry
           args: ["once", "--write", "--config", "/etc/forgeron/config.json"]
           envFrom:
             - secretRef:
-                name: forgeron           # CLAUDE_CODE_OAUTH_TOKEN et GH_TOKEN
+                name: forgeron           # CLAUDE_CODE_OAUTH_TOKEN and GH_TOKEN
           resources:
             requests: { cpu: "500m", memory: "1Gi" }
             limits:   { cpu: "4",    memory: "8Gi" }
@@ -49,9 +49,9 @@ spec:
       volumes:
         - name: config
           configMap: { name: forgeron-config }
-        # emptyDir : l'etat meurt avec le pod. Suffisant pour un premier essai en
-        # `once`, PAS pour la boucle - il faudrait un PersistentVolumeClaim, sinon
-        # chaque passe redecouvre les issues depuis zero et replanifie tout.
+        # emptyDir: the state dies with the pod. Enough for a first try with
+        # `once`, NOT for the loop - it would need a PersistentVolumeClaim, otherwise
+        # every pass rediscovers the issues from scratch and replans everything.
         - name: state
           emptyDir: {}
         - name: repos

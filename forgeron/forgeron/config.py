@@ -28,8 +28,8 @@ class RepoConfig:
     slug: str                       # "owner/name"
     path: str                       # local clone the worktrees branch from
     base: str = "main"
-    labels: tuple[str, ...] = ("claude",)
-    hold_label: str = "claude:hold"
+    labels: tuple[str, ...] = ("forgeron",)
+    hold_label: str = "forgeron:hold"
     reviewers: tuple[str, ...] = ()
     branch_prefix: str = "feat"
 

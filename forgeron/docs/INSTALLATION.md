@@ -628,8 +628,8 @@ cat > ~/.forgeron/config.json <<'JSON'
       "slug": "TON_LOGIN/forgeron-sandbox",
       "path": "/repos/forgeron-sandbox",
       "base": "main",
-      "labels": ["claude"],
-      "hold_label": "claude:hold",
+      "labels": ["forgeron"],
+      "hold_label": "forgeron:hold",
       "reviewers": ["TON_LOGIN"]
     }
   ],

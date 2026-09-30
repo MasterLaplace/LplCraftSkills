@@ -18,8 +18,8 @@ data:
           "slug": "MasterLaplace/forgeron-sandbox",
           "path": "/repos/forgeron-sandbox",
           "base": "main",
-          "labels": ["claude"],
-          "hold_label": "claude:hold",
+          "labels": ["forgeron"],
+          "hold_label": "forgeron:hold",
           "reviewers": ["MasterLaplace"]
         }
       ],

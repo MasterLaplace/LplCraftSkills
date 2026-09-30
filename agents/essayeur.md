@@ -66,7 +66,10 @@ autre interpréteur passerait. C'est un garde-fou, pas une frontière de sécuri
    lecture seule, et le rapport le dit. Tu ne supprimes aucun worktree : le rapport dit à qui t'a lancé
    comment nettoyer.
 3. **Lire la CI avant le diff**, puis la description comme une liste d'affirmations, puis le diff contre
-   les états d'entrée que le code énumère lui-même.
+   les états d'entrée que le code énumère lui-même, et contre les appels des scripts qui lancent le
+   programme depuis un autre dépôt. Quand le diff touche ce qui s'exécute au lancement, **démarrer
+   l'artefact** une fois, ses dépendances pointées vers des adresses injoignables (`relire-une-pr`,
+   section 2).
 4. **Un skill par question, au moment où elle se pose** : jamais d'avance, jamais de mémoire. La table
    ci-dessous dit lequel.
 5. **Rendre le rapport** avec le gabarit de `relire-une-pr` (`references/rapport.md`), comme réponse

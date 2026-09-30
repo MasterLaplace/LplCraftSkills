@@ -52,6 +52,17 @@ git worktree add --detach <dossier-temporaire>/relecture-<N> FETCH_HEAD
 git -C <dossier-temporaire>/relecture-<N> log --oneline -1   # le commit relu, a citer dans le rapport
 ```
 
+Quand `git fetch` échoue (droits refusés, forge injoignable), le commit est souvent déjà là, rapatrié
+par un `git fetch` précédent. On le cherche avant de conclure que la relecture est impossible, à
+partir de l'empreinte de la tête que la forge affiche (sur GitHub, `gh pr view <N> --json
+headRefOid`) :
+
+```bash
+git cat-file -t <sha>                   # affiche "commit" si le commit est deja la
+git for-each-ref --contains <sha>       # la reference locale qui le porte
+git worktree add --detach <dossier-temporaire>/relecture-<N> <sha>
+```
+
 Le nettoyage du worktree revient à celui qui a demandé la revue : le rapport lui donne la commande.
 L'agent `essayeur` tient ces règles par un hook : ses outils d'écriture sont refusés, et une commande
 qui publie ou qui change l'état d'un dépôt est refusée avant de partir.
@@ -78,6 +89,33 @@ l'environnement l'empêche (un registre privé inaccessible, un jeton expiré), 
 PR** devient la preuve, de second rang : il dit ce qui a tourné sur ce commit, et **surtout ce qui n'a
 pas tourné.** Un linter absent de la CI n'a jamais vérifié ce diff, quel que soit son statut dans le
 README. On écrit dans le rapport laquelle des deux preuves on a utilisée.
+
+### Démarrer, quand la PR touche ce qui s'exécute au lancement
+
+Un build vert et des tests verts ne prouvent pas que le programme démarre : les tests lancent
+rarement l'hôte, et c'est au lancement que se révèlent une bibliothèque montée en version majeure qui
+exige un réglage nouveau, une configuration lue autrement, un point d'entrée qui ne traite plus un
+argument. **Quand le diff touche les dépendances, la version du framework, la configuration de
+démarrage ou le point d'entrée, on lance l'artefact une fois.**
+
+- **ses dépendances pointent vers des adresses injoignables**, jamais vers les services qui tournent sur
+  la machine : un port de `127.0.0.1` où rien n'écoute, vérifié avant, un nom d'hôte en `.invalid`
+  (un domaine réservé pour ne jamais exister, RFC 2606). Un service lancé contre la base ou la file de
+  messages locale peut y écrire ;
+- **la cause de l'arrêt se lit**. Un arrêt sur une configuration manquante ou sur une dépendance
+  injoignable est attendu : le programme est allé jusque-là. Un arrêt sur autre chose, levé par le
+  framework ou une bibliothèque, est un défaut à comprendre ;
+- **les arguments de ligne de commande se rejouent**, tels que les passent les scripts qui lancent le
+  programme (section 4) ;
+- **pour voir au-delà d'un premier défaut**, on applique dans une copie jetable le correctif que la revue
+  va proposer, et on relance. C'est le programme que l'auteur livrera une fois la remarque traitée. On
+  ne contourne jamais un garde en désactivant une vérification ou en trompant sa détection : le
+  programme qu'on observerait alors, personne ne le livrera.
+
+Sur une revue réelle d'une montée de version, le build, les tests et la CI étaient verts. Lancé une
+fois, le service s'arrêtait au démarrage : une bibliothèque passée en version majeure exigeait un
+middleware que le pipeline n'appelait pas. Avec ce correctif appliqué dans une copie, la documentation
+de l'API répondait en erreur 500 : le second défaut n'était visible qu'une fois le premier corrigé.
 
 ## 3. La description est une liste d'affirmations
 
@@ -114,6 +152,16 @@ fonction amont ne créait le total du groupe que s'il contenait plus d'un élém
 filtré, la tuile affichait donc le total de toute l'organisation. Le cas était déjà figé par un test
 existant : il suffisait de rejouer la sélection sur sa fixture pour voir le défaut, et le correctif
 proposé réutilisait la même fixture.
+
+**Les états peuvent vivre hors du dépôt.** Un fichier de déploiement, une configuration de CI ou un
+manifeste a un **lecteur**, et ce lecteur est souvent ailleurs : le script de déploiement, la
+bibliothèque de CI partagée, l'outil qui applique les migrations. Le diff ne montre pas comment ce
+lecteur appelle le programme. On le trouve, on le lit à la version qui tourne vraiment, et on rejoue
+ses appels (section 2,
+« Démarrer »). Sur la revue de montée de version citée en section 2, un descripteur de déploiement
+nommait le binaire à lancer pour migrer la base, et le script qui le lisait, dans le dépôt de l'équipe
+d'exploitation, le lançait avec un argument que la PR ne traitait plus : le déploiement aurait démarré
+le service au lieu de migrer.
 
 **Une capture d'écran prouve l'état capturé, et rien d'autre.** Lister les états qu'elle ne montre pas :
 c'est là qu'il faut regarder. Dans la même revue, les trois défauts n'apparaissaient qu'une fois un filtre posé,
@@ -177,6 +225,10 @@ On ne le paie pas sur chaque PR. On le paie quand se tromper coûte cher : le c
 pour la conception (un contrat public, des données persistées, un format sur le fil), plus deux cas
 propres à la revue, une frontière de confiance et une revue qui servira à décider.
 
+**Le prix suit ce que le diff touche, pas sa longueur.** Sur la revue de montée de version citée en
+section 2, la passe hostile a coûté environ 270 000 jetons et 25 minutes pour 106 lignes de diff, et
+c'est elle qui a trouvé le script de déploiement de la section 4.
+
 ## 8. Trier et écrire : quatre piles et deux listes
 
 | Pile | Ce qu'on y met | Ce qui l'accompagne |
@@ -231,7 +283,8 @@ Avant de rendre une revue, ces sept réponses doivent exister :
 1. **rien n'a été publié**, la revue a été faite dans un worktree (ou en place, en lecture seule, pour
    un changement non commité, et le rapport le dit), et le commit relu est noté ;
 2. la CI de la PR a été lue, et **ce qu'elle ne lance pas** est écrit ; la PR a été construite, ou le
-   rapport dit pourquoi et quelle preuve la remplace ;
+   rapport dit pourquoi et quelle preuve la remplace ; et quand elle touche ce qui s'exécute au
+   lancement, **l'artefact a été démarré**, ou le rapport dit pourquoi ;
 3. chaque affirmation de la description qui porte une décision a **un statut et une preuve** ;
 4. les états d'entrée ont été **énumérés depuis le code**, et chaque branche nouvelle du diff a été
    rejouée dessus ;

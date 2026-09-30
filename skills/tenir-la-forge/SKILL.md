@@ -86,7 +86,7 @@ commits.
 |---|---|---|
 | le genre | `type:bug`, `type:feature`, `type:docs`, `type:chore` | une par item. Là où la plateforme offre des types d'issues natifs, ils remplacent cette famille |
 | la zone | `zone:kernel`, `zone:net` | propre à chaque dépôt, déclarée avec lui |
-| l'appel à l'aide | `good first issue`, `help wanted` | **le nom exact** : la plateforme les lit pour montrer le dépôt aux nouveaux venus |
+| l'appel à l'aide | `good first issue`, `help wanted` | **le nom exact** : la plateforme lit `good first issue` pour montrer le dépôt aux nouveaux venus, et `help wanted` est le nom que tout le monde cherche |
 | les bots | `dependencies`, `claude`, `claude:hold` | celles qu'un bot pose ou écoute, sous le nom qu'il attend |
 
 Cinq règles :
@@ -183,18 +183,22 @@ on retire ce qui suppose un deuxième humain.
 | ni force-push ni suppression | l'histoire publiée ne se réécrit pas | aucun |
 | une seule méthode de fusion | `tracer-le-travail`, section 9 | la règle et les réglages du dépôt doivent dire la même méthode |
 | l'histoire linéaire | une histoire sans commits de fusion | incompatible avec le commit de fusion, que `tracer-le-travail` recommande pour des commits tenus |
-| les commits signés | on sait qui a écrit | la plateforme vérifie aussi les commits de la branche : **un seul commit non signé bloque la fusion, même en squash**. Un bot sans clé ne passe donc qu'avec un contournement admin réglé « pour les PR seulement », et lui donner une clé revient à lui confier un secret (`garder-les-frontieres`) |
+| les commits signés | on sait qui a écrit | la plateforme vérifie aussi les commits de la branche : **un seul commit non signé peut bloquer la fusion, même en squash**. Un bot qui committe par l'API de la plateforme sous sa propre identité est signé par elle ; un bot qui committe en local sous ton nom ne passe qu'avec sa propre clé, qui est un secret à lui confier (`garder-les-frontieres`), ou avec un contournement admin réglé « pour les PR seulement » |
 | des approbations requises | un deuxième regard | seul : aucune approbation requise, et une vraie relecture quand un bot est l'auteur |
 
-Deux pièges hors des règles :
+Trois pièges hors des règles :
 
 - **un workflow qui pousse sur la branche principale** (un bump de version, un changelog régénéré)
   casse le jour où la PR devient obligatoire. La forme qui survit, c'est la PR de version : le workflow
   ouvre une PR qui montre le numéro et les notes qu'elle publiera, et la fusionner publie. Le numéro se
-  dérive des commits, pas d'une étiquette posée à la main ;
-- **modifier une règle par l'API remplace toute la liste des contournements.** L'outil envoie donc la
-  règle complète, et son plan montre les contournements. Sinon une mise à jour retire l'accès admin sans
-  que rien ne le dise.
+  dérive des commits, pas d'une étiquette posée à la main. Une PR ouverte par le jeton du workflow
+  ne lance ses propres checks qu'après l'approbation d'un humain ;
+- **modifier une règle par l'API la remplace en entier**, contournements et paramètres compris. L'outil
+  envoie donc la règle complète, son plan montre les contournements, et il nomme chaque paramètre que
+  seule la forge porte au lieu de le perdre. Sinon une mise à jour retire un accès ou une protection sans
+  que rien ne le dise ;
+- **un check requis dont le workflow ne tourne que sur certains chemins reste en attente pour toujours**
+  sur une PR qui ne les touche pas : la PR ne se fusionne plus, et rien n'est rouge.
 
 ## 7. La sécurité qu'un dépôt public a gratuitement
 
@@ -226,7 +230,7 @@ Deux pièges hors des règles :
 | `SECURITY` | où signaler une faille, en privé | oui |
 | `SUPPORT` | où poser une question qui n'est pas un défaut | oui |
 | gabarits d'issue et de PR | les questions que l'auteur remplit | oui, mais par dossier entier |
-| `CODEOWNERS` | qui relit quelle zone | non, chaque dépôt a le sien. Seul, il sert quand même : la plateforme demande la revue de son propriétaire sur chaque PR d'un contributeur ou d'un bot |
+| `CODEOWNERS` | qui relit quelle zone | non, chaque dépôt a le sien. Seul, il sert quand même : la plateforme demande la revue de son propriétaire sur chaque PR d'un contributeur, ou d'un bot qui a sa propre identité, dès qu'elle sort du brouillon. Un bot qui parle en ton nom ne te demande rien : tu es l'auteur |
 
 Six règles :
 

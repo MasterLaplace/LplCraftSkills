@@ -79,7 +79,7 @@ class FullJourney(unittest.TestCase):
         self.assertEqual(harness.record.pr, 101)
 
         body = forge.bodies("pr-body")[0]
-        self.assertIn("Addresses #42", body)
+        self.assertIn("Closes #42", body)
         self.assertIn("the suite passes twice in a row", body)
 
         # 2. implementation, on the same conversation

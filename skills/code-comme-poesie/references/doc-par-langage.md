@@ -1,15 +1,15 @@
 # La doc de contrat, par langage
 
-Même rôle partout : **décrire un contrat à quelqu'un qui n'ouvrira pas le code.** Trois questions, jamais
+Même rôle partout : **décrire un contrat à quelqu'un qui n'ouvrira pas le code.** Trois questions, jamais
 une quatrième, ce que ça **garantit**, ce que ça **exige**, ce que ça **peut lever**. Le *comment* n'y
-figure jamais : il est dans le corps, et il changera.
+figure jamais : il est dans le corps, et il changera.
 
 **Sur la frontière publique uniquement.** Une doc de contrat sur une fonction privée est un duplicata de
 plus à maintenir, sans lecteur.
 
-## C et C++ : Doxygen
+## C et C++ : Doxygen
 
-Le langage où la doc de contrat rapporte le plus, parce que le type dit le moins : propriétaire de la
+Le langage où la doc de contrat rapporte le plus, parce que le type dit le moins : propriétaire de la
 mémoire, durée de vie, alignement, réentrance, aucun de ces contrats n'est dans la signature.
 
 ```c
@@ -27,17 +27,17 @@ mémoire, durée de vie, alignement, réentrance, aucun de ces contrats n'est da
 ssize_t read_chunk(int fd, char *buffer, size_t capacity);
 ```
 
-Les balises qui portent vraiment quelque chose en C et C++ : `@param` avec **qui possède** le pointeur,
+Les balises qui portent vraiment quelque chose en C et C++ : `@param` avec **qui possède** le pointeur,
 `@return` et `@retval`, `@pre` et `@post`, `@throws` en C++, `@warning` pour la réentrance et la sûreté
 entre fils d'exécution, `@note` pour le pourquoi non déductible. Le `@brief` tient sur une ligne, à
 l'impératif.
 
-**Ce qui ne doit PAS y être** : la complexité algorithmique si elle n'est pas garantie, puisqu'elle
+**Ce qui ne doit PAS y être** : la complexité algorithmique si elle n'est pas garantie, puisqu'elle
 changera, et une description du corps.
 
 ## Assembleur
 
-Le seul endroit où le commentaire de ligne est **la norme et non une odeur** : l'intention n'est nulle part
+Le seul endroit où le commentaire de ligne est **la norme et non une odeur** : l'intention n'est nulle part
 dans le code, et le lecteur ne peut pas la reconstruire.
 
 ```asm
@@ -53,10 +53,10 @@ compute_checksum:
     ret
 ```
 
-Ce qu'un en-tête de routine doit dire, et que rien d'autre ne peut dire : la **convention d'appel**, les
+Ce qu'un en-tête de routine doit dire, et que rien d'autre ne peut dire : la **convention d'appel**, les
 registres **écrasés** et **préservés**, les conditions d'entrée, les effets mémoire.
 
-## C# : commentaires de documentation XML
+## C# : commentaires de documentation XML
 
 ```csharp
 /// <summary>Calcule le montant proratise pour un mois partiel.</summary>
@@ -72,11 +72,11 @@ registres **écrasés** et **préservés**, les conditions d'entrée, les effets
 public static Money ComputeProratedAmount(Contract contract, DateRange period)
 ```
 
-`<exception>` est la balise à ne jamais sauter : c'est la seule partie du contrat qui n'apparaît **nulle
+`<exception>` est la balise à ne jamais sauter : c'est la seule partie du contrat qui n'apparaît **nulle
 part** dans la signature en C#. Activer la génération du fichier de documentation pour que l'absence de doc
 sur du public devienne un avertissement du compilateur, **dériver plutôt que discipliner**.
 
-## TypeScript : TSDoc
+## TypeScript : TSDoc
 
 ```ts
 /**
@@ -93,11 +93,11 @@ sur du public devienne un avertissement du compilateur, **dériver plutôt que d
 export function computeProratedAmount(contract: Contract, period: DateRange): Money
 ```
 
-En TypeScript, **le type porte déjà la moitié du contrat** : ne jamais redire dans la doc ce que la
-signature dit, `@param contract - le contrat` est du bruit. Ce qui reste à écrire : les **unités**, les
+En TypeScript, **le type porte déjà la moitié du contrat** : ne jamais redire dans la doc ce que la
+signature dit, `@param contract - le contrat` est du bruit. Ce qui reste à écrire : les **unités**, les
 **plages valides**, les **erreurs**, les **effets de bord**, et le pourquoi.
 
-## Rust : rustdoc
+## Rust : rustdoc
 
 ```rust
 /// Calcule le montant proratise pour un mois partiel.
@@ -116,11 +116,11 @@ signature dit, `@param contract - le contrat` est du bruit. Ce qui reste à écr
 pub fn compute_prorated_amount(contract: &Contract, period: DateRange) -> Result<Money, BillingError>
 ```
 
-Le seul écosystème où l'exemple de doc est **exécuté par les tests** : c'est de la dérivation native,
+Le seul écosystème où l'exemple de doc est **exécuté par les tests** : c'est de la dérivation native,
 l'exemple ne peut pas mentir longtemps. Les sections `# Errors`, `# Panics` et `# Safety`, pour le code
 non sûr, sont attendues par convention.
 
-## Python : docstrings
+## Python : docstrings
 
 ```python
 def compute_prorated_amount(contract: Contract, period: DateRange) -> Money:
@@ -138,7 +138,7 @@ def compute_prorated_amount(contract: Contract, period: DateRange) -> Money:
     """
 ```
 
-`Raises` est la section la plus souvent omise et la plus utile : en Python, rien dans la signature ne
+`Raises` est la section la plus souvent omise et la plus utile : en Python, rien dans la signature ne
 l'annonce.
 
 ## Le tableau de correspondance
@@ -156,6 +156,6 @@ l'annonce.
 ## Et la règle qui vaut plus que le format
 
 **Ce qui peut être dérivé ne doit pas être écrit.** Un exemple exécuté, un avertissement de compilateur sur
-du public non documenté, une doc générée depuis les signatures : tous coûtent moins cher qu'une relecture,
+du public non documenté, une doc générée depuis les signatures : tous coûtent moins cher qu'une relecture,
 et surtout **ils cassent quand ils mentent**. Ce qui reste écrit à la main doit être apparié par un test, ou
 assumé par écrit comme pouvant dériver.

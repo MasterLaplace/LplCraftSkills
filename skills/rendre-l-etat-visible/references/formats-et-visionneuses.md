@@ -1,12 +1,12 @@
-# Émetteurs minimaux : se greffer sur une visionneuse qui existe déjà
+# Émetteurs minimaux : se greffer sur une visionneuse qui existe déjà
 
 Chacun de ces formats est **du texte**, s'écrit sans dépendance, et s'ouvre dans un outil que quelqu'un
-d'autre a écrit et maintient. C'est la réponse à « un visualiseur coûte trop cher ».
+d'autre a écrit et maintient. C'est la réponse à « un visualiseur coûte trop cher ».
 
-> Les commentaires des blocs de code restent sans accents : ils sont destinés à être copiés dans des
+> Les commentaires des blocs de code restent sans accents : ils sont destinés à être copiés dans des
 > sources.
 
-## Le patron général : capturer, puis rendre à part
+## Le patron général : capturer, puis rendre à part
 
 ```c
 /* La capture ecrit un instantane BRUT. Elle ne formate rien, ne juge rien. */
@@ -28,7 +28,7 @@ void DumpGridSnapshot(const Grid *grid, const char *path)
 rejouable et testable par fichier de référence, et c'est ce qui l'empêche de perturber le programme
 observé.
 
-## PPM et PGM : une image, six lignes, zéro dépendance
+## PPM et PGM : une image, six lignes, zéro dépendance
 
 Le meilleur rapport valeur/coût de la liste, surtout en C ou en embarqué.
 
@@ -44,12 +44,12 @@ void WritePgm(const char *path, const unsigned char *pixels, int width, int heig
 ```
 
 S'ouvre dans la plupart des visionneuses, et se convertit partout. Pour une **carte de chaleur**, mapper la
-valeur sur 0 à 255 et regarder : les trous, les bandes et les dégradés inattendus sautent aux yeux.
+valeur sur 0 à 255 et regarder : les trous, les bandes et les dégradés inattendus sautent aux yeux.
 
-**Variante ASCII (`P2`)** quand on veut pouvoir **diffe** deux instantanés dans l'historique de version :
+**Variante ASCII (`P2`)** quand on veut pouvoir **diffe** deux instantanés dans l'historique de version :
 plus gros, mais lisible et versionnable.
 
-## Chrome Trace Event : une chronologie professionnelle pour trente lignes
+## Chrome Trace Event : une chronologie professionnelle pour trente lignes
 
 Le format que `chrome://tracing` et Perfetto savent lire. C'est LA réponse aux bugs de concurrence et de
 synchronisation.
@@ -65,15 +65,15 @@ synchronisation.
 
 | Champ | Ce qu'il faut savoir |
 |---|---|
-| `ph` | `X` égale intervalle complet, avec `dur` ; `B` et `E` égalent début et fin appairés ; `i` un instant ; `C` un compteur |
+| `ph` | `X` égale intervalle complet, avec `dur` ; `B` et `E` égalent début et fin appairés ; `i` un instant ; `C` un compteur |
 | `ts`, `dur` | **microsecondes**, entiers. Une horloge monotone, jamais l'heure murale |
-| `tid` | c'est ce qui empile les voies : un par fil d'exécution, ou par entité logique, une file, un client |
-| `args` | tout ce qu'on veut inspecter au clic : tailles, identifiants, décisions |
+| `tid` | c'est ce qui empile les voies : un par fil d'exécution, ou par entité logique, une file, un client |
+| `args` | tout ce qu'on veut inspecter au clic : tailles, identifiants, décisions |
 
-Ouvrir Perfetto puis y glisser le fichier. On voit alors ce qu'aucun journal ne montre : **les trous**, les
+Ouvrir Perfetto puis y glisser le fichier. On voit alors ce qu'aucun journal ne montre : **les trous**, les
 chevauchements, et qui attend qui.
 
-## Graphviz `.dot` : graphes, machines à états, dépendances
+## Graphviz `.dot` : graphes, machines à états, dépendances
 
 ```dot
 digraph state {
@@ -90,12 +90,12 @@ digraph state {
 dot -Tsvg state.dot -o state.svg
 ```
 
-**L'usage qui trouve des bugs** : émettre le graphe des transitions **réellement observées** dans un
+**L'usage qui trouve des bugs** : émettre le graphe des transitions **réellement observées** dans un
 tirage, et le comparer à celui des transitions **autorisées**. Ce qui apparaît en trop est le défaut.
 
-## Flamegraph : où passe le temps, ou la mémoire
+## Flamegraph : où passe le temps, ou la mémoire
 
-Le format « piles repliées » est du texte : une pile par ligne, séparateurs `;`, poids à la fin.
+Le format « piles repliées » est du texte : une pile par ligne, séparateurs `;`, poids à la fin.
 
 ```
 main;ComputeAll;ComputeOne;Allocate 4821
@@ -108,10 +108,10 @@ flamegraph.pl folded.txt > profile.svg      # ou glisser dans speedscope
 perf script | stackcollapse-perf.pl > folded.txt   # depuis un perf record
 ```
 
-Marche aussi bien pour des **allocations** ou des **compteurs métier** que pour du temps : c'est un agrégat
+Marche aussi bien pour des **allocations** ou des **compteurs métier** que pour du temps : c'est un agrégat
 d'arbres pondérés, rien de plus.
 
-## PLY : nuage de points ou maillage 3D
+## PLY : nuage de points ou maillage 3D
 
 ```
 ply
@@ -129,10 +129,10 @@ end_header
 0.5 1.0 0.0 0 0 255
 ```
 
-S'ouvre dans MeshLab, Blender, CloudCompare. La couleur est le canal à exploiter : encoder l'erreur, l'âge,
+S'ouvre dans MeshLab, Blender, CloudCompare. La couleur est le canal à exploiter : encoder l'erreur, l'âge,
 le fil d'exécution ou le numéro d'itération dans le RVB fait apparaître la structure du défaut.
 
-## CSV : séries, distributions, et le tri le plus rapide
+## CSV : séries, distributions, et le tri le plus rapide
 
 ```bash
 # Une distribution, en une ligne
@@ -142,28 +142,28 @@ gnuplot -e "set terminal dumb; plot 'lat.csv' using 1 with histeps"
 gnuplot -e "set terminal dumb size 100,30; plot 'a.csv' with lines, 'b.csv' with lines"
 ```
 
-`set terminal dumb` rend un graphe **en texte dans le terminal** : aucune fenêtre, ça se colle dans une
+`set terminal dumb` rend un graphe **en texte dans le terminal** : aucune fenêtre, ça se colle dans une
 issue, et ça suffit dans huit cas sur dix. **Une distribution bat une moyenne**, et c'est souvent tout ce
 qu'il fallait voir.
 
-## Mermaid : la séquence, en texte, dans le dépôt
+## Mermaid : la séquence, en texte, dans le dépôt
 
 ```mermaid
 sequenceDiagram
-  Client->>Serveur: JOIN seq=1
-  Serveur->>Client: ACK seq=1
-  Client->>Serveur: MOVE seq=2
-  Note over Client,Serveur: perte de seq=3
-  Client->>Serveur: MOVE seq=4
-  Serveur--xClient: DESYNC
+  Client->>Server: JOIN seq=1
+  Server->>Client: ACK seq=1
+  Client->>Server: MOVE seq=2
+  Note over Client,Server: seq=3 lost
+  Client->>Server: MOVE seq=4
+  Server--xClient: DESYNC
 ```
 
 Généré depuis un journal de paquets, il rend visible l'ordre réel, et il vit dans le dépôt, se diffe, et
 s'affiche directement dans une PR.
 
-## Rendus texte maison : les deux patrons qui couvrent presque tout
+## Rendus texte maison : les deux patrons qui couvrent presque tout
 
-Ces deux blocs sont des **exemples de sortie**, pas des schémas : c'est ce que le rendu produit.
+Ces deux blocs sont des **exemples de sortie**, pas des schémas : c'est ce que le rendu produit.
 
 ```
 # Grille : une cellule = un caractere, une legende sous le rendu
@@ -184,7 +184,7 @@ Les deux se diffent, se collent, et se figent en fichiers de référence. Les co
 
 - [ ] la **forme** que je cherche à voir est nommée
 - [ ] aucun format de cette page ne la porte déjà, sinon, l'émettre et s'arrêter là
-- [ ] la capture écrit un **instantané brut** sur disque ; le rendu est **ailleurs**
+- [ ] la capture écrit un **instantané brut** sur disque ; le rendu est **ailleurs**
 - [ ] il existe un rendu **texte**, diffable, avant tout pixel
 - [ ] le rendu est **pur** et couvert par un **fichier de référence** sur une donnée réelle
 - [ ] la **deuxième utilisation** est nommée, sinon je retourne au bug

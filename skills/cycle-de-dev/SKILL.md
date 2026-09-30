@@ -10,92 +10,93 @@ description: >-
   franchie sans avoir lance a l'instant la commande qui le prouve ». Delegue aux skills
   explorer-le-code, challenger-le-sujet, cadrer-et-planifier, concevoir-avant-coder, tests-first,
   code-comme-poesie, commencer-ferme, doc-derivee, journal-et-debogueur, trouver-la-cause,
-  mesure-et-telemetrie, rendre-l-etat-visible, se-faire-comprendre et tracer-le-travail.
+  mesure-et-telemetrie, rendre-l-etat-visible, se-faire-comprendre, tracer-le-travail,
+  relire-une-pr et garder-les-frontieres.
 ---
 
 # Le cycle de développement, et la seule faute qui compte
 
-*En une phrase : huit étapes dans cet ordre, chacune fermée par une question à laquelle on doit
+*En une phrase : huit étapes dans cet ordre, chacune fermée par une question à laquelle on doit
 pouvoir répondre par oui ou non.*
 
 ```mermaid
 flowchart LR
-  BL[backlog] --> CE["comprendre<br/>l'existant"] --> BR[branche] --> TE[test] --> CO[code] --> DO[doc] --> PR[pull request] --> RE[revue]
+  BL[backlog] --> CE["understand<br/>what exists"] --> BR[branch] --> TE[test] --> CO[code] --> DO[doc] --> PR[pull request] --> RE[review]
   RE -.-> BL
-  CE -.->|"si se tromper coute cher"| CA["cadrer + plan"]
+  CE -.->|"if being wrong is costly"| CA["frame + plan"]
   CA -.-> TE
 ```
 
 La porte en pointille est **conditionnelle**, et son critere n'est pas la taille du travail mais sa
-**reversibilite** : une modification locale et annulable va directement au test, une modification qui
+**reversibilite** : une modification locale et annulable va directement au test, une modification qui
 touche une frontiere qu'on ne pourra plus changer passe par une conception approuvee et un plan, meme
 si elle fait deux lignes. C'est le skill `cadrer-et-planifier`.
 
-L'ordre n'est pas une cérémonie, c'est une contrainte d'information : **chaque étape produit ce que
+L'ordre n'est pas une cérémonie, c'est une contrainte d'information : **chaque étape produit ce que
 la suivante consomme.** Un test écrit après le code épouse le code au lieu de le contraindre. Une
 doc écrite après la PR décrit ce qui a été fait au lieu de ce qui avait été promis.
 
-**La seule faute qui compte : franchir une porte sans avoir répondu à sa question.** Se tromper de
-conception se rattrape ; avancer en croyant qu'une porte est franchie ne se rattrape pas, parce que
+**La seule faute qui compte : franchir une porte sans avoir répondu à sa question.** Se tromper de
+conception se rattrape ; avancer en croyant qu'une porte est franchie ne se rattrape pas, parce que
 plus rien en aval ne la revérifie.
 
 > Une question est dite **falsifiable** quand on peut dire ce qui, concrètement, la rendrait fausse.
-> « Le code est propre » ne l'est pas ; « la suite passe deux fois de suite sans nettoyage manuel »
+> « Le code est propre » ne l'est pas ; « la suite passe deux fois de suite sans nettoyage manuel »
 > l'est. Tout ce pack repose sur cette distinction.
 
 ## Les huit portes
 
 | Étape | Ce qui entre | Ce qui sort | La porte, une question falsifiable |
 |---|---|---|---|
-| backlog | une demande, en langage humain | un item avec un identifiant stable | *quel comportement observable change, et qui le constate ?* |
-| comprendre l'existant | un item, et le code qu'il touche | une carte : où vit ce code, et la commande qui le teste | *sais-je construire, tester, et où vit le code que je vais changer ?* |
-| branche | un item | une branche nommée d'après lui | *cette branche porte-t-elle UNE intention ?* |
-| test | des critères d'acceptation | des tests qui ÉCHOUENT | *ai-je vu le test rouge, et pour la bonne raison ?* |
-| code | des tests rouges | des tests verts | *tous verts, **zéro avertissement**, et aucun test affaibli pour y arriver ?* |
-| doc | le contrat public livré | doc de contrat + changelog | *un appelant qui ne connaît pas ce code peut-il l'utiliser sans le lire ?* |
-| PR | un ensemble cohérent | une PR petite et lisible | *un relecteur peut-il la comprendre en quinze minutes ?* |
-| revue | une PR | des remarques traitées | *chaque remarque est-elle close par un changement ou par un argument écrit ?* |
+| backlog | une demande, en langage humain | un item avec un identifiant stable | *quel comportement observable change, et qui le constate ?* |
+| comprendre l'existant | un item, et le code qu'il touche | une carte : où vit ce code, et la commande qui le teste | *sais-je construire, tester, et où vit le code que je vais changer ?* |
+| branche | un item | une branche nommée d'après lui | *cette branche porte-t-elle UNE intention ?* |
+| test | des critères d'acceptation | des tests qui ÉCHOUENT | *ai-je vu le test rouge, et pour la bonne raison ?* |
+| code | des tests rouges | des tests verts | *tous verts, **zéro avertissement**, et aucun test affaibli pour y arriver ?* |
+| doc | le contrat public livré | doc de contrat + changelog | *un appelant qui ne connaît pas ce code peut-il l'utiliser sans le lire ?* |
+| PR | un ensemble cohérent | une PR petite et lisible | *un relecteur peut-il la comprendre en quinze minutes ?* |
+| revue | une PR | des remarques traitées | *chaque remarque est-elle close par un changement ou par un argument écrit ?* |
 
-Une porte sans réponse **arrête le travail** ; elle ne se remet pas à plus tard. Et si la réponse
+Une porte sans réponse **arrête le travail** ; elle ne se remet pas à plus tard. Et si la réponse
 manque parce qu'une information manque, **demander est la réponse.**
 
-### La règle qui vaut pour toutes : on ne déclare pas, on prouve
+### La règle qui vaut pour toutes : on ne déclare pas, on prouve
 
 **Tu ne peux pas dire qu'une porte est franchie si tu n'as pas lancé, à l'instant, la commande qui le
 prouve.** Une exécution d'il y a vingt minutes ne compte pas, une extrapolation encore moins.
 
 | L'affirmation | Ce qu'elle exige | Ce qui ne suffit PAS |
 |---|---|---|
-| les tests passent | la sortie de la commande complète, zéro échec | un tour précédent, « ça devrait passer » |
+| les tests passent | la sortie de la commande complète, zéro échec | un tour précédent, « ça devrait passer » |
 | l'analyse est propre | la sortie de l'outil, zéro erreur | une vérification partielle, une extrapolation |
-| le build réussit | le code de sortie de la commande | « les logs ont l'air bons » |
+| le build réussit | le code de sortie de la commande | « les logs ont l'air bons » |
 | le bug est corrigé | le **symptôme d'origine** rejoué, et disparu | le code a changé, donc c'est réglé |
 | le test de non-régression est valide | le cycle rouge puis vert **vu** | il passe une fois |
 | le besoin est couvert | une relecture **ligne à ligne** des critères | les tests passent |
 
-Les mots qui trahissent une affirmation non vérifiée : « ça devrait », « probablement », « a priori »,
-« normalement ». Et la satisfaction exprimée **avant** la vérification est le signal le plus fiable
+Les mots qui trahissent une affirmation non vérifiée : « ça devrait », « probablement », « a priori »,
+« normalement ». Et la satisfaction exprimée **avant** la vérification est le signal le plus fiable
 qu'elle n'a pas eu lieu.
 
 *Règle reprise de superpowers (`github.com/obra/superpowers`, skill `verification-before-completion`).*
 
-**Une seule porte est absolue : aucun avertissement ne franchit un merge.** Pas « on nettoiera »,
-pas « ce n'est que du style ». Un avertissement toléré en devient mille en six mois, et le millième
+**Une seule porte est absolue : aucun avertissement ne franchit un merge.** Pas « on nettoiera »,
+pas « ce n'est que du style ». Un avertissement toléré en devient mille en six mois, et le millième
 cache celui qui annonçait le bug, c'est la seule règle de cette liste qui se dégrade d'elle-même si
 on l'assouplit une fois. Les conditions qui la rendent tenable (avertissements en erreurs dans la
 configuration **versionnée**, chaîne de compilation **épinglée**, suppressions locales et
-justifiées) sont dans `tracer-le-travail`, section « la porte de merge ».
+justifiées) sont dans `tracer-le-travail`, section « la porte de merge ».
 
 ## Avant la première ligne, trois questions au demandeur
 
-Les poser coûte une minute, les deviner coûte le cycle entier :
+Les poser coûte une minute, les deviner coûte le cycle entier :
 
-1. **Quel comportement observable change ?** Si personne ne peut le constater de l'extérieur, ce
+1. **Quel comportement observable change ?** Si personne ne peut le constater de l'extérieur, ce
    n'est pas une fonctionnalité mais une préférence d'implémentation, et elle n'a pas besoin d'un
    cycle.
-2. **Qu'est-ce qui est vrai aujourd'hui et ne le sera plus ?** C'est la formulation qui trouve les
-   cassures : appelants existants, données déjà en base, contrat publié, tests d'autres équipes.
-3. **À quoi ressemble « fini » ?** Si la réponse n'est pas falsifiable, elle sera négociée à la fin,
+2. **Qu'est-ce qui est vrai aujourd'hui et ne le sera plus ?** C'est la formulation qui trouve les
+   cassures : appelants existants, données déjà en base, contrat publié, tests d'autres équipes.
+3. **À quoi ressemble « fini » ?** Si la réponse n'est pas falsifiable, elle sera négociée à la fin,
    au pire moment. Voir `tests-first` pour la transformer en critères d'acceptation.
 
 **Ne devine jamais la réponse à la troisième.** C'est celle qui coûte le plus cher à se tromper, et
@@ -104,118 +105,132 @@ c'est celle que le demandeur croit avoir donnée.
 ## Les trois raccourcis autorisés, et leur prix
 
 Le cycle complet sur une faute de frappe est du théâtre. Trois cas s'en dispensent, et **aucun
-autre** :
+autre** :
 
 | Cas | Ce qu'on saute | Ce qu'on ne saute JAMAIS |
 |---|---|---|
 | correction triviale (frappe, renommage local, formatage) | backlog, test, doc | la revue, même rapide |
 | **exploration** (savoir si c'est faisable) | tout | **jeter le code de l'exploration.** Ce qu'on en garde est la réponse, pas le code |
-| correctif urgent en production | backlog *avant*, doc *avant* | le test qui reproduit le bug, et le backlog **après** : décalé, jamais annulé |
+| correctif urgent en production | backlog *avant*, doc *avant* | le test qui reproduit le bug, et le backlog **après** : décalé, jamais annulé |
 
-L'exploration est le raccourci le plus utile et le plus mal utilisé : sa valeur est la réponse à une
+L'exploration est le raccourci le plus utile et le plus mal utilisé : sa valeur est la réponse à une
 question. Un code d'exploration promu en production sans repasser par le cycle est la dette la plus
 chère qui existe, **parce qu'elle a l'air terminée.**
 
 > **Une objection sérieuse à ce tableau, et elle n'est pas tranchée ici.** D'autres méthodologies
 > tiennent qu'**aucun travail n'est trop simple pour une conception écrite**, au motif que c'est
-> justement sur les changements « évidents » que les hypothèses non examinées coûtent le plus, et
+> justement sur les changements « évidents » que les hypothèses non examinées coûtent le plus, et
 > qu'une conception peut tenir en trois phrases.
 >
 > Ce qui départage n'est pas la taille, c'est **la réversibilité**. La question à se poser avant de
-> prendre un raccourci : *combien coûte de se tromper ici ?* Une modification locale et annulable ne
+> prendre un raccourci : *combien coûte de se tromper ici ?* Une modification locale et annulable ne
 > mérite pas de cérémonie. Une modification qui touche un contrat public, des données persistées ou un
 > format sur le fil mérite trois phrases écrites, **même si elle fait deux lignes**, parce qu'on ne
 > pourra pas la reprendre.
 
 ## Ce que chaque étape charge, et à quel moment
 
-Un skill se charge **au moment où son étape arrive**, jamais tous d'avance : les quinze ensemble
-pèsent environ 85 000 jetons, et une règle lue cinquante appels d'outils avant le geste pèse moins
+Un skill se charge **au moment où son étape arrive**, jamais tous d'avance : les dix-sept ensemble
+pèsent environ 94 000 jetons, et une règle lue cinquante appels d'outils avant le geste pèse moins
 qu'une règle lue juste avant.
 
 | Étape | Charger | Pour |
 |---|---|---|
 | zéro, une fois par projet | `journal-et-debogueur` | le journal et le débogueur, installés avant le premier item |
-| backlog | `challenger-le-sujet`, puis `tracer-le-travail` | questionner la demande (vrai problème ou solution déjà choisie ?), puis écrire l'item |
+| backlog | `challenger-le-sujet`, puis `tracer-le-travail` | questionner la demande (vrai problème ou solution déjà choisie ?), puis écrire l'item |
 | comprendre l'existant | `explorer-le-code` | la première heure, un fil suivi de bout en bout, l'histoire du code qu'on va changer |
-| cadrer, si se tromper coûte cher | `cadrer-et-planifier`, `concevoir-avant-coder` | la conception approuvée, les critères, le plan ; YAGNI, ossature, frontières |
+| cadrer, si se tromper coûte cher | `cadrer-et-planifier`, `concevoir-avant-coder` | la conception approuvée, les critères, le plan ; YAGNI, ossature, frontières |
 | branche | `tracer-le-travail` | une branche par intention |
 | test | `tests-first` | les critères en tests rouges, et les tests qui mentent |
 | code | `code-comme-poesie`, `commencer-ferme` | les noms, les gardes, les qualifieurs, les avertissements au maximum |
 | doc | `doc-derivee`, `se-faire-comprendre` | où l'information vit, et comment l'écrire pour être compris |
-| PR | `tracer-le-travail`, `se-faire-comprendre`, `challenger-le-sujet` | la description, l'avant/après, et le relecteur hostile avant le vrai |
-| revue | `challenger-le-sujet` (section 5), puis `tracer-le-travail` | découper chaque remarque en affirmations, puis la clore par un changement ou un argument écrit |
+| PR | `tracer-le-travail`, `se-faire-comprendre` | la description et l'avant/après ; puis, si se tromper coûte cher, **un relecteur séparé avant le vrai** (voir ci-dessous) |
+| revue reçue | `challenger-le-sujet` (section 5), puis `tracer-le-travail` | découper chaque remarque en affirmations, puis la clore par un changement ou un argument écrit |
+| revue donnée | `relire-une-pr` | relire la PR d'un autre, ou jouer le relecteur séparé, sans rien publier |
 
-Et trois skills qui ne suivent pas le cycle, parce qu'ils répondent à un événement :
+**La revue a deux rôles, et ils ne se jouent pas pareil.** Recevoir une revue est le travail de
+l'auteur. En donner une est le travail d'un relecteur qui n'a pas écrit le code : l'auteur relit avec
+son contexte en tête, et ne voit pas ce que ce contexte lui masque. Donc,
+à l'étape PR, **l'auteur ne se relit pas lui-même** : quand se tromper coûte cher (le même critère que
+pour la conception, plus une frontière de confiance), il fait relire son diff par quelqu'un qui n'a pas
+sa conversation, un collègue ou l'agent `essayeur`, puis traite le rapport comme une revue reçue avant
+de demander la revue humaine. Ce relecteur ne remplace pas l'humain : il retire ce qui était facile à
+trouver, pour que l'humain relise le fond.
+
+Et quatre skills qui ne suivent pas le cycle, parce qu'ils répondent à un événement :
 
 | Quand | Charger |
 |---|---|
 | un bug, un test rouge, un comportement inattendu | `trouver-la-cause` |
 | l'information est dans une forme (chronologie, grille, graphe), pas dans une valeur | `rendre-l-etat-visible` |
 | une lenteur, une mesure, un artefact de production | `mesure-et-telemetrie` |
+| une frontière de confiance touchée, une dépendance ou un outil tiers ajouté | `garder-les-frontieres` |
 
-`challenger-le-sujet` apparaît trois fois, et c'est le seul skill présent au début et à la fin du
-cycle : il questionne la demande à l'entrée, anticipe la revue avant la PR, et juge chaque remarque à la
-sortie.
+`garder-les-frontieres` a aussi sa question aux portes du cycle : au cadrage, à la revue et au merge,
+*ce changement touche-t-il une frontière de confiance ?* La réponse s'écrit, même quand c'est non.
 
-**Invoque-les. Ne re-dérive pas leur contenu de mémoire** : c'est exactement le mécanisme par lequel
+`challenger-le-sujet` ouvre et ferme le cycle : il questionne la demande à l'entrée, et juge chaque
+remarque reçue à la sortie. Entre les deux, le relecteur séparé de l'étape PR le charge pour sa passe
+hostile.
+
+**Invoque-les. Ne re-dérive pas leur contenu de mémoire** : c'est exactement le mécanisme par lequel
 une règle se met à diverger de sa propre définition. L'agent `artisan` du pack suit cette table, et
-deux hooks la rendent difficile à oublier : aucune écriture avant d'avoir chargé ce skill, aucun arrêt
+deux hooks la rendent difficile à oublier : aucune écriture avant d'avoir chargé ce skill, aucun arrêt
 sur un fichier modifié après la dernière commande.
 
-Deux précisions sur la carte ci-dessus :
+Deux précisions sur la carte ci-dessus :
 
-- **il existe une étape zéro, hors cycle, qui ne se fait qu'une fois** : au démarrage d'un projet,
+- **il existe une étape zéro, hors cycle, qui ne se fait qu'une fois** : au démarrage d'un projet,
   installer le journal et le débogueur **avant** le premier item. Le jour où on en a besoin, on est
-  sous pression et on ne le fait pas. C'est `journal-et-debogueur` qui porte cette porte ;
-- **l'étape doc est celle qu'on croit connaître.** Sa porte n'est pas « le README est à jour » mais
-  « la doc peut-elle encore mentir ? », et la réponse est le plus souvent **un `--help` complet
+  sous pression et on ne le fait pas. C'est `journal-et-debogueur` qui porte cette porte ;
+- **l'étape doc est celle qu'on croit connaître.** Sa porte n'est pas « le README est à jour » mais
+  « la doc peut-elle encore mentir ? », et la réponse est le plus souvent **un `--help` complet
   plutôt qu'un paragraphe**. C'est `doc-derivee`.
 
 ## Les anti-patterns du cycle, chacun avec sa signature
 
 Ils se reconnaissent à un symptôme, ce qui permet de les nommer en revue sans discuter des
-intentions :
+intentions :
 
-- **le test écrit après le code.** Signature : il passe du premier coup. Un test qu'on n'a jamais vu
-  échouer ne prouve rien, il prouve seulement qu'il ne détecte pas ce cas-là ;
-- **la branche fourre-tout.** Signature : son nom contient « et ». Elle rend la revue impossible et
-  le retour arrière impossible : on ne peut plus retirer une seule des deux intentions ;
-- **la doc « quand on aura le temps ».** Signature : elle est toujours à l'étape suivante. Le moment
-  où le contrat est frais est le seul où l'écrire coûte peu ;
-- **la PR de quarante fichiers.** Signature : tous les commentaires de revue portent sur le nommage,
+- **le test écrit après le code.** Signature : il passe du premier coup. Un test qu'on n'a jamais vu
+  échouer ne prouve rien, il prouve seulement qu'il ne détecte pas ce cas-là ;
+- **la branche fourre-tout.** Signature : son nom contient « et ». Elle rend la revue impossible et
+  le retour arrière impossible : on ne peut plus retirer une seule des deux intentions ;
+- **la doc « quand on aura le temps ».** Signature : elle est toujours à l'étape suivante. Le moment
+  où le contrat est frais est le seul où l'écrire coûte peu ;
+- **la PR de quarante fichiers.** Signature : tous les commentaires de revue portent sur le nommage,
   aucun sur le fond, parce que personne ne peut tenir le fond en tête. Une grosse PR n'est pas
-  relue, elle est approuvée ;
-- **la revue répondue à l'oral.** Signature : la remarque revient à la PR suivante. Une remarque se
+  relue, elle est approuvée ;
+- **la revue répondue à l'oral.** Signature : la remarque revient à la PR suivante. Une remarque se
   clôt par un changement ou par un argument **écrit dans le fil**, jamais par un accord verbal.
 
 ## Quand une étape révèle que la précédente était fausse
 
-Ça arrive, et c'est un succès du cycle plutôt qu'un échec : **remonter est la réponse correcte.** Le
+Ça arrive, et c'est un succès du cycle plutôt qu'un échec : **remonter est la réponse correcte.** Le
 code révèle que le test était mal posé, le test révèle que le critère d'acceptation était ambigu, la
 revue révèle que le découpage était mauvais.
 
-Ce qu'il ne faut pas faire : **plier l'étape amont pour sauver l'aval.** Affaiblir un test pour
+Ce qu'il ne faut pas faire : **plier l'étape amont pour sauver l'aval.** Affaiblir un test pour
 faire passer le code en est la version la plus courante et la plus destructrice, le test reste
 vert, donc plus rien ne signale que la garantie a disparu.
 
 ## La porte de sortie
 
 C'est le skill qui porte des portes, donc la sienne est celle du cycle entier. Ces cinq réponses
-doivent exister avant de considérer le travail terminé :
+doivent exister avant de considérer le travail terminé :
 
-1. les **huit portes** ont chacune une réponse. Celle qui manque n'a pas été reportée : elle a arrêté
-   le travail là où elle était ;
+1. les **huit portes** ont chacune une réponse. Celle qui manque n'a pas été reportée : elle a arrêté
+   le travail là où elle était ;
 2. chaque réponse a été **prouvée par une commande lancée à l'instant**, et non déduite d'un tour
-   précédent. « Ça devrait passer » n'est pas une réponse, c'est l'absence de réponse ;
+   précédent. « Ça devrait passer » n'est pas une réponse, c'est l'absence de réponse ;
 3. **aucun avertissement n'a franchi le merge**, et aucun test n'a été affaibli, ignoré ou commenté
-   pour atteindre le vert ;
-4. tout raccourci pris est **l'un des trois autorisés**, et son prix a été payé : la revue même
-   rapide, le code d'exploration jeté, le backlog décalé et non annulé ;
+   pour atteindre le vert ;
+4. tout raccourci pris est **l'un des trois autorisés**, et son prix a été payé : la revue même
+   rapide, le code d'exploration jeté, le backlog décalé et non annulé ;
 5. quand une étape a révélé qu'une précédente était fausse, on est **remonté**, plutôt que d'avoir
    plié l'amont pour sauver l'aval.
 
 Et la faute que ce skill existe pour empêcher, rappelée ici parce que c'est le dernier endroit où elle
-peut encore être attrapée : **franchir une porte sans avoir répondu à sa question.** Se tromper de
-conception se rattrape ; avancer en croyant qu'une porte est franchie ne se rattrape pas, parce que
+peut encore être attrapée : **franchir une porte sans avoir répondu à sa question.** Se tromper de
+conception se rattrape ; avancer en croyant qu'une porte est franchie ne se rattrape pas, parce que
 plus rien en aval ne la revérifie.

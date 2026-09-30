@@ -94,11 +94,11 @@ class Workspace(Protocol):
 
 @runtime_checkable
 class Regenerator(Protocol):
-    """Prouve qu'une commande reproduit un fichier. Une seule methode, bornee par son nom.
+    """Proves that a command reproduces a file. A single method, bounded by its name.
 
-    Un port a part plutot qu'une methode de Workspace : celui-ci possede git, et
-    « lancer une commande arbitraire » est une capacite bien plus large que ce
-    qu'on veut voir passer par la couture d'un depot.
+    A separate port rather than a Workspace method: that one owns git, and
+    "run an arbitrary command" is a much broader capability than what one
+    wants to see go through the seam of a repository.
     """
 
     def reproduce(self, worktree: str, path: str, command: str): ...

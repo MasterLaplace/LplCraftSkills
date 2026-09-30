@@ -23,7 +23,7 @@ def observe(**changes) -> Observation:
     return Observation(**base)
 
 
-def feedback(body: str = "revois ca", state: str = "CHANGES_REQUESTED") -> tuple[Feedback, ...]:
+def feedback(body: str = "rework this", state: str = "CHANGES_REQUESTED") -> tuple[Feedback, ...]:
     return (Feedback(ident="1", kind=FeedbackKind.REVIEW, author="human", body=body,
                      created_at="t", state=state),)
 
@@ -165,7 +165,7 @@ class Precedence(unittest.TestCase):
 
 class Questions(unittest.TestCase):
     def test_a_plan_with_questions_does_not_become_a_branch(self) -> None:
-        self.assertIs(phase_after_plan({"questions": ["quel format ?"]}), Phase.AWAITING_ANSWER)
+        self.assertIs(phase_after_plan({"questions": ["which format?"]}), Phase.AWAITING_ANSWER)
 
     def test_a_plan_without_questions_proceeds(self) -> None:
         self.assertIs(phase_after_plan({"questions": []}), Phase.DRAFTED)

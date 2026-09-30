@@ -29,120 +29,120 @@ IN_REVIEW_BLOCK = (
 
 RESOLVED_OK = (
     '        return record.with_(phase=Phase.IMPLEMENTED, checks_since="",\n'
-    '                            note=f"conflit resolu par {method.lower()}")'
+    '                            note=f"conflict resolved by {method.lower()}")'
 )
 RESOLVED_MUTANT = RESOLVED_OK.replace("Phase.IMPLEMENTED", "Phase.IN_REVIEW")
 
 # (name, file, text to find, replacement) - each one removes a single guarantee.
 MUTATIONS = [
-    ("un rollup vide vaut absence de CI (grace supprimee)",
+    ("an empty rollup means no CI (grace period removed)",
      "forgeron/engine.py",
      "            if waited < self._config.checks_grace_seconds:",
      "            if False:"),
 
-    ("une issue fermee est un abandon, meme fusionnee",
+    ("a closed issue is an abandonment, even when merged",
      "forgeron/states.py",
      "    if not obs.issue_open and not obs.merged:",
      "    if not obs.issue_open:"),
 
-    ("le verdict de l'agent est cru sur parole",
+    ("the agent's verdict is taken at its word",
      "forgeron/engine.py",
      "        if not self._workspace.is_synced(record.worktree, record.branch):",
      "        if False:"),
 
-    ("les remarques deja traitees ne sont pas memorisees",
+    ("remarks already handled are not remembered",
      "forgeron/engine.py",
      "            seen_feedback=record.seen_feedback + tuple(item.ident for item in feedback),",
      "            seen_feedback=record.seen_feedback,"),
 
-    ("la CI n'est pas attendue avant la revue",
+    ("CI is not awaited before review",
      "forgeron/states.py",
      "        return Decision(Action.WAIT_CHECKS, Phase.AWAITING_CHECKS, \"work pushed, checking CI\")",
      "        return Decision(Action.REQUEST_REVIEW, Phase.IN_REVIEW, \"work pushed\")"),
 
-    ("les questions du plan sont ignorees",
+    ("the plan's questions are ignored",
      "forgeron/states.py",
      "    return Phase.AWAITING_ANSWER if questions else Phase.DRAFTED",
      "    return Phase.DRAFTED"),
 
-    ("un humain ne passe plus avant la CI rouge",
+    ("a human no longer outranks red CI",
      "forgeron/states.py",
      """        if obs.new_feedback:
             return Decision(Action.REVISE, Phase.REVISING,
                             f"{len(obs.new_feedback)} item(s) of feedback while waiting for CI")""",
      "        if False:\n            pass"),
 
-    ("l'etiquette de pause n'arrete rien",
+    ("the pause label stops nothing",
      "forgeron/states.py",
      "    if obs.held:",
      "    if False:"),
 
-    ("on rebase meme sous les yeux d'un relecteur",
+    ("rebasing even under a reviewer's eyes",
      "forgeron/states.py",
      '    already_reviewed = obs.pr is not None and obs.pr.reviewed',
      "    already_reviewed = False"),
 
-    ("la resolution de conflit est crue sur parole",
+    ("the conflict resolution is taken at its word",
      "forgeron/engine.py",
      "        remaining = self._workspace.conflicted(record.worktree)",
      "        remaining = []"),
 
-    ("un humain ne passe plus avant un conflit",
+    ("a human no longer outranks a conflict",
      "forgeron/states.py",
      IN_REVIEW_BLOCK,
      "        pass"),
 
-    ("une resolution de conflit ne redemande pas de revue",
+    ("a conflict resolution does not ask for review again",
      "forgeron/engine.py",
      RESOLVED_OK,
      RESOLVED_MUTANT),
 
-    ("le fichier n'est pas ecarte avant de relancer",
+    ("the file is not set aside before running again",
      "forgeron/regenerator.py",
      "        os.replace(target, aside)\n        try:",
      "        import shutil; shutil.copy2(target, aside)\n        try:"),
 
-    ("le verdict du verificateur est ignore",
+    ("the verifier's verdict is ignored",
      "forgeron/engine.py",
      "            if outcome.ok:",
      "            if True:"),
 
-    ("un visuel peut sortir du worktree",
+    ("a visual can leave the worktree",
      "forgeron/regenerator.py",
      "        if os.path.commonpath([root, target]) != root:",
      "        if False:"),
 
-    ("le plafond de visuels est retire",
+    ("the visuals ceiling is removed",
      "forgeron/engine.py",
      "        for entry in declared[:MAX_VISUALS]:",
      "        for entry in declared:"),
 
-    ("la verification d'attribution est retiree",
+    ("the attribution check is removed",
      "forgeron/engine.py",
      "        if tainted:",
      "        if False:"),
 
-    ("le filtre emporte aussi un co-auteur humain",
+    ("the filter also takes away a human co-author",
      "forgeron/attribution.py",
      r'    r"^\s*co-authored-by:.*(claude|anthropic)",',
      r'    r"^\s*co-authored-by:",'),
 
-    ("la prose de l'agent n'est plus nettoyee",
+    ("the agent's prose is no longer scrubbed",
      "forgeron/engine.py",
      '        attribution.strip(verdict.get("summary", "")).strip(),\n        "",\n        answers,',
      '        verdict.get("summary", "").strip(),\n        "",\n        answers,'),
 
-    ("le plafond de correctifs CI est retire",
+    ("the CI fixes ceiling is removed",
      "forgeron/states.py",
      "            if record.check_fixes >= limits.max_check_fixes:",
      "            if False:"),
 
-    ("l'agent n'est plus transmis a claude",
+    ("the agent is no longer passed to claude",
      "forgeron/claude_agent.py",
      '        if self._agent:\n            argv += ["--agent", self._agent]\n',
      '        if False:\n            argv += ["--agent", self._agent]\n'),
 
-    ("l'agent passe apres l'option variadique --tools",
+    ("the agent comes after the variadic --tools option",
      "forgeron/claude_agent.py",
      '        if self._agent:\n            argv += ["--agent", self._agent]\n\n'
      '        text = contract or self._contract\n'
@@ -168,9 +168,9 @@ def run_suite() -> tuple[bool, str]:
 
 def main() -> int:
     baseline_ok, baseline_line = run_suite()
-    print(f"baseline           : {'VERTE' if baseline_ok else 'ROUGE'}  {baseline_line}")
+    print(f"baseline           : {'GREEN' if baseline_ok else 'RED'}  {baseline_line}")
     if not baseline_ok:
-        print("la suite doit etre verte avant de la sonder", file=sys.stderr)
+        print("the suite must be green before it is probed", file=sys.stderr)
         return 1
 
     undetected: list[str] = []
@@ -178,8 +178,8 @@ def main() -> int:
         path = ROOT / relative
         original = path.read_text(encoding="utf-8")
         if needle not in original:
-            print(f"IMPOSSIBLE         : {name} — motif absent de {relative}")
-            undetected.append(f"{name} (motif absent)")
+            print(f"IMPOSSIBLE         : {name} — pattern missing from {relative}")
+            undetected.append(f"{name} (pattern missing)")
             continue
         try:
             path.write_text(original.replace(needle, replacement, 1), encoding="utf-8")
@@ -187,21 +187,21 @@ def main() -> int:
             caught = not caught
         finally:
             path.write_text(original, encoding="utf-8")
-        print(f"{'DETECTEE' if caught else 'PASSEE   '}          : {name}")
+        print(f"{'DETECTED' if caught else 'MISSED   '}          : {name}")
         if not caught:
             undetected.append(name)
 
     restored_ok, _ = run_suite()
-    print(f"\nrestauree          : {'VERTE' if restored_ok else 'ROUGE'}")
+    print(f"\nrestored           : {'GREEN' if restored_ok else 'RED'}")
     if not restored_ok:
-        print("les sources n'ont pas ete restaurees correctement", file=sys.stderr)
+        print("the sources were not restored correctly", file=sys.stderr)
         return 1
     if undetected:
-        print(f"\n{len(undetected)} mutation(s) non detectee(s) — la suite ne les couvre pas :")
+        print(f"\n{len(undetected)} mutation(s) not detected — the suite does not cover them:")
         for name in undetected:
             print(f"  - {name}")
         return 1
-    print(f"\n{len(MUTATIONS)}/{len(MUTATIONS)} mutations detectees")
+    print(f"\n{len(MUTATIONS)}/{len(MUTATIONS)} mutations detected")
     return 0
 
 

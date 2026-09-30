@@ -1,13 +1,13 @@
-# forgeron dans un conteneur.
+# forgeron in a container.
 #
-# Trois choix, avec leur raison :
-#  - debian:trixie-slim et non python:3-slim, parce que l'image a de toute facon
-#    besoin de git, curl et gh : partir d'une base Python n'economise rien et fige
-#    une version de Python dont le pilote n'a pas besoin (stdlib seule, 3.10+) ;
-#  - un utilisateur NON root, parce que l'agent execute des commandes que le prompt
-#    ne decide pas entierement, et que root dans un conteneur monte l'hote ;
-#  - AUCUN secret dans l'image. Une couche est publique des que l'image est poussee,
-#    et une instruction qui supprime un fichier n'efface pas la couche d'avant.
+# Three choices, with their reason:
+#  - debian:trixie-slim and not python:3-slim, because the image needs git, curl
+#    and gh anyway: starting from a Python base saves nothing and pins
+#    a Python version the driver does not need (stdlib only, 3.10+);
+#  - a NON-root user, because the agent runs commands the prompt does not
+#    entirely decide, and root in a container mounts the host;
+#  - NO secret in the image. A layer is public as soon as the image is pushed,
+#    and an instruction that deletes a file does not erase the layer before it.
 
 FROM debian:trixie-slim
 
@@ -16,17 +16,17 @@ ARG USERNAME=forgeron
 ARG UID=1000
 ARG GID=1000
 
-# curl/ca-certificates : l'installateur claude et le depot gh
-# git              : les worktrees, les commits
-# python3          : le pilote
-# jq, zstd         : optionnels, mais l'installateur claude s'en sert s'ils sont la
-# openssh-client   : si un jour le remote est en ssh plutot qu'en https
+# curl/ca-certificates: the claude installer and the gh repository
+# git              : the worktrees, the commits
+# python3          : the driver
+# jq, zstd         : optional, but the claude installer uses them if they are there
+# openssh-client   : in case the remote is one day over ssh rather than https
 RUN apt-get update && apt-get install -y --no-install-recommends \
         ca-certificates curl git python3 nodejs jq zstd openssh-client gnupg \
     && rm -rf /var/lib/apt/lists/*
 
-# gh, depuis le depot officiel : la version d'un depot de distribution a des mois
-# de retard, et c'est justement ce qui a prive forgeron de `gh pr checks --json`.
+# gh, from the official repository: the version in a distribution repository is months
+# behind, and that is precisely what deprived forgeron of `gh pr checks --json`.
 RUN install -m 0755 -d /etc/apt/keyrings \
     && curl -fsSL https://cli.github.com/packages/githubcli-archive-keyring.gpg \
          -o /etc/apt/keyrings/githubcli-archive-keyring.gpg \
@@ -42,9 +42,9 @@ RUN groupadd -g "$GID" "$USERNAME" \
 USER $USERNAME
 WORKDIR /home/$USERNAME
 
-# L'installateur refuse sudo depuis le shell d'un utilisateur, mais sa garde ne se
-# declenche que si SUDO_USER est renseigne : un utilisateur normal, ici, passe.
-# Il pose le binaire dans ~/.local/bin, d'ou le PATH ci-dessous.
+# The installer refuses sudo from a user's shell, but its guard only
+# triggers when SUDO_USER is set: a normal user, here, gets through.
+# It puts the binary in ~/.local/bin, hence the PATH below.
 RUN curl -fsSL https://claude.ai/install.sh | bash
 ENV PATH="/home/${USERNAME}/.local/bin:${PATH}"
 
@@ -60,15 +60,15 @@ ENV PYTHONPATH=/opt/forgeron \
     PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1
 
-# La prevention de l'attribution IA doit exister LA OU L'AGENT COMMIT, et pas
-# seulement sur la machine de l'auteur : un conteneur neuf n'a aucun hook, donc la
-# couche qui previent y serait absente exactement la ou l'agent est le moins
-# surveille. Le script est derive des memes motifs que la verification du pilote.
+# The AI attribution prevention must exist WHERE THE AGENT COMMITS, and not
+# only on the author's machine: a fresh container has no hook, so the
+# layer that prevents would be missing there exactly where the agent is the least
+# watched. The script is derived from the same patterns as the driver's check.
 RUN python3 -m forgeron hook --install "/home/${USERNAME}/.config/git/hooks" \
     && git config --global core.hooksPath "/home/${USERNAME}/.config/git/hooks"
 
-# Un healthcheck qui ment est pire que pas de healthcheck : celui-ci n'affirme que
-# ce qu'il verifie, a savoir que le pilote se charge et sait s'auto-decrire.
+# A healthcheck that lies is worse than no healthcheck: this one only claims
+# what it checks, namely that the driver loads and can describe itself.
 HEALTHCHECK --interval=60s --timeout=15s --start-period=10s --retries=3 \
     CMD python3 -m forgeron --version || exit 1
 

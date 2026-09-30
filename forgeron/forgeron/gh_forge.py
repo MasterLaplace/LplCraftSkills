@@ -210,12 +210,12 @@ class GhForge:
         budget = max_bytes
         for run in runs:
             if budget <= 0:
-                chunks.append("[... journaux des jobs suivants omis, budget atteint ...]")
+                chunks.append("[... logs of the following jobs omitted, budget reached ...]")
                 break
             head = f"### {run.name} ({run.workflow})\n{run.url}"
             if not run.job_id:
-                chunks.append(f"{head}\n\n[pas un job GitHub Actions : journal non "
-                              f"recuperable par l'API, ouvrir l'URL]")
+                chunks.append(f"{head}\n\n[not a GitHub Actions job: log not "
+                              f"retrievable through the API, open the URL]")
                 continue
 
             raw = self._run(["run", "view", "--repo", repo, "--job", run.job_id,
@@ -224,19 +224,19 @@ class GhForge:
             if not raw.strip():
                 raw = self._run(["api", f"repos/{repo}/actions/jobs/{run.job_id}/logs"],
                                 check=False)
-                source = "api jobs/logs (repli)"
+                source = "api jobs/logs (fallback)"
             if not raw.strip():
-                chunks.append(f"{head}\n\n[journal introuvable : expire (90 jours) ou "
-                              f"supprime. Les deux sources ont rendu zero octet.]")
+                chunks.append(f"{head}\n\n[log not found: expired (90 days) or "
+                              f"deleted. Both sources returned zero bytes.]")
                 continue
 
             slice_budget = min(budget, max(2000, max_bytes // max(1, len(runs))))
             trimmed = raw[-slice_budget:]
             if len(raw) > len(trimmed):
-                trimmed = (f"[... {len(raw) - len(trimmed)} octets omis EN TETE, "
-                           f"la fin du journal suit ...]\n" + trimmed)
+                trimmed = (f"[... {len(raw) - len(trimmed)} bytes omitted AT THE START, "
+                           f"the end of the log follows ...]\n" + trimmed)
             budget -= len(trimmed)
-            chunks.append(f"{head}\nsource : {source}\n\n{trimmed}")
+            chunks.append(f"{head}\nsource: {source}\n\n{trimmed}")
         return "\n\n".join(chunks)
 
     def collect_feedback(self, repo: str, pr: int, issue: int) -> list[Feedback]:
@@ -260,7 +260,7 @@ class GhForge:
                     continue
                 items.append(Feedback(
                     ident=f"review:{review['id']}", kind=FeedbackKind.REVIEW, author=author,
-                    body=body or f"(revue {state} sans commentaire)",
+                    body=body or f"(review {state} without a comment)",
                     created_at=review.get("submitted_at") or "", state=state,
                 ))
 
@@ -328,16 +328,16 @@ class GhForge:
     def comment_on_pull_request(self, repo: str, number: int, body: str,
                                 attachments: tuple[tuple[str, str], ...] = (),
                                 cwd: str | None = None) -> None:
-        """Poste un commentaire, avec ses images ou videos si la forge sait les rendre.
+        """Post a comment, with its images or videos if the forge can render them.
 
-        `--attach` existe depuis gh 2.99.0 (mesure : absent en 2.98). Les chemins
-        sont RELATIFS et la commande tourne depuis `cwd`, pour que la reference
-        ecrite dans le corps reste lisible si l'envoi echoue : un `![x](rendu.png)`
-        casse se voit, un chemin absolu de la machine de quelqu'un d'autre est du
-        bruit que personne ne sait interpreter.
+        `--attach` exists since gh 2.99.0 (measured: absent in 2.98). The paths
+        are RELATIVE and the command runs from `cwd`, so that the reference
+        written in the body stays readable if the upload fails: a broken
+        `![x](render.png)` is visible, an absolute path from somebody else's machine
+        is noise nobody knows how to interpret.
 
-        gh reecrit en place toute reference que le corps contient deja, et ajoute
-        a la fin celles qu'il ne trouve pas.
+        gh rewrites in place every reference the body already contains, and appends
+        at the end the ones it does not find.
         """
         argv = ["pr", "comment", str(number), "--repo", repo, "--body-file", "-"]
         for path, caption in attachments:
@@ -356,11 +356,11 @@ class GhForge:
         return json.loads(out or "[]")
 
     def version(self) -> tuple[int, int, int]:
-        """La version de gh, en trois entiers. Ce qui est disponible en depend.
+        """The gh version, as three integers. What is available depends on it.
 
-        Demandee plutot que supposee : `--attach` n'existe pas avant 2.99.0 et
-        `gh pr checks --json` pas avant 2.6x, donc un drapeau inconnu echouerait
-        au milieu d'un run, ce qui est la pire facon de l'apprendre.
+        Asked rather than assumed: `--attach` does not exist before 2.99.0 and
+        `gh pr checks --json` not before 2.6x, so an unknown flag would fail
+        in the middle of a run, which is the worst way to find out.
         """
         raw = self._run(["--version"], check=False).split()
         for word in raw:

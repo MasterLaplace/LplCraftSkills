@@ -67,6 +67,20 @@ ensemble, et la forge n'accepte que certaines combinaisons, listées dans le mes
 chose pour les deux clés du squash. Les réglages d'un dépôt partent en une seule écriture, pour que la
 forge voie la paire entière.
 
+## Les choix de l'exemple
+
+- **fusion en squash seulement**, titre et message pris de la PR (`PR_TITLE`, `PR_BODY`) : avec des
+  PR petites, une intention chacune, personne ne relit l'historique interne d'une branche après la
+  fusion, et les tours de revue d'un bot y ajoutent du bruit (`tracer-le-travail`, section 9). Le
+  titre de la PR devient donc le commit sur la branche principale, et il suit les commits
+  conventionnels ;
+- **un contournement admin permanent**, pour que le mainteneur puisse réécrire l'histoire. Il le
+  dispense aussi de la PR, et un bot qui parle avec son jeton en hérite : choisi le 2026-09-30 en
+  connaissant ce prix. Ajouter un contournement à un ruleset qui existe est un affaiblissement, que
+  le verbe refuse ; on le pose donc une fois à la main, et le fichier le déclare ensuite ;
+- **les étiquettes du pilote s'appellent `forgeron` et `forgeron:hold`** : une étiquette nomme
+  l'outil du projet, pas le modèle qui tourne derrière.
+
 ## Ce qu'il refuse, et pourquoi
 
 | Refus | Pourquoi |

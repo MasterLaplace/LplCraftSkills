@@ -8,8 +8,8 @@
       "good first issue": {"color": "7057ff", "description": "Small and well scoped: a good first contribution"},
       "help wanted": {"color": "008672", "description": "The maintainer would welcome a hand"},
       "dependencies": {"color": "0366d6", "description": "Updates a dependency"},
-      "claude": {"color": "5319e7", "description": "Handed to forgeron"},
-      "claude:hold": {"color": "b60205", "description": "forgeron no longer touches it"}
+      "forgeron": {"color": "5319e7", "description": "Handed to forgeron"},
+      "forgeron:hold": {"color": "b60205", "description": "forgeron no longer touches it"}
     },
     "renames": {
       "bug": "type:bug",
@@ -18,11 +18,11 @@
     },
     "unlisted_labels": "report",
     "settings": {
-      "allow_merge_commit": true,
-      "allow_squash_merge": false,
+      "allow_squash_merge": true,
+      "allow_merge_commit": false,
       "allow_rebase_merge": false,
-      "merge_commit_title": "PR_TITLE",
-      "merge_commit_message": "PR_BODY",
+      "squash_merge_commit_title": "PR_TITLE",
+      "squash_merge_commit_message": "PR_BODY",
       "delete_branch_on_merge": true,
       "allow_update_branch": true
     },
@@ -49,10 +49,10 @@
             "require_last_push_approval": false,
             "required_review_thread_resolution": false,
             "require_extra_approval_for_unattributed_changes": true,
-            "allowed_merge_methods": ["merge"]
+            "allowed_merge_methods": ["squash"]
           }}
         ],
-        "bypass_actors": []
+        "bypass_actors": [{"actor_id": 5, "actor_type": "RepositoryRole", "bypass_mode": "always"}]
       }
     ]
   },

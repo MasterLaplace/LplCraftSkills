@@ -143,8 +143,8 @@ Pour reprendre la main sans rien casser : étiquette `claude:hold`. Pour tout a
 
 ## Ce qui est vérifié, et ce qui ne l'est pas
 
-Vérifié hors ligne, à chaque `./tests/run.sh` : **182 tests** dont le trajet complet issue → fusion
-avec un build rouge et un tour de revue au milieu, plus **31 sondes de mutation** qui cassent une
+Vérifié hors ligne, à chaque `./tests/run.sh` : **202 tests** dont le trajet complet issue → fusion
+avec un build rouge et un tour de revue au milieu, plus **38 sondes de mutation** qui cassent une
 règle chacune et vérifient que la suite s'en aperçoit. Une suite verte au premier coup ne prouve
 rien ; c'est la sonde qui prouve qu'elle *pouvait* échouer.
 
@@ -171,7 +171,7 @@ disparaître la sortie structurée, et ses hooks ne se déclenchent qu'au niveau
 
 Sous Windows natif, **4 tests échouent** parce qu'ils supposent un shell POSIX : un script de hook
 lancé directement, et un `;` qui n'est pas un séparateur pour `cmd.exe`. forgeron vise Linux et WSL, où
-ils passent ; les 178 autres passent aussi sous Windows.
+ils passent ; les 198 autres passent aussi sous Windows.
 
 **Pas encore vérifié de bout en bout**, et c'est dit à chaque fois dans les fichiers concernés :
 le chemin d'**écriture** sur la forge (créer le brouillon, le passer prêt, commenter), qui demande un

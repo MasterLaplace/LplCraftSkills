@@ -43,16 +43,29 @@ passage de la suite : un exemple qui ne se charge plus casse la suite.
   renommages, ses réglages et sa sécurité, et **remplace** la liste des rulesets si elle en déclare
   une ;
 - `required_checks` ajoute la règle des checks requis à chaque ruleset de branche du dépôt : les
-  noms de checks changent d'un dépôt à l'autre, pas la règle ;
+  noms de checks changent d'un dépôt à l'autre, pas la règle. Un nom seul accepte le check de
+  n'importe quelle source ; `{"context", "integration_id"}` l'épingle à une application. Sans ruleset
+  de branche, ou avec un ruleset qui déclare déjà ses checks, le fichier est refusé ;
 - `renames` migre un vocabulaire sans perdre les items qui portent l'ancienne étiquette ;
 - `unlisted_labels` vaut `report` (par défaut : les étiquettes non déclarées sont listées) ou
-  `delete-unused` (celles qu'aucun item ne porte sont supprimées, les autres jamais) ;
+  `delete-unused` (celles qu'aucune issue ni PR ne porte sont supprimées, les autres jamais). Les
+  discussions portent aussi des étiquettes, et l'API ne les compte pas : sur un dépôt où elles sont
+  actives, rien n'est supprimé. Une étiquette nommée dans un fichier (un formulaire d'issue,
+  `dependabot.yml`, un workflow) n'est pas comptée non plus : lire ces fichiers avant de choisir
+  `delete-unused` ;
 - `only` restreint un dépôt à certains domaines. C'est le cas d'un dépôt qui garde son propre
   vocabulaire d'étiquettes et reçoit seulement les réglages, la sécurité et les règles.
 
-Une clé inconnue, une couleur mal formée, une étiquette sans description ou un renommage vers une
-étiquette non déclarée refusent tout le fichier, avec le chemin exact de ce qui ne va pas. Rien n'est
-à moitié appliqué.
+Le fichier est refusé en entier, avec le chemin exact de ce qui ne va pas, pour une clé inconnue, une
+valeur du mauvais type, une couleur mal formée, une étiquette sans description, un renommage vers une
+étiquette non déclarée, deux noms qui ne diffèrent que par la casse, un ruleset sans `bypass_actors` ou
+sans les paramètres que la forge exige, ou une paire de messages de fusion invalide. Rien n'est à
+moitié appliqué.
+
+**Les messages de fusion vont par paire.** `merge_commit_title` et `merge_commit_message` se déclarent
+ensemble, et la forge n'accepte que certaines combinaisons, listées dans le message d'erreur ; même
+chose pour les deux clés du squash. Les réglages d'un dépôt partent en une seule écriture, pour que la
+forge voie la paire entière.
 
 ## Ce qu'il refuse, et pourquoi
 
@@ -64,6 +77,9 @@ Une clé inconnue, une couleur mal formée, une étiquette sans description ou u
 | retirer une protection de sécurité | désactiver la protection au push ou les alertes se fait à la main, avec sa raison écrite (`garder-les-frontieres`) |
 | supprimer un ruleset non déclaré | il est listé, jamais supprimé |
 | lire un état de sécurité illisible comme « inactif » | un état qu'on ne lit pas ne prouve rien : le point est bloqué, pas corrigé |
+| affaiblir un ruleset | baisser son application, lui retirer une règle, lui ajouter un contournement : même raison que pour la sécurité |
+| perdre un paramètre que seule la forge porte | une mise à jour remplace le ruleset en entier : le plan nomme le paramètre, qu'il faut déclarer pour le garder ou retirer à la main |
+| toucher un dépôt archivé | il est en lecture seule : tout est sauté, et la sortie dit que rien n'a été vérifié |
 
 Les rulesets hérités d'une organisation ne sont ni lus ni modifiés : ils appartiennent à qui les a
 posés.
@@ -79,8 +95,9 @@ Le verbe passe par `gh`, donc par ta session : aucun jeton dans la config, rien
 C'est le cas d'un dépôt dont on n'est que collaborateur : ses étiquettes se posent, le reste revient
 à son propriétaire.
 
-Chaque écriture, réussie ou refusée, laisse une ligne `etabli_applied` ou `etabli_failed` dans
-`~/.forgeron/journal.jsonl`, avec l'avant et l'après. C'est la réponse à « qui a changé ce réglage, et
+Chaque écriture, réussie, refusée ou restée sans réponse, laisse une ligne `etabli_applied` ou
+`etabli_failed` dans le journal de forgeron (`journal.jsonl` sous son `home`), avec l'avant et l'après.
+Pour un ruleset, l'avant est le ruleset entier tel que la forge l'a rendu, donc de quoi le reposer. C'est la réponse à « qui a changé ce réglage, et
 quand » que la forge ne donne qu'à moitié.
 
 ## Ce qu'il ne fait pas, délibérément
@@ -104,14 +121,15 @@ quand » que la forge ne donne qu'à moitié.
 
 ## Les faits mesurés
 
-Lus le 2026-09-30 sur six dépôts réels, en lecture seule, avec la session `gh` d'un compte personnel
+Lus le 2026-09-30 sur six dépôts réels (cinq pour ce qui demande d'être admin), en lecture seule, avec la session `gh` d'un compte personnel
 (portées `repo`, `read:org`, `gist`, `admin:public_key`, `read:packages`) :
 
 - les nombres d'items par étiquette viennent d'une seule requête GraphQL paginée
   (`labels { issues { totalCount } pullRequests { totalCount } }`), au lieu d'une recherche par
   étiquette que la limite de l'API de recherche (30 par minute) rendrait lente ;
-- `GET /repos/{o}/{r}/vulnerability-alerts` sort de `gh api` en code 1 avec `HTTP 404` quand les
-  alertes sont inactives, et en code 0 sans corps quand elles sont actives ;
+- `GET /repos/{o}/{r}/vulnerability-alerts` sort de `gh api` en code 1 avec
+  `Vulnerability alerts are disabled. (HTTP 404)` quand les alertes sont inactives, et en code 0 sans
+  corps quand elles sont actives. Un autre 404 ne dit rien de l'état ;
 - `automated-security-fixes` et `private-vulnerability-reporting` répondent `{"enabled": false}` sur un
   dépôt où ils sont inactifs, et les deux champs de `security_and_analysis` sont lisibles par l'admin ;
 - sur un dépôt dont on n'a que l'écriture, `permissions.admin` est faux et les étiquettes restent

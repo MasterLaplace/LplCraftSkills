@@ -176,7 +176,7 @@ Quatre familles, citées comme exemples d'un principe et non comme une recommand
 | analyse des dépendances | des versions aux vulnérabilités connues, et l'inventaire de ce qui est embarqué |
 | analyse des workflows de CI | des permissions trop larges, une action non épinglée, une entrée injectée dans une commande |
 
-Trois règles :
+Quatre règles :
 
 - **lire leur résultat plutôt que les refaire à la main.** Un motif recopié de mémoire trouve moins que
   l'outil qui le maintient ;
@@ -184,7 +184,11 @@ Trois règles :
   justification écrite, locale, et qui dit quand elle pourra tomber (voir `tracer-le-travail`,
   section 8). Une alerte fermée sans raison est un avertissement supprimé ;
 - **un outil vert prouve l'absence des motifs qu'il connaît, pas l'absence de faille.** Aucun ne sait
-  qui a le droit de lire quoi dans ton métier. C'est la part qui reste à un humain.
+  qui a le droit de lire quoi dans ton métier. C'est la part qui reste à un humain ;
+- **un résultat qu'on ne peut pas lire n'a rien prouvé.** Un tableau de bord fermé, un jeton refusé,
+  une analyse dont on ne voit que le badge : pour le relecteur, l'outil n'a rien vérifié. Le point va
+  dans ce qui n'a pas été vérifié, et on demande le résultat à qui y a accès, au lieu de le déduire de la
+  couleur du badge.
 
 ## 5. L'événement : une dépendance ou un outil tiers
 
@@ -204,6 +208,12 @@ Des grilles publiques existent pour la provenance et la maintenance (SLSA pour l
 fabrication, OpenSSF Scorecard pour la santé d'un projet). Elles aident à répondre, elles ne décident
 pas.
 
+**Une empreinte épinglée dit d'où elle vient.** Le digest d'une image ou l'empreinte d'un commit ne se
+relit pas à l'œil : sans sa source, le relecteur croit l'auteur sur parole. La description de la PR
+donne donc, pour chaque empreinte, où elle a été lue et la commande qui la relit (le registre, la
+forge). Un robot de mise à jour qui propose la même empreinte dans d'autres dépôts confirme qu'elle
+est celle que le registre publie aujourd'hui, et rien de plus : il lit le même registre.
+
 **La décision appartient à l'équipe sécurité de l'organisation.** On lui apporte le lien, les réponses
 aux six questions avec leur statut, et la question précise qu'on lui pose. Un rapport d'analyse, même
 très détaillé, ne donne pas le feu vert : il permet à l'équipe de le donner.
@@ -222,6 +232,11 @@ Le rapport tient en cinq rubriques :
 3. ce que les outils automatiques ont rendu, alertes fermées comprises, avec leur justification ;
 4. ce qui n'a pas été regardé ;
 5. la question posée à l'équipe, en une phrase.
+
+**Une frontière peut avoir deux propriétaires.** Un changement qui touche la manière dont un
+déploiement atteint la base de production relève de l'équipe sécurité, et de l'équipe qui opère ce
+déploiement. On pose à chacune la question qui la concerne, séparément, et le rapport dit à qui chaque
+question est partie.
 
 **Une faille découverte se signale tout de suite, et ne se corrige pas en silence.** Une fuite ou une
 faille trouvée en codant, en relisant ou en testant va à l'équipe sécurité avant tout correctif. Il

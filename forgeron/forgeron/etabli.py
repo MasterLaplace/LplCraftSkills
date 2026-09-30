@@ -8,12 +8,30 @@ from typing import Any
 
 DOMAINS = ("labels", "settings", "security", "rulesets")
 
-SETTINGS_KEYS = frozenset({
+BOOLEAN_SETTINGS = frozenset({
     "allow_squash_merge", "allow_merge_commit", "allow_rebase_merge", "allow_auto_merge",
-    "allow_update_branch", "delete_branch_on_merge", "squash_merge_commit_title",
-    "squash_merge_commit_message", "merge_commit_title", "merge_commit_message",
-    "web_commit_signoff_required", "has_issues", "has_projects", "has_wiki", "has_discussions",
+    "allow_update_branch", "delete_branch_on_merge", "web_commit_signoff_required", "has_issues",
+    "has_projects", "has_wiki",
 })
+
+CHOICE_SETTINGS = {
+    "squash_merge_commit_title": ("PR_TITLE", "COMMIT_OR_PR_TITLE"),
+    "squash_merge_commit_message": ("PR_BODY", "COMMIT_MESSAGES", "BLANK"),
+    "merge_commit_title": ("PR_TITLE", "MERGE_MESSAGE"),
+    "merge_commit_message": ("PR_BODY", "PR_TITLE", "BLANK"),
+}
+
+SETTINGS_KEYS = BOOLEAN_SETTINGS | frozenset(CHOICE_SETTINGS)
+
+MESSAGE_PAIRS = {
+    ("merge_commit_title", "merge_commit_message"): (
+        ("PR_TITLE", "PR_BODY"), ("PR_TITLE", "BLANK"), ("MERGE_MESSAGE", "PR_TITLE"),
+    ),
+    ("squash_merge_commit_title", "squash_merge_commit_message"): (
+        ("PR_TITLE", "PR_BODY"), ("PR_TITLE", "BLANK"), ("PR_TITLE", "COMMIT_MESSAGES"),
+        ("COMMIT_OR_PR_TITLE", "COMMIT_MESSAGES"),
+    ),
+}
 
 SECURITY_KEYS = (
     "secret_scanning", "secret_scanning_push_protection", "dependabot_alerts",
@@ -25,6 +43,19 @@ UNLISTED_POLICIES = ("report", "delete-unused")
 REPO_KEYS = frozenset({"labels", "renames", "unlisted_labels", "settings", "security", "rulesets",
                        "required_checks", "only"})
 DEFAULT_KEYS = REPO_KEYS - {"required_checks", "only"}
+
+RULESET_KEYS = ("name", "target", "enforcement", "conditions", "rules", "bypass_actors")
+RULESET_REQUIRED = ("name", "target", "enforcement", "rules", "bypass_actors")
+TARGETS = ("branch", "tag", "push")
+ENFORCEMENTS = ("active", "evaluate", "disabled")
+PULL_REQUEST_REQUIRED = ("dismiss_stale_reviews_on_push", "require_code_owner_review",
+                         "require_last_push_approval", "required_approving_review_count",
+                         "required_review_thread_resolution")
+ACTOR_TYPES = ("Integration", "OrganizationAdmin", "RepositoryRole", "Team", "DeployKey")
+BYPASS_MODES = ("always", "pull_request", "exempt")
+BYPASS_MODES_BY_REACH = ("pull_request", "always", "exempt")
+API_ONLY_KEYS = frozenset({"id", "source", "source_type", "node_id", "_links", "created_at",
+                           "updated_at", "current_user_can_bypass"})
 
 _COLOR = re.compile(r"^[0-9a-f]{6}$")
 _SLUG = re.compile(r"^[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+$")
@@ -84,6 +115,8 @@ class Observed:
     settings: dict[str, Any] = dataclasses.field(default_factory=dict)
     security: dict[str, bool | None] = dataclasses.field(default_factory=dict)
     rulesets: tuple[dict[str, Any], ...] = ()
+    archived: bool = False
+    discussions: bool = False
 
 
 @dataclasses.dataclass(frozen=True)
@@ -122,6 +155,7 @@ def parse(raw: Any, source: str = "etabli") -> tuple[Desired, ...]:
     if not isinstance(repos, dict) or not repos:
         raise ConfigError(f"{source}.repos: at least one repository is expected, as "
                           f"\"owner/name\": {{}}")
+    _refuse_case_twins(repos, f"{source}.repos", "repository")
     base = {
         "labels": _labels(defaults.get("labels", {}), f"{source}.defaults.labels"),
         "renames": _renames(defaults.get("renames", {}), f"{source}.defaults.renames"),
@@ -143,10 +177,9 @@ def _desired(slug: str, base: dict[str, Any], entry: Any, where: str) -> Desired
 
     labels = {**base["labels"], **_labels(entry.get("labels", {}), f"{where}.labels")}
     renames = {**base["renames"], **_renames(entry.get("renames", {}), f"{where}.renames")}
+    _refuse_case_twins(labels, f"{where}.labels", "label")
+    _refuse_case_twins(renames, f"{where}.renames", "label")
     declared = {name.lower() for name in labels}
-    if len(declared) != len(labels):
-        raise ConfigError(f"{where}.labels: two labels differ only by case, and the forge "
-                          f"treats them as one")
     for old, new in renames.items():
         if new.lower() not in declared:
             raise ConfigError(f"{where}.renames: \"{old}\" -> \"{new}\", but \"{new}\" is not "
@@ -160,6 +193,7 @@ def _desired(slug: str, base: dict[str, Any], entry: Any, where: str) -> Desired
                           f"{', '.join(UNLISTED_POLICIES)}")
 
     settings = {**base["settings"], **_settings(entry.get("settings", {}), f"{where}.settings")}
+    _check_message_pairs(settings, f"{where}.settings")
     security = {**base["security"], **_security(entry.get("security", {}), f"{where}.security")}
     rulesets = (_rulesets(entry["rulesets"], f"{where}.rulesets") if "rulesets" in entry
                 else base["rulesets"])
@@ -182,11 +216,20 @@ def _desired(slug: str, base: dict[str, Any], entry: Any, where: str) -> Desired
     )
 
 
-def _refuse_unknown(value: dict[str, Any], allowed: frozenset[str] | set[str], where: str) -> None:
+def _refuse_unknown(value: dict[str, Any], allowed, where: str) -> None:
     unknown = sorted(set(value) - set(allowed))
     if unknown:
         raise ConfigError(f"{where}: unknown key(s) {', '.join(unknown)}; "
                           f"expected: {', '.join(sorted(allowed))}")
+
+
+def _refuse_case_twins(names, where: str, what: str) -> None:
+    seen: dict[str, str] = {}
+    for name in names:
+        twin = seen.setdefault(name.lower(), name)
+        if twin != name:
+            raise ConfigError(f"{where}: \"{twin}\" and \"{name}\" are the same {what} for the forge, "
+                              f"which ignores case")
 
 
 def _labels(raw: Any, where: str) -> dict[str, Label]:
@@ -194,6 +237,8 @@ def _labels(raw: Any, where: str) -> dict[str, Label]:
         raise ConfigError(f"{where}: an object {{\"name\": {{\"color\", \"description\"}}}} is expected")
     labels: dict[str, Label] = {}
     for name, spec in raw.items():
+        if not name.strip():
+            raise ConfigError(f"{where}: a label name cannot be empty")
         if not isinstance(spec, dict):
             raise ConfigError(f"{where}.{name}: an object is expected")
         _refuse_unknown(spec, {"color", "description"}, f"{where}.{name}")
@@ -222,7 +267,24 @@ def _settings(raw: Any, where: str) -> dict[str, Any]:
     if not isinstance(raw, dict):
         raise ConfigError(f"{where}: an object is expected")
     _refuse_unknown(raw, SETTINGS_KEYS, where)
+    for key, value in raw.items():
+        if key in BOOLEAN_SETTINGS and not isinstance(value, bool):
+            raise ConfigError(f"{where}.{key}: true or false, not {value!r}")
+        if key in CHOICE_SETTINGS and value not in CHOICE_SETTINGS[key]:
+            raise ConfigError(f"{where}.{key}: {value!r}, expected one of: "
+                              f"{', '.join(CHOICE_SETTINGS[key])}")
     return dict(raw)
+
+
+def _check_message_pairs(settings: dict[str, Any], where: str) -> None:
+    for (title, message), valid in MESSAGE_PAIRS.items():
+        present = [key for key in (title, message) if key in settings]
+        if not present:
+            continue
+        combinations = ", ".join(f"{first}+{second}" for first, second in valid)
+        if len(present) == 1 or (settings[title], settings[message]) not in valid:
+            raise ConfigError(f"{where}: {title} and {message} are declared together, as one of: "
+                              f"{combinations}")
 
 
 def _security(raw: Any, where: str) -> dict[str, bool]:
@@ -240,39 +302,113 @@ def _rulesets(raw: Any, where: str) -> tuple[dict[str, Any], ...]:
         raise ConfigError(f"{where}: a list of rulesets in the API format is expected")
     names: set[str] = set()
     for index, ruleset in enumerate(raw):
-        if not isinstance(ruleset, dict) or not ruleset.get("name"):
-            raise ConfigError(f"{where}[{index}]: an object with a \"name\" is expected")
-        for key in ("target", "enforcement", "rules"):
+        at = f"{where}[{index}]"
+        if not isinstance(ruleset, dict) or not isinstance(ruleset.get("name"), str) \
+                or not ruleset["name"].strip():
+            raise ConfigError(f"{at}: an object with a \"name\" is expected")
+        _refuse_unknown(ruleset, RULESET_KEYS, f"{at} ({ruleset['name']})")
+        for key in RULESET_REQUIRED:
             if key not in ruleset:
-                raise ConfigError(f"{where}[{index}] ({ruleset['name']}): \"{key}\" is missing")
+                raise ConfigError(f"{at} ({ruleset['name']}): \"{key}\" is missing")
+        if ruleset["target"] not in TARGETS:
+            raise ConfigError(f"{at}.target: {ruleset['target']!r}, expected one of: {', '.join(TARGETS)}")
+        if ruleset["enforcement"] not in ENFORCEMENTS:
+            raise ConfigError(f"{at}.enforcement: {ruleset['enforcement']!r}, expected one of: "
+                              f"{', '.join(ENFORCEMENTS)}")
+        if not isinstance(ruleset.get("conditions", {}), dict):
+            raise ConfigError(f"{at}.conditions: an object is expected")
+        _check_rules(ruleset["rules"], f"{at}.rules")
+        _check_bypass(ruleset["bypass_actors"], f"{at}.bypass_actors")
         if ruleset["name"] in names:
             raise ConfigError(f"{where}: two rulesets are named \"{ruleset['name']}\"")
         names.add(ruleset["name"])
     return tuple(json.loads(json.dumps(ruleset)) for ruleset in raw)
 
 
+def _check_rules(rules: Any, where: str) -> None:
+    if not isinstance(rules, list):
+        raise ConfigError(f"{where}: a list of rules is expected")
+    for index, rule in enumerate(rules):
+        at = f"{where}[{index}]"
+        if not isinstance(rule, dict) or not isinstance(rule.get("type"), str):
+            raise ConfigError(f"{at}: an object with a \"type\" is expected, not {rule!r}")
+        _refuse_unknown(rule, {"type", "parameters"}, at)
+        parameters = rule.get("parameters") or {}
+        if not isinstance(parameters, dict):
+            raise ConfigError(f"{at}.parameters: an object is expected")
+        if rule["type"] == "pull_request":
+            missing = [key for key in PULL_REQUEST_REQUIRED if key not in parameters]
+            if missing:
+                raise ConfigError(f"{at}.parameters: the forge requires {', '.join(missing)}")
+
+
+def _check_bypass(actors: Any, where: str) -> None:
+    if not isinstance(actors, list):
+        raise ConfigError(f"{where}: a list is expected, [] for no bypass")
+    for index, actor in enumerate(actors):
+        at = f"{where}[{index}]"
+        if not isinstance(actor, dict):
+            raise ConfigError(f"{at}: an object is expected")
+        _refuse_unknown(actor, {"actor_id", "actor_type", "bypass_mode"}, at)
+        if actor.get("actor_type") not in ACTOR_TYPES:
+            raise ConfigError(f"{at}.actor_type: {actor.get('actor_type')!r}, expected one of: "
+                              f"{', '.join(ACTOR_TYPES)}")
+        if actor.get("bypass_mode", "always") not in BYPASS_MODES:
+            raise ConfigError(f"{at}.bypass_mode: {actor.get('bypass_mode')!r}, expected one of: "
+                              f"{', '.join(BYPASS_MODES)}")
+
+
 def _with_required_checks(rulesets: tuple[dict[str, Any], ...], checks: Any,
                           where: str) -> tuple[dict[str, Any], ...]:
-    if not isinstance(checks, list) or any(not isinstance(check, str) or not check
-                                           for check in checks):
+    if not isinstance(checks, list):
         raise ConfigError(f"{where}: a list of check names is expected")
-    if not checks:
+    entries = [_check_entry(check, f"{where}[{index}]") for index, check in enumerate(checks)]
+    if not entries:
         return rulesets
+    branch = [ruleset for ruleset in rulesets if ruleset["target"] == "branch"]
+    if not branch:
+        raise ConfigError(f"{where}: no branch ruleset to add the checks to")
+    for ruleset in branch:
+        if any(rule.get("type") == "required_status_checks" for rule in ruleset["rules"]):
+            raise ConfigError(f"{where}: ruleset \"{ruleset['name']}\" already declares "
+                              f"required_status_checks; declare the checks in one place")
     rule = {"type": "required_status_checks", "parameters": {
         "strict_required_status_checks_policy": False,
-        "required_status_checks": [{"context": check} for check in checks],
+        "required_status_checks": entries,
     }}
     completed = []
     for ruleset in rulesets:
         ruleset = json.loads(json.dumps(ruleset))
-        types = {entry.get("type") for entry in ruleset["rules"]}
-        if ruleset["target"] == "branch" and "required_status_checks" not in types:
+        if ruleset["target"] == "branch":
             ruleset["rules"].append(json.loads(json.dumps(rule)))
         completed.append(ruleset)
     return tuple(completed)
 
 
+def _check_entry(check: Any, where: str) -> dict[str, Any]:
+    if isinstance(check, str) and check:
+        return {"context": check}
+    if isinstance(check, dict) and isinstance(check.get("context"), str) and check["context"] \
+            and set(check) <= {"context", "integration_id"} \
+            and isinstance(check.get("integration_id", 0), int):
+        return dict(check)
+    raise ConfigError(f"{where}: a check name, or {{\"context\", \"integration_id\"}}, not {check!r}")
+
+
+def declared_domains(desired: Desired) -> tuple[str, ...]:
+    declared = {
+        "labels": bool(desired.labels or desired.renames),
+        "settings": bool(desired.settings),
+        "security": bool(desired.security),
+        "rulesets": bool(desired.rulesets),
+    }
+    return tuple(domain for domain in desired.domains if declared[domain])
+
+
 def plan(desired: Desired, observed: Observed) -> list[Change]:
+    if observed.archived:
+        return [Change(desired.slug, "repository", Kind.SKIPPED, "*",
+                       note="archived: the repository is read-only")]
     changes: list[Change] = []
     if "labels" in desired.domains:
         changes += _plan_labels(desired, observed)
@@ -331,9 +467,14 @@ def _plan_labels(desired: Desired, observed: Observed) -> list[Change]:
     for key, current in present.items():
         if key in wanted or key in consumed:
             continue
-        if desired.unlisted_labels == "delete-unused" and current.uses == 0:
-            changes.append(Change(repo, "labels", Kind.DELETE, current.name,
-                                  before=_label_view(current), note="undeclared, carried by no item"))
+        if desired.unlisted_labels == "delete-unused" and current.uses == 0 and not observed.discussions:
+            changes.append(Change(repo, "labels", Kind.DELETE, current.name, before=_label_view(current),
+                                  note="undeclared, carried by no issue or pull request"))
+        elif desired.unlisted_labels == "delete-unused" and current.uses == 0:
+            changes.append(Change(repo, "labels", Kind.BLOCKED, current.name,
+                                  note="undeclared and carried by no issue or pull request, but "
+                                       "discussions are on and their labels are not counted: "
+                                       "never deleted"))
         elif desired.unlisted_labels == "delete-unused":
             changes.append(Change(repo, "labels", Kind.BLOCKED, current.name,
                                   note=f"undeclared, but carried by {current.uses} item(s): "
@@ -353,9 +494,16 @@ def _plan_settings(desired: Desired, observed: Observed) -> list[Change]:
         return []
     if not observed.admin:
         return [Change(desired.slug, "settings", Kind.SKIPPED, "*", note="requires admin on the repository")]
-    return [Change(desired.slug, "settings", Kind.UPDATE, key, before=observed.settings.get(key),
-                   after=value)
-            for key, value in desired.settings.items() if observed.settings.get(key) != value]
+    differing = {key for key, value in desired.settings.items() if observed.settings.get(key) != value}
+    for pair in MESSAGE_PAIRS:
+        if differing & set(pair):
+            differing |= {key for key in pair if key in desired.settings}
+    if not differing:
+        return []
+    keys = [key for key in desired.settings if key in differing]
+    return [Change(desired.slug, "settings", Kind.UPDATE, "settings",
+                   before={key: observed.settings.get(key) for key in keys},
+                   after={key: desired.settings[key] for key in keys})]
 
 
 def _plan_security(desired: Desired, observed: Observed) -> list[Change]:
@@ -394,10 +542,19 @@ def _plan_rulesets(desired: Desired, observed: Observed) -> list[Change]:
             changes.append(Change(desired.slug, "rulesets", Kind.CREATE, want["name"], after=want))
             continue
         differences = ruleset_differences(want, have)
-        if differences:
+        kept = forge_only(want, have)
+        weaker = ruleset_weakening(want, have) + [f"the PUT would drop {path}" for path in kept]
+        if differences and weaker:
+            changes.append(Change(desired.slug, "rulesets", Kind.BLOCKED, want["name"],
+                                  note="weakens the ruleset: " + " ; ".join(weaker)
+                                       + ". Declare it in the file to keep it, or change it by hand "
+                                         "with its reason written down"))
+        elif differences:
             changes.append(Change(desired.slug, "rulesets", Kind.UPDATE, want["name"],
-                                  before={"id": have.get("id")}, after=want,
-                                  note=" ; ".join(differences)))
+                                  before=have, after=want, note=" ; ".join(differences)))
+        elif kept:
+            changes.append(Change(desired.slug, "rulesets", Kind.UNLISTED, want["name"],
+                                  note="forge-only parameters, kept: " + ", ".join(kept)))
     declared = {want["name"] for want in desired.rulesets}
     for name in present:
         if name not in declared:
@@ -414,8 +571,8 @@ def ruleset_differences(want: dict[str, Any], have: dict[str, Any]) -> list[str]
     if not contains(have.get("conditions") or {}, want.get("conditions") or {}):
         differences.append("conditions")
 
-    wanted_rules = {rule.get("type"): rule for rule in want.get("rules", [])}
-    present_rules = {rule.get("type"): rule for rule in have.get("rules", [])}
+    wanted_rules = _rules_by_type(want)
+    present_rules = _rules_by_type(have)
     for kind, rule in wanted_rules.items():
         if kind not in present_rules:
             differences.append(f"+ rule {kind}")
@@ -428,8 +585,59 @@ def ruleset_differences(want: dict[str, Any], have: dict[str, Any]) -> list[str]
     wanted_bypass = _bypass(want)
     present_bypass = _bypass(have)
     if wanted_bypass != present_bypass:
-        differences.append(f"bypass {sorted(present_bypass)} -> {sorted(wanted_bypass)}")
+        differences.append(f"bypass {sorted(present_bypass, key=str)} -> {sorted(wanted_bypass, key=str)}")
     return differences
+
+
+def ruleset_weakening(want: dict[str, Any], have: dict[str, Any]) -> list[str]:
+    weaker = []
+    rank = {mode: position for position, mode in enumerate(ENFORCEMENTS)}
+    if rank.get(want.get("enforcement"), 0) > rank.get(have.get("enforcement"), 0):
+        weaker.append(f"enforcement {have.get('enforcement')} -> {want.get('enforcement')}")
+    wanted_rules = _rules_by_type(want)
+    weaker += [f"removes rule {kind}" for kind in _rules_by_type(have) if kind not in wanted_rules]
+    present = _bypass(have)
+    weaker += [f"adds bypass {actor}" for actor in sorted(_bypass(want), key=str)
+               if not any(kind == actor[0] and ident == actor[1]
+                          and BYPASS_MODES_BY_REACH.index(mode) >= BYPASS_MODES_BY_REACH.index(actor[2])
+                          for kind, ident, mode in present)]
+    return weaker
+
+
+def forge_only(want: dict[str, Any], have: dict[str, Any]) -> list[str]:
+    paths = [key for key, value in have.items()
+             if key not in RULESET_KEYS and key not in API_ONLY_KEYS and meaningful(value)]
+    paths += [f"conditions.{path}" for path in _extra_paths(have.get("conditions") or {},
+                                                            want.get("conditions") or {})]
+    wanted_rules = _rules_by_type(want)
+    for kind, rule in _rules_by_type(have).items():
+        if kind in wanted_rules:
+            paths += [f"{kind}.{path}" for path in _extra_paths(rule.get("parameters") or {},
+                                                                wanted_rules[kind].get("parameters") or {})]
+    return paths
+
+
+def _extra_paths(have: Any, want: Any) -> list[str]:
+    if not isinstance(have, dict) or not isinstance(want, dict):
+        return []
+    paths = []
+    for key, value in have.items():
+        if key not in want:
+            if meaningful(value):
+                paths.append(key)
+        else:
+            paths += [f"{key}.{path}" for path in _extra_paths(value, want[key])]
+    return paths
+
+
+def meaningful(value: Any) -> bool:
+    if isinstance(value, dict):
+        return any(meaningful(inner) for inner in value.values())
+    return bool(value)
+
+
+def _rules_by_type(ruleset: dict[str, Any]) -> dict[str, dict[str, Any]]:
+    return {rule.get("type"): rule for rule in ruleset.get("rules") or ()}
 
 
 def _bypass(ruleset: dict[str, Any]) -> set[tuple[str, Any, str]]:
@@ -442,6 +650,14 @@ def contains(have: Any, want: Any) -> bool:
         return isinstance(have, dict) and all(key in have and contains(have[key], value)
                                               for key, value in want.items())
     if isinstance(want, list):
-        return (isinstance(have, list) and len(have) == len(want)
-                and all(contains(present, wanted) for present, wanted in zip(have, want)))
+        if not isinstance(have, list) or len(have) != len(want):
+            return False
+        remaining = list(have)
+        for wanted in want:
+            match = next((index for index, present in enumerate(remaining) if contains(present, wanted)),
+                         None)
+            if match is None:
+                return False
+            remaining.pop(match)
+        return True
     return have == want

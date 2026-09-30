@@ -52,6 +52,8 @@ class GhEtabli:
             settings={key: repo[key] for key in SETTINGS_KEYS if key in repo},
             security=self._security(slug, repo) if admin else {},
             rulesets=self._rulesets(slug) if admin else (),
+            archived=bool(repo.get("archived")),
+            discussions=bool(repo.get("has_discussions")),
         )
 
     def apply(self, change: Change) -> None:
@@ -61,7 +63,7 @@ class GhEtabli:
         if change.domain == "labels":
             self._apply_label(slug, change)
         elif change.domain == "settings":
-            self._send("PATCH", f"repos/{slug}", {change.name: change.after})
+            self._send("PATCH", f"repos/{slug}", change.after)
         elif change.domain == "security":
             self._apply_security(slug, change)
         elif change.domain == "rulesets" and change.kind is Kind.CREATE:
@@ -110,7 +112,7 @@ class GhEtabli:
         code, _, err = self._runner(["api", path], None)
         if code == 0:
             return True
-        return False if "HTTP 404" in err else None
+        return False if "are disabled" in err and "HTTP 404" in err else None
 
     def _enabled(self, path: str) -> bool | None:
         code, out, _ = self._runner(["api", path], None)
@@ -168,8 +170,15 @@ class GhEtabli:
             raise GhEtabliError(f"gh {' '.join(argv[:2])}: unreadable response ({failure.msg})")
 
     def _subprocess(self, argv: list[str], stdin: str | None) -> tuple[int, str, str]:
-        done = subprocess.run([self._gh, *argv], input=stdin, capture_output=True, text=True,
-                              encoding="utf-8", errors="replace", timeout=self._timeout)
+        try:
+            done = subprocess.run([self._gh, *argv], input=stdin, capture_output=True, text=True,
+                                  encoding="utf-8", errors="replace", timeout=self._timeout)
+        except subprocess.TimeoutExpired:
+            raise GhEtabliError(f"gh {' '.join(argv[:4])}: no answer after {self._timeout} s, "
+                                f"the state of the forge is unknown")
+        except OSError as failure:
+            raise GhEtabliError(f"gh {' '.join(argv[:4])}: could not run {self._gh} ({failure}), "
+                                f"the state of the forge is unknown")
         return done.returncode, done.stdout, done.stderr
 
 

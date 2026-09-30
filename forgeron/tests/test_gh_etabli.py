@@ -1,7 +1,9 @@
 from __future__ import annotations
 
 import json
+import subprocess
 import unittest
+from unittest import mock
 
 from forgeron.etabli import Change, Kind
 from forgeron.gh_etabli import GhEtabli, GhEtabliError
@@ -12,6 +14,8 @@ REPO = {
     "allow_squash_merge": True,
     "delete_branch_on_merge": False,
     "description": "not a setting etabli manages",
+    "archived": False,
+    "has_discussions": True,
     "security_and_analysis": {"secret_scanning": {"status": "enabled"},
                               "secret_scanning_push_protection": {"status": "disabled"}},
 }
@@ -64,7 +68,7 @@ class Observing(unittest.TestCase):
 
     def test_security_states_come_from_three_sources_and_an_error_stays_unknown(self) -> None:
         state, _ = observe_with(**{
-            "repos/o/r/vulnerability-alerts": (1, "", "gh: Not Found (HTTP 404)"),
+            "repos/o/r/vulnerability-alerts": (1, "", "gh: Vulnerability alerts are disabled. (HTTP 404)"),
             "repos/o/r/automated-security-fixes": (0, json.dumps({"enabled": True, "paused": False}), ""),
             "repos/o/r/private-vulnerability-reporting": (1, "", "gh: Server Error (HTTP 500)"),
         })
@@ -73,6 +77,14 @@ class Observing(unittest.TestCase):
             "dependabot_alerts": False, "dependabot_security_updates": True,
             "private_vulnerability_reporting": None,
         })
+
+    def test_a_404_that_is_not_the_disabled_answer_stays_unknown(self) -> None:
+        state, _ = observe_with(**{"repos/o/r/vulnerability-alerts": (1, "", "gh: Not Found (HTTP 404)")})
+        self.assertIsNone(state.security["dependabot_alerts"])
+
+    def test_archived_and_discussions_are_read_from_the_repository(self) -> None:
+        state, _ = observe_with()
+        self.assertEqual((state.archived, state.discussions), (False, True))
 
     def test_alerts_that_answer_204_are_enabled(self) -> None:
         state, _ = observe_with(**{"repos/o/r/vulnerability-alerts": (0, "", "")})
@@ -102,6 +114,19 @@ class Observing(unittest.TestCase):
         runner = Runner({"repos/o/r": (1, "", "gh: Not Found (HTTP 404)")})
         with self.assertRaises(GhEtabliError):
             GhEtabli(runner=runner).observe("o/r")
+
+
+class Running(unittest.TestCase):
+    def test_a_missing_gh_is_an_error_not_a_crash(self) -> None:
+        with self.assertRaises(GhEtabliError):
+            GhEtabli(executable="gh-that-does-not-exist-anywhere").observe("o/r")
+
+    def test_a_timeout_is_an_error_that_says_the_state_is_unknown(self) -> None:
+        expired = subprocess.TimeoutExpired(cmd=["gh"], timeout=60)
+        with mock.patch("forgeron.gh_etabli.subprocess.run", side_effect=expired):
+            with self.assertRaises(GhEtabliError) as caught:
+                GhEtabli().apply(Change("o/r", "labels", Kind.DELETE, "wontfix"))
+        self.assertIn("unknown", str(caught.exception))
 
 
 class Applying(unittest.TestCase):
@@ -146,11 +171,21 @@ class Applying(unittest.TestCase):
         with self.assertRaises(GhEtabliError):
             GhEtabli(runner=Runner()).apply(Change("o/r", "labels", Kind.UNLISTED, "wontfix"))
 
+    def test_settings_go_out_in_one_patch_with_every_key(self) -> None:
+        argv, body = self.sent(Change("o/r", "settings", Kind.UPDATE, "settings",
+                                      before={"merge_commit_title": "MERGE_MESSAGE",
+                                              "merge_commit_message": "PR_TITLE"},
+                                      after={"merge_commit_title": "PR_TITLE",
+                                             "merge_commit_message": "PR_BODY"}))
+        self.assertEqual(argv[:4], ["api", "-X", "PATCH", "repos/o/r"])
+        self.assertEqual(body, {"merge_commit_title": "PR_TITLE", "merge_commit_message": "PR_BODY"})
+
     def test_a_refused_write_raises(self) -> None:
         runner = Runner({"repos/o/r": (1, "", "gh: Forbidden (HTTP 403)")})
         with self.assertRaises(GhEtabliError) as caught:
-            GhEtabli(runner=runner).apply(Change("o/r", "settings", Kind.UPDATE, "allow_merge_commit",
-                                                 before=True, after=False))
+            GhEtabli(runner=runner).apply(Change("o/r", "settings", Kind.UPDATE, "settings",
+                                                 before={"allow_merge_commit": True},
+                                                 after={"allow_merge_commit": False}))
         self.assertIn("403", str(caught.exception))
 
 

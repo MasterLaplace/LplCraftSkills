@@ -157,8 +157,8 @@ MUTATIONS = [
 
     ("etabli: a label items still carry is deleted",
      "forgeron/etabli.py",
-     '        if desired.unlisted_labels == "delete-unused" and current.uses == 0:',
-     '        if desired.unlisted_labels == "delete-unused":'),
+     '        if desired.unlisted_labels == "delete-unused" and current.uses == 0 and not observed.discussions:',
+     '        if desired.unlisted_labels == "delete-unused" and not observed.discussions:'),
 
     ("etabli: a rename overwrites a label that already exists",
      "forgeron/etabli.py",
@@ -199,6 +199,41 @@ MUTATIONS = [
      "forgeron/gh_etabli.py",
      '    return urllib.parse.quote(name, safe="")',
      "    return name"),
+
+    ("etabli: half of a commit message pair goes out alone",
+     "forgeron/etabli.py",
+     "            differing |= {key for key in pair if key in desired.settings}",
+     "            pass"),
+
+    ("etabli: delete-unused ignores that discussions carry labels",
+     "forgeron/etabli.py",
+     '        if desired.unlisted_labels == "delete-unused" and current.uses == 0 and not observed.discussions:',
+     '        if desired.unlisted_labels == "delete-unused" and current.uses == 0:'),
+
+    ("etabli: a ruleset update drops forge-only parameters silently",
+     "forgeron/etabli.py",
+     '        weaker = ruleset_weakening(want, have) + [f"the PUT would drop {path}" for path in kept]',
+     "        weaker = ruleset_weakening(want, have)"),
+
+    ("etabli: the tool weakens a ruleset",
+     "forgeron/etabli.py",
+     "        if differences and weaker:",
+     "        if False:"),
+
+    ("etabli: a gh timeout escapes as a traceback",
+     "forgeron/gh_etabli.py",
+     "        except subprocess.TimeoutExpired:",
+     "        except ZeroDivisionError:"),
+
+    ("etabli: a failed second read passes the old plan off as what is left",
+     "forgeron/cli.py",
+     "                remaining = None",
+     "                pass"),
+
+    ("etabli: nothing checked exits 0",
+     "forgeron/cli.py",
+     '            or any(not entry["checked"] for entry in report):',
+     "            or False:"),
 ]
 
 

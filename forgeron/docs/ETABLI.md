@@ -135,4 +135,8 @@ Lus le 2026-09-30 sur six dépôts réels (cinq pour ce qui demande d'être admi
 - sur un dépôt dont on n'a que l'écriture, `permissions.admin` est faux et les étiquettes restent
   lisibles.
 
-Pas encore vérifié : **le chemin d'écriture**, qui attend le premier `--write` sur le dépôt pilote.
+Le premier `--write`, sur le dépôt pilote `MasterLaplace/LplCraftSkills` le 2026-09-30, a fait
+17 écritures sans échec, et la relecture n'a plus rien proposé. Il a appris un fait : **la forge ajoute
+d'elle-même `require_extra_approval_for_unattributed_changes: true` à une règle `pull_request`
+neuve.** Non déclaré, ce paramètre bloquerait la mise à jour suivante du ruleset, puisque la perdre
+affaiblirait la règle : l'exemple le déclare donc.

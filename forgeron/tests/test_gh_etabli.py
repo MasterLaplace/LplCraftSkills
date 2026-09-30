@@ -143,8 +143,8 @@ class Applying(unittest.TestCase):
         self.assertEqual(body, {"new_name": "type:good", "color": "7057ff", "description": "d"})
 
     def test_a_label_name_with_a_colon_is_encoded(self) -> None:
-        argv, _ = self.sent(Change("o/r", "labels", Kind.DELETE, "claude:hold"))
-        self.assertEqual(argv[:4], ["api", "-X", "DELETE", "repos/o/r/labels/claude%3Ahold"])
+        argv, _ = self.sent(Change("o/r", "labels", Kind.DELETE, "forgeron:hold"))
+        self.assertEqual(argv[:4], ["api", "-X", "DELETE", "repos/o/r/labels/forgeron%3Ahold"])
 
     def test_push_protection_goes_through_security_and_analysis(self) -> None:
         argv, body = self.sent(Change("o/r", "security", Kind.UPDATE, "secret_scanning_push_protection",

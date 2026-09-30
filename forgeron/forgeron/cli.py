@@ -14,9 +14,10 @@ import subprocess
 import sys
 import uuid
 
-from . import __version__, attribution, config as config_module
+from . import __version__, attribution, config as config_module, etabli as etabli_module
 from .claude_agent import ClaudeAgent
 from .engine import Engine
+from .gh_etabli import GhEtabli, GhEtabliError
 from .gh_forge import GhForge
 from .git_workspace import GitWorkspace
 from .journal import Journal
@@ -29,8 +30,10 @@ EXIT_OK = 0
 EXIT_USAGE = 2
 EXIT_ENVIRONMENT = 3
 EXIT_BLOCKED = 4
+EXIT_DRIFT = 5
 
 DEFAULT_CONFIG = os.path.expanduser("~/.forgeron/config.json")
+DEFAULT_ETABLI = os.path.expanduser("~/.forgeron/etabli.json")
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -103,6 +106,33 @@ def _parser() -> argparse.ArgumentParser:
     forget.add_argument("repo")
     forget.add_argument("issue", type=int)
     forget.set_defaults(handler=_forget)
+
+    etabli = sub.add_parser(
+        "etabli",
+        help="apply the declared configuration of repositories: labels, settings, security, branch rules",
+        description=(
+            "Reads the declared configuration, observes each repository, and prints the plan.\n"
+            "Without --write, nothing is written. With --write, applies the plan, then reads the\n"
+            "repository again and prints what is left: a second pass that still proposes something\n"
+            "is a disagreement between the tool and the forge. Machine output: forgeron --json etabli."
+        ),
+        epilog=(
+            "Symbols: + create  ~ update  > rename  - delete  ? undeclared  ! blocked  . skipped\n"
+            "Exit: 0 nothing to change, 2 invalid configuration, 3 forge unreachable, 4 something\n"
+            "blocked, 5 changes left to apply."
+        ),
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+    )
+    etabli.add_argument("--file", default=DEFAULT_ETABLI, metavar="FILE",
+                        help="the declared configuration, shaped like etabli.example.json "
+                             "(default: %(default)s)")
+    etabli.add_argument("--repo", action="append", default=[], metavar="OWNER/NAME",
+                        help="only this repository, which must be declared (repeatable)")
+    etabli.add_argument("--only", default="", metavar="DOMAINS",
+                        help="only the named domains, among " + ",".join(etabli_module.DOMAINS))
+    etabli.add_argument("--write", action="store_true",
+                        help="apply the plan, then read each repository again. Without it: the plan only")
+    etabli.set_defaults(handler=_etabli)
 
     return parser
 
@@ -322,6 +352,151 @@ def _forget(args: argparse.Namespace) -> int:
     os.remove(store.path_of(record))
     print(f"oubliee : {record.key} (worktree {record.worktree} conserve)")
     return EXIT_OK
+
+
+def _etabli(args: argparse.Namespace) -> int:
+    try:
+        desired = etabli_module.load(args.file)
+        desired = select_desired(desired, args.repo, args.only)
+    except FileNotFoundError:
+        print(f"{args.file} missing: start from forgeron/etabli.example.json", file=sys.stderr)
+        return EXIT_USAGE
+    except etabli_module.ConfigError as failure:
+        print(str(failure), file=sys.stderr)
+        return EXIT_USAGE
+    journal = Journal(os.path.join(config_module.DEFAULT_HOME, "journal.jsonl"), echo=None)
+    return run_etabli(desired, GhEtabli(), write=args.write, as_json=args.json, journal=journal)
+
+
+def select_desired(desired: tuple[etabli_module.Desired, ...], repos: list[str],
+                   only: str) -> tuple[etabli_module.Desired, ...]:
+    declared = {want.slug for want in desired}
+    unknown = [repo for repo in repos if repo not in declared]
+    if unknown:
+        raise etabli_module.ConfigError(f"--repo {', '.join(unknown)}: not declared in the configuration "
+                                        f"({', '.join(sorted(declared))})")
+    domains = [domain for domain in only.split(",") if domain]
+    wrong = [domain for domain in domains if domain not in etabli_module.DOMAINS]
+    if wrong:
+        raise etabli_module.ConfigError(f"--only {', '.join(wrong)}: unknown domain, expected "
+                                        f"{', '.join(etabli_module.DOMAINS)}")
+    chosen = [want for want in desired if not repos or want.slug in repos]
+    if domains:
+        chosen = [dataclasses.replace(want, domains=tuple(d for d in want.domains if d in domains))
+                  for want in chosen]
+    return tuple(chosen)
+
+
+def run_etabli(desired, adapter, *, write: bool, as_json: bool, journal=None, out=None,
+               err=None) -> int:
+    out = out or sys.stdout
+    err = err or sys.stderr
+    journal = journal or Journal(None, echo=None)
+    report = []
+    for want in desired:
+        entry = {"repo": want.slug, "planned": [], "applied": [], "failed": [], "remaining": [],
+                 "error": ""}
+        try:
+            planned = etabli_module.plan(want, adapter.observe(want.slug))
+        except GhEtabliError as failure:
+            entry["error"] = str(failure)
+            report.append(entry)
+            continue
+        remaining = planned
+        applied, failed = [], []
+        if write and any(change.kind.actionable for change in planned):
+            for change in planned:
+                if not change.kind.actionable:
+                    continue
+                try:
+                    adapter.apply(change)
+                    applied.append(change)
+                    journal.emit("etabli_applied", key=change.repo, **_journal_fields(change))
+                except GhEtabliError as failure:
+                    failed.append((change, str(failure)))
+                    journal.emit("etabli_failed", key=change.repo, error=str(failure),
+                                 **_journal_fields(change))
+            try:
+                remaining = etabli_module.plan(want, adapter.observe(want.slug))
+            except GhEtabliError as failure:
+                entry["error"] = f"could not read the repository again after writing: {failure}"
+        entry.update(planned=planned, applied=applied, failed=failed, remaining=remaining)
+        report.append(entry)
+
+    if as_json:
+        print(json.dumps({"write": write, "repos": [_etabli_entry_json(entry) for entry in report],
+                          "exit": _etabli_exit(report)}, ensure_ascii=False, indent=2), file=out)
+    else:
+        for entry in report:
+            _print_etabli_entry(entry, write, out)
+        if not write and any(change.kind.actionable for entry in report for change in entry["remaining"]):
+            print("\nnothing was written: run again with --write to apply this plan", file=err)
+    return _etabli_exit(report)
+
+
+def _journal_fields(change) -> dict:
+    fields = change.to_dict()
+    fields.pop("repo")
+    return fields
+
+
+def _etabli_exit(report) -> int:
+    if any(entry["error"] or entry["failed"] for entry in report):
+        return EXIT_ENVIRONMENT
+    remaining = [change for entry in report for change in entry["remaining"]]
+    if any(change.kind.actionable for change in remaining):
+        return EXIT_DRIFT
+    if any(change.kind is etabli_module.Kind.BLOCKED for change in remaining):
+        return EXIT_BLOCKED
+    return EXIT_OK
+
+
+def _etabli_entry_json(entry) -> dict:
+    return {
+        "repo": entry["repo"],
+        "error": entry["error"],
+        "planned": [change.to_dict() for change in entry["planned"]],
+        "applied": [change.to_dict() for change in entry["applied"]],
+        "failed": [{**change.to_dict(), "error": reason} for change, reason in entry["failed"]],
+        "remaining": [change.to_dict() for change in entry["remaining"]],
+    }
+
+
+def _print_etabli_entry(entry, write: bool, out) -> None:
+    print(entry["repo"], file=out)
+    if entry["error"] and not entry["planned"]:
+        print(f"  ERROR {entry['error']}", file=out)
+        return
+    if write:
+        print(f"  applied: {len(entry['applied'])}, failed: {len(entry['failed'])}", file=out)
+        for change, reason in entry["failed"]:
+            print(f"  FAILED {change.domain:<9} {change.name}  {reason}", file=out)
+        if entry["error"]:
+            print(f"  ERROR {entry['error']}", file=out)
+        if entry["applied"] or entry["failed"]:
+            print("  after reading again:", file=out)
+    shown = entry["remaining"]
+    if not shown:
+        print("  = nothing to change", file=out)
+    for change in shown:
+        print(f"  {change.kind.value} {change.domain:<9} {_describe(change)}", file=out)
+
+
+def _describe(change) -> str:
+    kind = etabli_module.Kind
+    if change.domain == "labels" and change.kind is kind.CREATE:
+        return f"{change.name}  #{change.after['color']}  {change.after['description']}"
+    if change.domain == "labels" and change.kind is kind.RENAME:
+        return f"{change.name} -> {change.after['name']}  {change.note}"
+    if change.domain == "labels" and change.kind is kind.UPDATE:
+        fields = [f"{key} {change.before[key]!r} -> {change.after[key]!r}"
+                  for key in ("name", "color", "description") if change.before[key] != change.after[key]]
+        return f"{change.name}  {' ; '.join(fields)}"
+    if change.domain in ("settings", "security") and change.kind is kind.UPDATE:
+        return f"{change.name}  {change.before!r} -> {change.after!r}"
+    if change.domain == "rulesets" and change.kind is kind.CREATE:
+        return f"{change.name}  {', '.join(rule.get('type', '?') for rule in change.after['rules'])}"
+    return f"{change.name}  {change.note}".rstrip()
 
 
 # -- wiring -----------------------------------------------------------------

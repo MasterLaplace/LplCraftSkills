@@ -154,6 +154,51 @@ MUTATIONS = [
      '        if read_only:\n'
      '            argv += ["--tools", "Read", "Grep", "Glob", "Bash", "Skill", "WebFetch"]\n'
      '        if self._agent:\n            argv += ["--agent", self._agent]\n'),
+
+    ("etabli: a label items still carry is deleted",
+     "forgeron/etabli.py",
+     '        if desired.unlisted_labels == "delete-unused" and current.uses == 0:',
+     '        if desired.unlisted_labels == "delete-unused":'),
+
+    ("etabli: a rename overwrites a label that already exists",
+     "forgeron/etabli.py",
+     "        if new.lower() in present:",
+     "        if False:"),
+
+    ("etabli: an unreadable security state reads as off",
+     "forgeron/etabli.py",
+     "        if have is None:",
+     "        if False:"),
+
+    ("etabli: removing a protection goes through the tool",
+     "forgeron/etabli.py",
+     "        elif have and not want:",
+     "        elif False:"),
+
+    ("etabli: a ruleset's bypass list no longer counts",
+     "forgeron/etabli.py",
+     "    if wanted_bypass != present_bypass:",
+     "    if False:"),
+
+    ("etabli: labels are attempted without write access",
+     "forgeron/etabli.py",
+     "    if not observed.push:",
+     "    if False:"),
+
+    ("etabli: --write does not read the repository again",
+     "forgeron/cli.py",
+     "                remaining = etabli_module.plan(want, adapter.observe(want.slug))",
+     "                remaining = []"),
+
+    ("etabli: a write leaves no trace",
+     "forgeron/cli.py",
+     '                    journal.emit("etabli_applied", key=change.repo, **_journal_fields(change))',
+     "                    pass"),
+
+    ("etabli: a label name goes into the URL unencoded",
+     "forgeron/gh_etabli.py",
+     '    return urllib.parse.quote(name, safe="")',
+     "    return name"),
 ]
 
 

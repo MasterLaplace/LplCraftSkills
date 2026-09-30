@@ -131,6 +131,23 @@ https://docs.github.com/en/repositories/managing-your-repositorys-settings-and-f
 
 Tous demandent le rôle admin sur le dépôt.
 
+## Ce qu'un workflow voit, et ce qu'il déclenche
+
+- sur un événement `pull_request`, `GITHUB_SHA` est le commit de fusion que GitHub fabrique entre la
+  branche et sa base, pas le dernier commit de la branche. Un contrôle qui lit `git log -n 1 $GITHUB_SHA`
+  lit donc un message « Merge … into … ». Source :
+  https://docs.github.com/en/actions/reference/workflows-and-actions/events-that-trigger-workflows#pull_request ;
+- un push fait avec le `GITHUB_TOKEN` ne déclenche aucun autre workflow, sauf `workflow_dispatch` et
+  `repository_dispatch` : c'est la façon documentée d'enchaîner deux workflows. Source :
+  https://docs.github.com/en/actions/concepts/security/github_token ;
+- `${{ github.event.pull_request.body }}` écrit tel quel dans un `run:` est une injection : le texte
+  devient du shell. On le passe par une variable d'environnement. Source :
+  https://docs.github.com/en/actions/concepts/security/script-injections ;
+- Dependabot étiquette ses PR `dependencies` et le nom de l'écosystème, qui s'écrit `github_actions`
+  pour les actions (lu sur les PR d'un dépôt réel), et il couvre aussi les sous-modules
+  (`gitsubmodule`). Source :
+  https://docs.github.com/en/code-security/dependabot/working-with-dependabot/dependabot-options-reference .
+
 ## Jetons
 
 - `gh project` demande la portée `project` (`read:project` pour lire) : `gh auth refresh -s project`.

@@ -87,7 +87,7 @@ commits.
 | le genre | `type:bug`, `type:feature`, `type:docs`, `type:chore` | une par item. Là où la plateforme offre des types d'issues natifs, ils remplacent cette famille |
 | la zone | `zone:kernel`, `zone:net` | propre à chaque dépôt, déclarée avec lui |
 | l'appel à l'aide | `good first issue`, `help wanted` | **le nom exact** : la plateforme lit `good first issue` pour montrer le dépôt aux nouveaux venus, et `help wanted` est le nom que tout le monde cherche |
-| les bots | `dependencies`, `claude`, `claude:hold` | celles qu'un bot pose ou écoute, sous le nom qu'il attend |
+| les bots | `dependencies`, `forgeron`, `forgeron:hold` | celles qu'un bot pose ou écoute, sous le nom qu'il attend. Le nom dit le rôle ou l'outil du projet, jamais le modèle qui tourne derrière : changer de modèle ne renomme aucune étiquette |
 
 Cinq règles :
 
@@ -180,7 +180,7 @@ on retire ce qui suppose un deuxième humain.
 |---|---|---|
 | une PR obligatoire | chaque changement passe par la CI et laisse une trace qu'on peut relire | un auteur ne peut pas approuver sa propre PR : seul, on garde la PR obligatoire avec zéro approbation requise, et aucun contournement pour un push direct |
 | les checks de la CI requis | rien n'atterrit rouge | un job renommé bloque toutes les PR ; sans CI, aucun check ne peut être requis, donc il faut écrire la CI d'abord ; et un check ne prouve que ce qu'il lit. Un contrôle des messages de commit qui ne lit que le dernier commit laisse passer les autres, et sur une PR, le dernier commit est souvent le commit de fusion que la plateforme fabrique. Chaque check requis se voit échouer une fois |
-| ni force-push ni suppression | l'histoire publiée ne se réécrit pas | aucun |
+| ni force-push ni suppression | l'histoire publiée ne se réécrit pas | le mainteneur qui doit la réécrire passe par un contournement admin, et un contournement « toujours » le dispense aussi de la PR. Un bot qui parle avec son jeton hérite du même droit : la forge ne l'arrête plus, seul son propre code le fait |
 | une seule méthode de fusion | `tracer-le-travail`, section 9 | la règle et les réglages du dépôt doivent dire la même méthode |
 | l'histoire linéaire | une histoire sans commits de fusion | incompatible avec le commit de fusion, que `tracer-le-travail` recommande pour des commits tenus |
 | les commits signés | on sait qui a écrit | la plateforme vérifie aussi les commits de la branche : **un seul commit non signé peut bloquer la fusion, même en squash**. Un bot qui committe par l'API de la plateforme sous sa propre identité est signé par elle ; un bot qui committe en local sous ton nom ne passe qu'avec sa propre clé, qui est un secret à lui confier (`garder-les-frontieres`), ou avec un contournement admin réglé « pour les PR seulement » |
@@ -210,6 +210,16 @@ Trois pièges hors des règles :
 - **les alertes de dépendances et leurs mises à jour**, y compris pour les actions de CI et les sous-modules, qui sont aussi du code tiers ;
 - **le signalement privé d'une faille**, et un `SECURITY.md` qui y renvoie. Sans lui, une faille arrive
   dans une issue publique ;
+- **une faille se publie après son correctif, jamais avant.** C'est la divulgation coordonnée : la
+  faille arrive en privé, on la corrige, on publie la version corrigée, puis on publie tout, avec le
+  détail, le crédit à qui l'a trouvée et un identifiant public (un CVE). La transparence est entière,
+  elle est seulement décalée : avant le correctif, une description publique est une recette pour
+  l'attaquant pendant que les utilisateurs ne sont pas encore protégés. Un rapport d'incident suit la
+  même règle, et le TLP (*Traffic Light Protocol*) la nomme : il circule en RED ou AMBER pendant
+  l'incident et passe CLEAR, lisible par tous, une fois l'incident clos ;
+- **un `SECURITY.md` dit quatre choses**, c'est-à-dire les versions qui reçoivent des correctifs, où signaler en
+  privé, ce qui se passe ensuite (le délai de première réponse, la correction, la publication), et
+  comment la faille sera rendue publique ;
 - **l'analyse statique de la plateforme** quand le langage est couvert, lue à la porte de merge
   (`garder-les-frontieres`, section 4) ;
 - **des jetons à la portée minimale.** Un outil qui gère un board a besoin de la portée des projets. Un
@@ -226,7 +236,7 @@ Trois pièges hors des règles :
 | `README` | ce que c'est, comment le lancer, son état (actif, naissant, legacy) | non |
 | `LICENSE` | ce qu'on a le droit d'en faire. Sans licence, personne n'a le droit de le réutiliser | non, jamais |
 | `CONTRIBUTING` | le flux de `tracer-le-travail` : issue, branche, commits, PR, changelog | oui, pour le flux ; les commandes de build et de test restent dans le dépôt |
-| `CODE_OF_CONDUCT` | comment on se parle, et à qui signaler, en privé : un signalement public expose celui qui signale | oui |
+| `CODE_OF_CONDUCT` | comment on se parle, et où signaler un abus. Un signalement public, dans une discussion du dépôt avec son formulaire, garde tout au même endroit et n'oblige personne à publier une adresse ; le formulaire interdit alors de recopier une donnée personnelle, et renvoie ce cas vers le signalement privé de la plateforme | oui |
 | `SECURITY` | où signaler une faille, en privé | oui |
 | `SUPPORT` | où poser une question qui n'est pas un défaut | oui |
 | gabarits d'issue et de PR | les questions que l'auteur remplit | oui, mais par dossier entier |
@@ -295,7 +305,9 @@ Trois règles :
 - **le jeton qui ouvre tout.** Signature : un jeton aux droits sur tous les dépôts, rangé en secret dans
   chacun pour alimenter un board ;
 - **la case obligatoire.** Signature : un gabarit de bug qui exige d'avoir lu le code de conduite ;
-- **la faille signalée en public.** Signature : un `SECURITY.md` qui renvoie vers les issues ;
+- **la faille publiée avant son correctif.** Signature : un `SECURITY.md` qui renvoie vers les issues ;
+- **le signalement qui republie ce qu'il dénonce.** Signature : un doxxing signalé en public avec, en
+  pièce jointe, les données personnelles qu'il fallait effacer ;
 - **l'automatisme qui n'a jamais agi.** Signature : un workflow vert à chaque passage, et le travail
   qu'il devait faire fait à la main ;
 - **l'état écrit à la main.** Signature : un dépôt archivé présenté comme actif sur le site du projet.

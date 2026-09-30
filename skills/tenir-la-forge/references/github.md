@@ -111,6 +111,16 @@ discussion. **Ni la licence, ni les étiquettes.** Le repli se fait par type : 
 `ISSUE_TEMPLATE` n'hérite d'aucun gabarit d'issue. Source :
 https://docs.github.com/en/communities/setting-up-your-project-for-healthy-contributions/creating-a-default-community-health-file .
 
+Un formulaire de discussion vit dans `.github/DISCUSSION_TEMPLATE/<catégorie>.yml`, où `<catégorie>` est
+le *slug* d'une catégorie de discussions du dépôt. Les discussions s'activent par l'API
+(`updateRepository`, champ `hasDiscussionsEnabled` en GraphQL ; le `PATCH` REST ne l'accepte pas), mais
+**une catégorie ne se crée qu'à la main** : le schéma GraphQL n'a aucune mutation pour ça (lu le
+2026-09-30). Sans la catégorie, le formulaire ne sert à rien. L'héritage d'un formulaire depuis le
+dépôt `.github` est documenté pour une organisation ; pour un compte personnel, la doc des formulaires
+ne le dit pas (non vérifié), donc on pose aussi le formulaire dans chaque dépôt qui a la catégorie.
+Source :
+https://docs.github.com/en/discussions/managing-discussions-for-your-community/creating-discussion-category-forms .
+
 ## Où la plateforme lit ses fichiers
 
 | Fichier | Où GitHub le cherche |
@@ -137,6 +147,13 @@ https://docs.github.com/en/repositories/managing-your-repositorys-settings-and-f
 | signalement privé d'une faille | `GET /repos/{o}/{r}/private-vulnerability-reporting` | `PUT` au même chemin |
 
 Tous demandent le rôle admin sur le dépôt.
+
+Un signalement privé ouvre un avis de sécurité (*security advisory*) en brouillon, visible du seul
+mainteneur et de qui a signalé. On peut y corriger la faille dans un fork privé temporaire, puis
+publier l'avis avec la version corrigée. GitHub est une autorité de numérotation CVE : il attribue un
+identifiant CVE à l'avis d'un dépôt public, sans autre démarche. Source :
+https://docs.github.com/en/code-security/security-advisories/working-with-repository-security-advisories/about-repository-security-advisories .
+Le TLP 2.0 et ses quatre niveaux (RED, AMBER, GREEN, CLEAR) : https://www.first.org/tlp/ .
 
 ## Ce qu'un workflow voit, et ce qu'il déclenche
 

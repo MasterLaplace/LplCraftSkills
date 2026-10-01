@@ -11,13 +11,13 @@ from __future__ import annotations
 import tempfile
 import unittest
 
-from forgeron.config import Config, RepoConfig
+from forgeron.config import BoardConfig, Config, RepoConfig
 from forgeron.engine import Engine
 from forgeron.journal import Journal
 from forgeron.model import FeedbackKind, IssueRef, Phase
 from forgeron.states import Limits
 from forgeron.store import Store
-from tests.fakes import FakeAgent, FakeForge, FakeRegenerator, FakeWorkspace
+from tests.fakes import FakeAgent, FakeBoard, FakeForge, FakeRegenerator, FakeWorkspace
 
 ISSUE = IssueRef(repo="o/r", number=42, title="Add an LRU cache",
                  body="Repeated reads cost too much.", url="https://fake/42",
@@ -25,7 +25,7 @@ ISSUE = IssueRef(repo="o/r", number=42, title="Add an LRU cache",
 
 
 class Harness:
-    def __init__(self, **limits) -> None:
+    def __init__(self, board: FakeBoard | None = None, **limits) -> None:
         self.home = tempfile.mkdtemp()
         self.config = Config(
             home=self.home,
@@ -34,7 +34,9 @@ class Harness:
                               reviewers=("human",)),),
             limits=Limits(**limits) if limits else Limits(),
             max_concurrent=5,
+            board=BoardConfig(project="o/Board") if board is not None else None,
         )
+        self.board = board
         self.forge = FakeForge([ISSUE])
         self.workspace = FakeWorkspace()
         self.agent = FakeAgent()
@@ -42,13 +44,13 @@ class Harness:
         self.store = Store(self.config.state_dir)
         self.journal = Journal(None, echo=None)
         self.engine = Engine(self.config, self.forge, self.workspace, self.agent,
-                             self.store, self.journal, regenerator=self.regenerator)
+                             self.store, self.journal, regenerator=self.regenerator, board=board)
 
     def dry(self) -> "Engine":
         """The same wiring, previewing only. Same fakes, so the reads are identical."""
         return Engine(self.config, self.forge, self.workspace, self.agent,
                       self.store, self.journal, dry_run=True,
-                      regenerator=self.regenerator)
+                      regenerator=self.regenerator, board=self.board)
 
     def step(self) -> str:
         """One pass. Returns the phase afterwards, which is what tests read."""
@@ -292,6 +294,122 @@ class ChecksGrace(unittest.TestCase):
         harness.store.save(record.with_(checks_since="2020-01-01T00:00:00Z"))
         self.assertEqual(harness.step(), Phase.IN_REVIEW.value)
         self.assertEqual(len(harness.forge.review_requests), 1)
+
+
+class TheBoard(unittest.TestCase):
+    def review(self, harness: Harness) -> None:
+        self.assertEqual(harness.step(), Phase.DRAFTED.value)
+        self.submit(harness)
+
+    def submit(self, harness: Harness) -> None:
+        self.assertEqual(harness.step(), Phase.IMPLEMENTED.value)
+        harness.forge.ci_pending()
+        self.assertEqual(harness.step(), Phase.AWAITING_CHECKS.value)
+        harness.forge.ci_green()
+        self.assertEqual(harness.step(), Phase.IN_REVIEW.value)
+
+    def merge(self, harness: Harness) -> None:
+        self.review(harness)
+        harness.forge.approve("feat/42-cache-lru")
+        harness.forge.merge("feat/42-cache-lru")
+        self.assertEqual(harness.step(), Phase.DONE.value)
+
+    def test_an_adopted_issue_goes_on_the_board_and_follows_each_phase(self) -> None:
+        harness = Harness(board=FakeBoard())
+        self.assertEqual(harness.step(), Phase.DRAFTED.value)
+        self.assertEqual(harness.board.trail(), ["Queued", "Planning", "Working"])
+
+    def test_the_field_follows_a_whole_run(self) -> None:
+        harness = Harness(board=FakeBoard())
+        self.merge(harness)
+        self.assertEqual(harness.board.trail(), ["Queued", "Planning", "Working", "In review", "Done"])
+
+    def test_the_pull_request_goes_on_the_board_once_review_is_requested(self) -> None:
+        harness = Harness(board=FakeBoard())
+        self.assertEqual(harness.step(), Phase.DRAFTED.value)
+        self.assertNotIn("o/r#101", harness.board.placed, "a draft is not to review")
+        self.submit(harness)
+        self.assertEqual(harness.board.placed.count("o/r#101"), 1)
+
+    def test_no_option_is_written_on_the_pull_request(self) -> None:
+        harness = Harness(board=FakeBoard())
+        self.merge(harness)
+        self.assertEqual(harness.board.trail("item-101"), [])
+
+    def test_a_question_to_the_maintainer_shows_as_awaiting_answer(self) -> None:
+        harness = Harness(board=FakeBoard())
+        harness.agent.plan["questions"] = ["Which eviction policy?"]
+        self.assertEqual(harness.step(), Phase.AWAITING_ANSWER.value)
+        self.assertEqual(harness.board.trail()[-1], "Awaiting answer")
+
+    def test_a_phase_that_does_not_change_is_not_written_again(self) -> None:
+        harness = Harness(board=FakeBoard())
+        harness.step()
+        harness.forge.ci_pending()
+        for _ in range(3):
+            harness.step()
+        trail = harness.board.trail()
+        self.assertEqual(trail, [option for index, option in enumerate(trail)
+                                 if index == 0 or trail[index - 1] != option])
+
+    def test_a_board_that_fails_never_stops_the_work(self) -> None:
+        harness = Harness(board=FakeBoard(fail=True))
+        self.assertEqual(harness.step(), Phase.DRAFTED.value)
+        failures = harness.events("board_failed")
+        self.assertTrue(failures)
+        self.assertIn("Resource not accessible", failures[0]["error"])
+
+    def test_a_refused_write_is_written_at_the_next_transition(self) -> None:
+        harness = Harness(board=FakeBoard(refuse=("Working",)))
+        self.assertEqual(harness.step(), Phase.DRAFTED.value)
+        self.assertEqual(harness.board.trail(), ["Queued", "Planning"])
+        self.assertEqual(harness.step(), Phase.IMPLEMENTED.value)
+        self.assertEqual(harness.board.trail(), ["Queued", "Planning", "Working"])
+
+    def test_a_refused_write_is_retried_while_the_maintainer_has_not_answered(self) -> None:
+        harness = Harness(board=FakeBoard(refuse=("Awaiting answer",)))
+        harness.agent.plan["questions"] = ["Which eviction policy?"]
+        self.assertEqual(harness.step(), Phase.AWAITING_ANSWER.value)
+        self.assertEqual(harness.board.trail(), ["Queued", "Planning"])
+        self.assertEqual(harness.step(), Phase.AWAITING_ANSWER.value)
+        self.assertEqual(harness.board.trail(), ["Queued", "Planning", "Awaiting answer"])
+
+    def test_a_refused_done_is_retried_after_the_merge(self) -> None:
+        harness = Harness(board=FakeBoard(refuse=("Done",)))
+        self.merge(harness)
+        self.assertEqual(harness.board.trail()[-1], "In review")
+        self.assertEqual([event["option"] for event in harness.events("board_failed")], ["Done"])
+        harness.step()
+        self.assertEqual(harness.board.trail()[-1], "Done")
+        harness.step()
+        self.assertEqual(harness.board.trail().count("Done"), 1)
+
+    def restart(self, harness: Harness) -> FakeBoard:
+        board = FakeBoard()
+        Engine(harness.config, harness.forge, harness.workspace, harness.agent, harness.store,
+               harness.journal, regenerator=harness.regenerator, board=board).pass_once()
+        return board
+
+    def test_a_waiting_issue_is_shown_again_by_a_new_process(self) -> None:
+        harness = Harness(board=FakeBoard())
+        harness.agent.plan["questions"] = ["Which eviction policy?"]
+        harness.step()
+        self.assertEqual(self.restart(harness).trail(), ["Awaiting answer"])
+
+    def test_a_finished_issue_is_not_written_again_by_a_new_process(self) -> None:
+        harness = Harness(board=FakeBoard())
+        self.merge(harness)
+        board = self.restart(harness)
+        self.assertEqual((board.placed, board.options), ([], []))
+
+    def test_a_dry_run_writes_nothing_on_the_board(self) -> None:
+        harness = Harness(board=FakeBoard())
+        harness.agent.plan["questions"] = ["Which eviction policy?"]
+        harness.step()
+        harness.board.placed.clear()
+        harness.board.options.clear()
+        harness.dry().pass_once()
+        self.assertEqual((harness.board.placed, harness.board.options), ([], []))
 
 
 class DryRun(unittest.TestCase):

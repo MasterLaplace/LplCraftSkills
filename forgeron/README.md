@@ -144,8 +144,8 @@ Pour reprendre la main sans rien casser : étiquette `forgeron:hold`. Pour tout
 
 ## Ce qui est vérifié, et ce qui ne l'est pas
 
-Vérifié hors ligne, à chaque `./tests/run.sh` : **291 tests** dont le trajet complet issue → fusion
-avec un build rouge et un tour de revue au milieu, plus **55 sondes de mutation** qui cassent une
+Vérifié hors ligne, à chaque `./tests/run.sh` : **335 tests** dont le trajet complet issue → fusion
+avec un build rouge et un tour de revue au milieu, plus **77 sondes de mutation** qui cassent une
 règle chacune et vérifient que la suite s'en aperçoit. Une suite verte au premier coup ne prouve
 rien ; c'est la sonde qui prouve qu'elle *pouvait* échouer.
 
@@ -161,7 +161,9 @@ refusé, et `abort` qui repose la branche exactement où elle était. Un dépôt
 donc aucun réseau.
 
 Vérifié contre le vrai GitHub, en lecture seule : identité, liste d'issues, recherche de pull
-request, agrégat de checks, et **récupération des journaux d'un job en échec**.
+request, agrégat de checks, et **récupération des journaux d'un job en échec**. Et en écriture, sur
+un projet jetable supprimé ensuite : le **rangement sur le projet**, ajouter l'item et écrire
+l'option.
 
 Vérifié contre le vrai `claude` : la sortie structurée (`--json-schema` → champ `structured_output`),
 la **reprise de conversation d'un processus à l'autre** (`--session-id` puis `--resume`), et ce que
@@ -172,7 +174,7 @@ disparaître la sortie structurée, et ses hooks ne se déclenchent qu'au niveau
 
 Sous Windows natif, **4 tests échouent** parce qu'ils supposent un shell POSIX : un script de hook
 lancé directement, et un `;` qui n'est pas un séparateur pour `cmd.exe`. forgeron vise Linux et WSL, où
-ils passent ; les 287 autres passent aussi sous Windows.
+ils passent ; les 331 autres passent aussi sous Windows.
 
 **Pas encore vérifié de bout en bout**, et c'est dit à chaque fois dans les fichiers concernés :
 le chemin d'**écriture** sur la forge (créer le brouillon, le passer prêt, commenter), qui demande un

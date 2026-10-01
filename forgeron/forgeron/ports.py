@@ -1,8 +1,9 @@
 """The seams. Everything with a side effect is declared here and nowhere else.
 
-Three ports, split by what fails and how: the forge is a network away, the
+Five ports, split by what fails and how: the forge is a network away, the
 workspace is a filesystem and a git index, the agent is a process that costs
-money. Folding them into one client would mean a test of the review loop needs a
+money, the regenerator runs an arbitrary command, and the board is a network
+away too but must never stop the work. Folding them into one client would mean a test of the review loop needs a
 network, which is exactly how a review loop stops being tested.
 """
 
@@ -102,6 +103,13 @@ class Regenerator(Protocol):
     """
 
     def reproduce(self, worktree: str, path: str, command: str): ...
+
+
+@runtime_checkable
+class Board(Protocol):
+    def place(self, repo: str, number: int) -> str: ...
+
+    def set_option(self, item: str, option: str) -> None: ...
 
 
 @runtime_checkable

@@ -317,6 +317,116 @@ MUTATIONS = [
      "        if not desired and not projects:",
      "        if False:"),
 
+    ("board: a board that fails stops the work",
+     "forgeron/engine.py",
+     "        except Exception as failure:\n            self._journal.emit(\"board_failed\"",
+     "        except ZeroDivisionError as failure:\n            self._journal.emit(\"board_failed\""),
+
+    ("board: every save writes the option again",
+     "forgeron/engine.py",
+     "        shown = self._shown.get((record.repo, record.issue)) == option",
+     "        shown = False"),
+
+    ("board: a refused write counts as shown",
+     "forgeron/engine.py",
+     "            return False\n        self._shown[(record.repo, number)] = option",
+     "            pass\n        self._shown[(record.repo, number)] = option"),
+
+    ("board: the pull request is left off the board",
+     "forgeron/engine.py",
+     "        if record.pr and in_review and (record.repo, record.pr) not in self._shown:",
+     "        if False:"),
+
+    ("board: a draft pull request goes on the board",
+     "forgeron/engine.py",
+     "        in_review = option == option_for(Phase.IN_REVIEW)",
+     "        in_review = True"),
+
+    ("board: the pull request gets an option of its own",
+     "forgeron/engine.py",
+     "            if option:\n                self._board.set_option(item, option)",
+     "            if True:\n                self._board.set_option(item, option)"),
+
+    ("board: a phase waiting for a human is never caught up",
+     "forgeron/engine.py",
+     "            self._show(record)\n            return decision",
+     "            return decision"),
+
+    ("board: a refused Done is never written",
+     "forgeron/engine.py",
+     "                if (record.repo, record.issue) in self._owed:",
+     "                if False:"),
+
+    ("board: a new process writes every finished issue again",
+     "forgeron/engine.py",
+     "                if (record.repo, record.issue) in self._owed:",
+     "                if True:"),
+
+    ("board: a dry run writes on the board",
+     "forgeron/engine.py",
+     "        if self._board is None or self._dry_run:",
+     "        if self._board is None:"),
+
+    ("board: an option the field lacks is sent anyway",
+     "forgeron/board.py",
+     "        if option not in options:",
+     "        if False:"),
+
+    ("board: a field read once is never read again",
+     "forgeron/board.py",
+     "        if known is None or option not in known[1]:",
+     "        if not self._fields:"),
+
+    ("board: only the first page of projects is read",
+     "forgeron/board.py",
+     "            if not page.get(\"hasNextPage\"):",
+     "            if True:"),
+
+    ("board: of two projects with one title, the first wins",
+     "forgeron/board.py",
+     "        if len(found) != 1:",
+     "        if not found:"),
+
+    ("board: a question to the maintainer reads as work in progress",
+     "forgeron/board.py",
+     '    Phase.AWAITING_ANSWER: "Awaiting answer",',
+     '    Phase.AWAITING_ANSWER: "Working",'),
+
+    ("board: a pull request in review reads as work in progress",
+     "forgeron/board.py",
+     '    Phase.IN_REVIEW: "In review",',
+     '    Phase.IN_REVIEW: "Working",'),
+
+    ("board: a merged issue reads as work in progress",
+     "forgeron/board.py",
+     '    Phase.DONE: "Done",',
+     '    Phase.DONE: "Working",'),
+
+    ("board: an empty field name passes the loader",
+     "forgeron/config.py",
+     "    if not isinstance(field, str) or not field.strip():",
+     "    if not isinstance(field, str):"),
+
+    ("board: the engine is built without its board",
+     "forgeron/cli.py",
+     "regenerator=ShellRegenerator(), board=_board(configuration))",
+     "regenerator=ShellRegenerator(), board=None)"),
+
+    ("board: the configured field is ignored",
+     "forgeron/cli.py",
+     "    return GhBoard(configuration.board.project, configuration.board.field)",
+     "    return GhBoard(configuration.board.project)"),
+
+    ("board: doctor takes read:project for project",
+     "forgeron/cli.py",
+     "    if \"'project'\" in scopes:",
+     "    if \"project\" in scopes:"),
+
+    ("board: doctor accepts a field that lacks options",
+     "forgeron/cli.py",
+     "    if missing:\n        return False",
+     "    if False:\n        return False"),
+
     ("etabli: a view is created with node ids the REST API refuses",
      "forgeron/gh_etabli.py",
      "        ids = self._field_ids(state, \"database_id\")",

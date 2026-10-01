@@ -35,6 +35,12 @@ class RepoConfig:
 
 
 @dataclasses.dataclass(frozen=True, slots=True)
+class BoardConfig:
+    project: str
+    field: str = "Forgeron"
+
+
+@dataclasses.dataclass(frozen=True, slots=True)
 class Config:
     home: str = DEFAULT_HOME
     repos: tuple[RepoConfig, ...] = ()
@@ -49,6 +55,7 @@ class Config:
     checks_log_bytes: int = 12000    # how much failing log the agent is given
     notify_command: str = ""        # optional: shell template, {title} {url} available
     agent: str = "artisan" # "artisan" is the default agent, "claude" is the bare model, "" means no agent
+    board: BoardConfig | None = None
 
     @property
     def state_dir(self) -> str:
@@ -83,6 +90,7 @@ class Config:
             "checks_log_bytes": self.checks_log_bytes,
             "notify_command": self.notify_command,
             "agent": self.agent,
+            "board": dataclasses.asdict(self.board) if self.board else None,
         }
 
 
@@ -100,12 +108,31 @@ def load(path: str) -> Config:
         raise ValueError(f"unknown configuration key(s): {', '.join(sorted(unknown))}")
 
     repos = tuple(_repo_from(entry) for entry in raw.pop("repos", []))
+    board = _board_from(raw.pop("board", None))
     limits_raw = raw.pop("limits", {})
     limits_known = {field.name for field in dataclasses.fields(Limits)}
     limits_unknown = set(limits_raw) - limits_known
     if limits_unknown:
         raise ValueError(f"unknown limits key(s): {', '.join(sorted(limits_unknown))}")
-    return Config(repos=repos, limits=Limits(**limits_raw), **raw)
+    return Config(repos=repos, limits=Limits(**limits_raw), board=board, **raw)
+
+
+def _board_from(entry: Any) -> BoardConfig | None:
+    if entry is None:
+        return None
+    if not isinstance(entry, dict):
+        raise ValueError("board: an object {\"project\": \"OWNER/TITLE\"} is expected")
+    known = {field.name for field in dataclasses.fields(BoardConfig)}
+    unknown = set(entry) - known
+    if unknown:
+        raise ValueError(f"unknown board key(s): {', '.join(sorted(unknown))}")
+    owner, _, title = str(entry.get("project", "")).partition("/")
+    if not owner.strip() or not title.strip():
+        raise ValueError(f"board.project: {entry.get('project')!r}, expected OWNER/TITLE")
+    field = entry.get("field", "Forgeron")
+    if not isinstance(field, str) or not field.strip():
+        raise ValueError(f"board.field: {field!r}, expected the name of a single-select field")
+    return BoardConfig(**entry)
 
 
 def _repo_from(entry: dict[str, Any]) -> RepoConfig:

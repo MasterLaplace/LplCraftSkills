@@ -14,6 +14,7 @@ import subprocess
 import uuid
 
 from . import attribution, prompts
+from .board import option_for
 from .config import Config, RepoConfig
 from .journal import Journal
 from .model import (Action, CheckState, Decision, Feedback, IssueRef, MergeState,
@@ -33,6 +34,7 @@ class Engine:
         journal: Journal,
         dry_run: bool = False,
         regenerator=None,
+        board=None,
     ) -> None:
         self._config = config
         self._forge = forge
@@ -42,6 +44,9 @@ class Engine:
         self._journal = journal
         self._dry_run = dry_run
         self._regenerator = regenerator
+        self._board = board
+        self._shown: dict[tuple[str, int], str] = {}
+        self._owed: set[tuple[str, int]] = set()
 
     # -- one pass -----------------------------------------------------------
 
@@ -54,6 +59,8 @@ class Engine:
         acted = 0
         for record in self._store.all():
             if record.phase.is_terminal:
+                if (record.repo, record.issue) in self._owed:
+                    self._show(record)
                 continue
             if acted >= self._config.max_concurrent:
                 self._journal.debug("concurrency_hold", key=record.key)
@@ -86,7 +93,7 @@ class Engine:
                 branch=f"forgeron/issue-{issue.number}",
                 worktree=f"{self._config.worktree_dir}/{repo.slug.replace('/', '__')}/issue-{issue.number}",
             )
-            self._store.save(record)
+            self._save(record)
             self._journal.emit("adopted", key=record.key, title=issue.title,
                                session=record.session_id)
 
@@ -97,6 +104,7 @@ class Engine:
         self._journal.emit("decided", key=record.key, phase=record.phase.value,
                            action=decision.action.value, reason=decision.reason)
         if decision.action is Action.NOTHING:
+            self._show(record)
             return decision
 
         if self._dry_run:
@@ -109,14 +117,46 @@ class Engine:
             record = handler(record, repo, observation, decision)
         except Exception as failure:  # a failed action must not lose the record
             record = record.with_(phase=Phase.BLOCKED, note=f"{type(failure).__name__}: {failure}")
-            self._store.save(record)
+            self._save(record)
             self._journal.emit("action_failed", key=record.key,
                                action=decision.action.value, error=str(failure)[:300])
             return Decision(Action.BLOCK, Phase.BLOCKED, str(failure)[:200])
-        self._store.save(record)
+        self._save(record)
         self._journal.emit("advanced", key=record.key, phase=record.phase.value,
                            spent=round(record.spent_usd, 4))
         return decision
+
+    def _save(self, record: Record) -> None:
+        self._store.save(record)
+        self._show(record)
+
+    def _show(self, record: Record) -> None:
+        if self._board is None or self._dry_run:
+            return
+        option = option_for(record.phase)
+        shown = self._shown.get((record.repo, record.issue)) == option
+        if not shown:
+            shown = self._reflect(record, record.issue, option)
+        in_review = option == option_for(Phase.IN_REVIEW)
+        if record.pr and in_review and (record.repo, record.pr) not in self._shown:
+            shown = self._reflect(record, record.pr, "") and shown
+        if shown:
+            self._owed.discard((record.repo, record.issue))
+        else:
+            self._owed.add((record.repo, record.issue))
+
+    def _reflect(self, record: Record, number: int, option: str) -> bool:
+        try:
+            item = self._board.place(record.repo, number)
+            if option:
+                self._board.set_option(item, option)
+        except Exception as failure:
+            self._journal.emit("board_failed", key=record.key, number=number, option=option,
+                               error=str(failure)[:300])
+            return False
+        self._shown[(record.repo, number)] = option
+        self._journal.emit("board_set", key=record.key, number=number, option=option)
+        return True
 
     # -- observation --------------------------------------------------------
 
@@ -201,7 +241,7 @@ class Engine:
 
         self._workspace.prepare(repo.path, record.worktree, record.branch, repo.base)
         record = record.with_(phase=Phase.PLANNING)
-        self._store.save(record)
+        self._save(record)
 
         answers = obs.new_feedback
         result = self._agent.run(
@@ -280,7 +320,7 @@ class Engine:
         issue = self._forge.get_issue(record.repo, record.issue)
         self._workspace.prepare(repo.path, record.worktree, record.branch, repo.base)
         record = record.with_(phase=Phase.IMPLEMENTING)
-        self._store.save(record)
+        self._save(record)
 
         pr_url = obs.pr.url if obs.pr else ""
         result = self._agent.run(
@@ -316,7 +356,7 @@ class Engine:
             checks_since="",
             seen_feedback=record.seen_feedback + tuple(item.ident for item in feedback),
         )
-        self._store.save(record)
+        self._save(record)
 
         result = self._agent.run(
             cwd=record.worktree,
@@ -358,7 +398,7 @@ class Engine:
         logs = self._forge.failing_logs(record.repo, failing, self._config.checks_log_bytes)
         attempt = record.check_fixes + 1
         record = record.with_(phase=Phase.FIXING_CHECKS, check_fixes=attempt)
-        self._store.save(record)
+        self._save(record)
         self._journal.emit("checks_red", key=record.key, attempt=attempt,
                            jobs=",".join(run.name for run in failing),
                            log_bytes=len(logs))
@@ -418,7 +458,7 @@ class Engine:
         attempt = record.conflicts + 1
         record = record.with_(phase=Phase.RESOLVING, conflicts=attempt,
                               rounds=record.rounds + 1)
-        self._store.save(record)
+        self._save(record)
 
         clean, conflicted = self._workspace.sync_with_base(record.worktree, repo.base, method)
         self._journal.emit("conflict", key=record.key, method=method, attempt=attempt,

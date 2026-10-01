@@ -225,6 +225,29 @@ class FakeWorkspace:
         self.discarded.append(worktree)
 
 
+class FakeBoard:
+    def __init__(self, fail: bool = False, refuse: tuple[str, ...] = ()) -> None:
+        self.fail = fail
+        self.refuse = list(refuse)
+        self.placed: list[str] = []
+        self.options: list[tuple[str, str]] = []
+
+    def place(self, repo: str, number: int) -> str:
+        if self.fail:
+            raise RuntimeError("gh api graphql: Resource not accessible")
+        self.placed.append(f"{repo}#{number}")
+        return f"item-{number}"
+
+    def set_option(self, item: str, option: str) -> None:
+        if option in self.refuse:
+            self.refuse.remove(option)
+            raise RuntimeError(f"gh api graphql: 502 while writing {option}")
+        self.options.append((item, option))
+
+    def trail(self, item: str = "item-42") -> list[str]:
+        return [option for placed, option in self.options if placed == item]
+
+
 @dataclasses.dataclass
 class FakeResult:
     ok: bool

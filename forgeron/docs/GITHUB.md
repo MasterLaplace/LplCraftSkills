@@ -21,14 +21,16 @@ Il faut un vrai jeton ou une App dans trois cas, et trois seulement :
 
 ### Ce que ton jeton actuel peut et ne peut pas
 
-Mesuré ici : portées `admin:public_key`, `gist`, `read:org`, `repo`.
+Mesuré le 2026-10-01 sous WSL, où tourne forgeron : portées `admin:public_key`, `admin:repo_hook`,
+`gist`, `project`, `read:org`, `repo`.
 
-- `repo` **suffit** pour tout ce que fait forgeron : issues, branches, pull requests, reviews,
-  commentaires, agrégat de checks, journaux de jobs ;
+- `repo` **suffit** pour tout ce que fait forgeron, sauf le rangement sur le projet, qui demande
+  `project` (voir plus bas) : issues, branches, pull requests, reviews, commentaires, agrégat de
+  checks, journaux de jobs ;
 - ⚠ `workflow` est **absente**, et c'est une bonne nouvelle : l'agent **ne peut pas** pousser une
   modification de `.github/workflows/`. GitHub refuse le push. C'est un garde-fou appliqué par le
   serveur, pas par un prompt — le seul genre qui tienne. Ne l'ajoute pas « au cas où » ;
-- `admin:repo_hook` est absente : c'est ce qui bloque l'option 2 ci-dessous.
+- `admin:repo_hook` est présente : l'option 2 ci-dessous n'est plus bloquée par le jeton.
 
 ## Le notifier : les deux directions, et une seule est à construire
 
@@ -36,6 +38,56 @@ Mesuré ici : portées `admin:public_key`, `gist`, `read:org`, `repo`.
 joindre sur tous tes appareils. C'est ce que fait `request_review`. Écrire un notifieur à côté en
 ferait un deuxième, moins bon. Si tu veux en plus un toast local, `notify_command` dans la
 configuration est un gabarit shell avec `{title}` et `{url}`.
+
+**Sur le projet : forgeron range ce qu'il prend.** Avec une section `board` dans la configuration,
+forgeron met sur le projet chaque issue qu'il adopte et chaque PR dont il demande la revue, et tient
+le champ du projet qui dit où il en est :
+
+```json
+"board": {"project": "MasterLaplace/Laplace", "field": "Forgeron"}
+```
+
+`field` vaut `Forgeron` par défaut. Ses options sont fixes, et chacune regroupe des phases du moteur :
+
+| Option | Phases |
+|---|---|
+| Queued | queued |
+| Planning | planning |
+| Awaiting answer | awaiting_answer |
+| Working | drafted, implementing, implemented, awaiting_checks, fixing_checks, resolving |
+| In review | in_review, revising, revised |
+| Blocked | blocked |
+| Done | merged, done, abandoned |
+
+- il faut la portée `project` : `gh auth refresh -s project`. Dès qu'un `board` est configuré,
+  `forgeron doctor` vérifie la portée, puis lit le champ et nomme les options qui lui manquent ;
+- **le projet ne bloque jamais le travail.** Une écriture refusée laisse une ligne `board_failed`
+  dans le journal, et la phase avance quand même. L'écriture est retentée à la transition suivante,
+  ou à la passe suivante quand la phase attend un humain (une question, une revue, un blocage) ;
+- un « Done » refusé est retenté à chaque passe tant que forgeron tourne. Après un redémarrage, il
+  ne l'est plus : forgeron ne réécrit pas les issues finies, pour ne pas remettre sur le projet une
+  carte que tu as archivée. La ligne `board_failed` du journal dit laquelle corriger à la main ;
+- la PR entre sur le projet quand forgeron demande la revue, pas à l'ouverture du brouillon : sur
+  Laplace, le workflow « Item added to project » met une PR en *To review*, et un brouillon n'est pas
+  à relire. Avant, l'issue porte déjà sa PR (champ *Linked pull requests*). La PR n'a pas d'option
+  dans le champ : c'est l'issue qui dit où en est forgeron ;
+- une option ne s'écrit que lorsqu'elle change : six phases de travail d'affilée font une seule
+  écriture. Un champ ou une option créés pendant que forgeron tourne, par `forgeron etabli --write`
+  par exemple, sont trouvés à l'écriture suivante, sans redémarrage ;
+- le champ Status et la priorité ne sont pas touchés : les workflows du projet tiennent l'un, le
+  mainteneur l'autre ;
+- **la portée `project` vaut pour tous les projets que ton compte peut écrire**, pas seulement
+  celui-ci, et le jeton de `gh` est celui de tout le processus. L'agent ne s'en sert que si ses
+  permissions le laissent lancer `gh` : `claude -p` refuse une commande que rien n'autorise, et
+  forgeron journalise le refus (`permission_denied`). Mesuré le 2026-10-01 : aucune règle de
+  permission dans le `~/.claude/settings.json` de WSL ;
+- une GitHub App n'a pas accès aux projets d'un compte personnel : avec une App, ce rangement
+  passerait encore par le jeton du mainteneur.
+
+Vérifié contre le vrai GitHub le 2026-10-01, sur un projet jetable supprimé ensuite : ajouter une
+issue (deux fois, le même item revient), écrire une option, refuser en la nommant une option que le
+champ n'a pas, puis la trouver sans redémarrage une fois ajoutée au champ. À l'ajout, le projet neuf
+a aussi posé Status à *Todo* : ce sont ses workflows, pas forgeron.
 
 **Vers forgeron : quatre étages, par coût d'infrastructure croissant.**
 
@@ -58,7 +110,7 @@ L'extension officielle ouvre un webhook temporaire et relaie vers ton `localhost
 publique, ni ouverture de port.
 
 ```bash
-gh auth refresh -s admin:repo_hook          # la portee qui manque aujourd'hui
+gh auth refresh -s admin:repo_hook          # la portee qu'il faut
 gh extension install cli/gh-webhook
 gh webhook forward \
   --repo OWNER/NAME \
@@ -173,7 +225,7 @@ python3 -m forgeron config --init            # puis editer ~/.forgeron/config.js
                                              #   slug "TON_LOGIN/forgeron-sandbox"
                                              #   path "$HOME/forgeron-sandbox"
                                              #   reviewers ["TON_LOGIN"]
-python3 -m forgeron doctor                   # doit etre vert sur les 6 requises
+python3 -m forgeron doctor                   # toutes les requises au vert, il les compte
 python3 -m forgeron once                     # SANS --write : dit ce qu'il ferait
 python3 -m forgeron once --write             # cadrage + brouillon
 python3 -m forgeron run --write --interval 30

@@ -22,7 +22,7 @@ compare l'état réel à l'état déclaré.
 ## Les coutures
 
 Tout ce qui a un effet de bord est déclaré dans [`ports.py`](../forgeron/ports.py) et nulle part
-ailleurs. Trois ports, séparés **par ce qui échoue et comment** :
+ailleurs. Cinq ports, séparés **par ce qui échoue et comment** :
 
 ```mermaid
 graph LR
@@ -32,12 +32,18 @@ graph LR
     ENG -.port.-> F[Forge]
     ENG -.port.-> W[Workspace]
     ENG -.port.-> A[Agent]
+    ENG -.port.-> R[Regenerator]
+    ENG -.port.-> B[Board]
     F --> GH[gh_forge.py<br/>gh CLI]
     F --> FF[FakeForge<br/>tests]
     W --> GIT[git_workspace.py<br/>one worktree per issue]
     W --> FW[FakeWorkspace]
     A --> CL[claude_agent.py<br/>claude -p]
     A --> FA[FakeAgent]
+    R --> SR[regenerator.py<br/>runs a command]
+    R --> FR[FakeRegenerator]
+    B --> GB[board.py<br/>gh api graphql]
+    B --> FB[FakeBoard]
 ```
 
 Les replier en un seul client rendrait un test de la boucle de revue dépendant du réseau, et c'est
@@ -172,6 +178,7 @@ lance donc pas tel quel derrière `--json-schema` : forgeron ne le fait pas, il
 | `max_check_fixes` | boucler sur une CI rouge pour une raison d'environnement |
 | `checks_timeout_minutes` | attendre pour toujours une CI qui ne démarrera jamais |
 | jeton **sans** portée `workflow` | un agent qui modifie `.github/workflows` — le push est refusé par GitHub, pas seulement par le prompt |
+| aucune permission qui laisse l'agent lancer `gh` | un agent qui se sert du jeton de `gh`, dont la portée `project` atteint tous les projets du compte : `claude -p` refuse la commande, et forgeron journalise le refus |
 | bail par issue, à expiration | deux pilotes sur la même issue. À expiration et pas par PID : en cluster le détenteur précédent est un pod qui n'existe plus, et « ce PID vit-il » répond sur la mauvaise machine |
 | écriture atomique du dossier (fichier temporaire + `rename`) | le seul état dont un réconciliateur ne se relève pas : un enregistrement tronqué, parce qu'il **s'analyse** |
 | fusion toujours humaine | tout le reste |

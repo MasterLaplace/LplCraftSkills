@@ -115,7 +115,7 @@ le travail avance :
 
 ```mermaid
 flowchart LR
-  T["To triage"] --> P["Ready"] --> C["In progress"] --> D["Done"]
+  T["No status: to triage"] --> P["Ready"] --> C["In progress"] --> D["Done"]
   V["To review"] --> X["Changes requested"] --> V
   V --> A["Approved"] --> D
   C -. "a PR is opened" .-> V
@@ -124,6 +124,10 @@ flowchart LR
 Une issue parcourt la ligne du haut, une PR celle du bas. Les changements viennent d'événements que la
 plateforme connaît : un item ajouté, une PR liée à l'issue, des changements demandés, une approbation,
 une fusion, une fermeture, une réouverture.
+
+Un projet n'a qu'un statut d'entrée, parce que le workflow qui le pose ne se duplique pas. On le donne
+aux PR, qui entrent en « To review », et les issues entrent sans statut : leur colonne « No Status »
+est la boîte des items à trier.
 
 | La question | La vue | Ce qu'elle montre |
 |---|---|---|

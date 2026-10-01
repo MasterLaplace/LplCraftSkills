@@ -41,8 +41,11 @@ file de fusion https://docs.github.com/en/repositories/configuring-branches-and-
   vers les dépôts. `copyProjectV2` accepte un compte personnel comme destination (`gh project copy`).
   Source : https://docs.github.com/en/issues/planning-and-tracking-with-projects/creating-projects/copying-an-existing-project ;
 - **les vues se créent par l'API depuis 2026**, en REST depuis le 2026-01-15, avec filtre, tri et
-  regroupement (`POST /users/{user_id}/projectsV2/{number}/views`) ; en GraphQL depuis le 2026-07-28
-  (`createProjectV2View`, nom, disposition et champs visibles seulement). Le point d'entrée REST des
+  regroupement (`POST /users/{user_id}/projectsV2/{number}/views`). La doc nomme l'identifiant, mais le
+  2026-10-01 l'identifiant numérique répondait 404 et le login fonctionnait
+  (`users/MasterLaplace/projectsV2/7/views`) ; la liste des vues ne se lit pas en REST. En GraphQL
+  depuis le 2026-07-28 (`createProjectV2View`, nom, disposition et champs visibles), et
+  `updateProjectV2View` change le filtre. Le point d'entrée REST des
   projets d'un compte personnel refuse les GitHub Apps et les jetons à portée fine. Source :
   https://docs.github.com/en/rest/projects/views ;
 - **ajout automatique : un workflow par dépôt suivi**, et le nombre dépend de l'offre : 1 en Free, 5 en
@@ -50,8 +53,16 @@ file de fusion https://docs.github.com/en/repositories/configuring-branches-and-
   https://docs.github.com/en/issues/planning-and-tracking-with-projects/automating-your-project/adding-items-automatically ;
 - un projet porte au plus 50 000 items ; l'archivage automatique filtre sur `is`, `reason` et `updated`.
   Source : https://docs.github.com/en/issues/planning-and-tracking-with-projects/automating-your-project/archiving-items-automatically ;
-- le workflow « un item est ajouté » se règle par type d'item (issue ou pull request), ce qui permet
-  deux statuts d'entrée différents dans le même projet. Constaté dans l'interface, pas dans la doc ;
+- **un projet n'a qu'un statut d'entrée.** Le workflow « Item added to project » filtre par type d'item
+  mais ne pose qu'un statut, et seul l'ajout automatique se duplique. Le type qui n'a pas ce statut
+  entre sans statut, et la colonne « No Status » sert alors de boîte d'entrée. Sources :
+  https://github.com/orgs/community/discussions/103145 ,
+  https://github.com/orgs/community/discussions/36584 ;
+- la limite d'ajouts automatiques s'entend par projet, et le workflow créé avec le projet compte
+  dedans. Rapporté sur un projet de compte personnel, pas écrit dans la doc. Source :
+  https://github.com/orgs/community/discussions/137767 ;
+- un projet neuf n'expose pas les champs de date « Updated » et « Closed » à l'API : une vue créée
+  par l'API ne peut pas encore trier dessus. Mesuré le 2026-10-01 ;
 - le workflow « pull request liée à une issue » existe depuis le 2025-11-06 et passe
   l'issue « en cours ». Source : https://github.blog/changelog/2025-11-06-improved-onboarding-flow-for-github-projects/ ;
 - les points d'étape (*status updates*) se publient par l'API (`createProjectV2StatusUpdate`) ; les

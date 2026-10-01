@@ -17,6 +17,7 @@ from functools import partial
 
 from . import __version__, attribution, config as config_module, etabli as etabli_module
 from . import etabli_projects
+from .board import OPTIONS, BoardError, GhBoard
 from .claude_agent import ClaudeAgent
 from .engine import Engine
 from .gh_etabli import GhEtabli, GhEtabliError
@@ -161,9 +162,9 @@ def _doctor(args: argparse.Namespace) -> int:
         found = _which(binary)
         check(f"{binary} present", bool(found), found or "not found in the PATH")
 
+    scopes = ""
     try:
         auth = subprocess.run(["gh", "auth", "status"], capture_output=True, text=True, timeout=20)
-        scopes = ""
         for line in auth.stderr.splitlines() + auth.stdout.splitlines():
             if "Token scopes" in line:
                 scopes = line.split(":", 1)[1].strip()
@@ -195,6 +196,11 @@ def _doctor(args: argparse.Namespace) -> int:
             check(f"clone {repo.slug}", os.path.isdir(os.path.join(repo.path, ".git")), repo.path)
         check(f"agent {configuration.agent or '(none)'}",
               *_agent_installed(configuration.agent, USER_AGENTS_DIR))
+        scope = _board_scope(configuration.board, scopes)
+        if scope is not None:
+            check("project scope", *scope)
+            if scope[0]:
+                check(f"field {configuration.board.field}", *_board_field(_board(configuration)))
     except FileNotFoundError:
         check("configuration read", False, f"{args.config} missing — run: forgeron config --init")
     except Exception as failure:
@@ -663,6 +669,30 @@ def _bypass_text(ruleset) -> str:
 
 # -- wiring -----------------------------------------------------------------
 
+def _board_scope(board, scopes: str) -> tuple[bool, str] | None:
+    if board is None:
+        return None
+    if "'project'" in scopes:
+        return True, f"forgeron keeps {board.project}"
+    return False, f"needed to keep {board.project}: gh auth refresh -s project"
+
+
+def _board_field(board: GhBoard) -> tuple[bool, str]:
+    try:
+        missing = board.missing_options()
+    except BoardError as failure:
+        return False, str(failure)
+    if missing:
+        return False, f"{board.project}: options missing, {', '.join(missing)}"
+    return True, f"{board.project}: the {len(OPTIONS)} options are there"
+
+
+def _board(configuration) -> GhBoard | None:
+    if configuration.board is None:
+        return None
+    return GhBoard(configuration.board.project, configuration.board.field)
+
+
 def _build(args: argparse.Namespace) -> tuple[Engine, Journal]:
     configuration = _load_or_die(args)
     write = bool(getattr(args, "write", False))
@@ -673,7 +703,7 @@ def _build(args: argparse.Namespace) -> tuple[Engine, Journal]:
                         dry_run=not write, agent=configuration.agent)
     engine = Engine(configuration, GhForge(), GitWorkspace(), agent,
                     Store(configuration.state_dir), journal, dry_run=not write,
-                    regenerator=ShellRegenerator())
+                    regenerator=ShellRegenerator(), board=_board(configuration))
     return engine, journal
 
 

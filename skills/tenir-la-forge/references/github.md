@@ -58,9 +58,10 @@ file de fusion https://docs.github.com/en/repositories/configuring-branches-and-
   entre sans statut, et la colonne « No Status » sert alors de boîte d'entrée. Sources :
   https://github.com/orgs/community/discussions/103145 ,
   https://github.com/orgs/community/discussions/36584 ;
-- la limite d'ajouts automatiques s'entend par projet, et le workflow créé avec le projet compte
-  dedans. Rapporté sur un projet de compte personnel, pas écrit dans la doc. Source :
-  https://github.com/orgs/community/discussions/137767 ;
+- la limite d'ajouts automatiques s'entend par projet. Avec Pro et l'ajout des sous-issues actif, un
+  cinquième dépôt suivi a été refusé : 4 dépôts au plus. Mesuré le 2026-10-01 sur un projet de compte
+  personnel ; la doc ne le dit pas, et https://github.com/orgs/community/discussions/137767 rapporte la
+  même limite ;
 - un projet neuf n'expose pas les champs de date « Updated » et « Closed » à l'API : une vue créée
   par l'API ne peut pas encore trier dessus. Mesuré le 2026-10-01 ;
 - le workflow « pull request liée à une issue » existe depuis le 2025-11-06 et passe

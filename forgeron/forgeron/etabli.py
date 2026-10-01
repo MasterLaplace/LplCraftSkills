@@ -146,7 +146,7 @@ def load(path: str) -> tuple[Desired, ...]:
 def parse(raw: Any, source: str = "etabli") -> tuple[Desired, ...]:
     if not isinstance(raw, dict):
         raise ConfigError(f"{source}: a JSON object is expected at the root")
-    _refuse_unknown(raw, {"defaults", "repos"}, source)
+    _refuse_unknown(raw, {"defaults", "repos", "projects"}, source)
     defaults = raw.get("defaults", {})
     repos = raw.get("repos")
     if not isinstance(defaults, dict):

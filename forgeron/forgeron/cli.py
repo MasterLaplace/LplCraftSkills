@@ -13,8 +13,10 @@ import os
 import subprocess
 import sys
 import uuid
+from functools import partial
 
 from . import __version__, attribution, config as config_module, etabli as etabli_module
+from . import etabli_projects
 from .claude_agent import ClaudeAgent
 from .engine import Engine
 from .gh_etabli import GhEtabli, GhEtabliError
@@ -34,6 +36,7 @@ EXIT_DRIFT = 5
 
 DEFAULT_CONFIG = os.path.expanduser("~/.forgeron/config.json")
 DEFAULT_ETABLI = os.path.expanduser("~/.forgeron/etabli.json")
+ONLY_DOMAINS = (*etabli_module.DOMAINS, "projects")
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -109,12 +112,15 @@ def _parser() -> argparse.ArgumentParser:
 
     etabli = sub.add_parser(
         "etabli",
-        help="apply the declared configuration of repositories: labels, settings, security, branch rules",
+        help="apply the declared configuration of repositories and projects: labels, settings, security, "
+             "branch rules, project fields, views and links",
         description=(
-            "Reads the declared configuration, observes each repository, and prints the plan.\n"
-            "Without --write, nothing is written. With --write, applies the plan, then reads the\n"
-            "repository again and prints what is left: a second pass that still proposes something\n"
-            "is a disagreement between the tool and the forge. Machine output: forgeron --json etabli."
+            "Reads the declared configuration, observes each repository and project, and prints the plan.\n"
+            "Without --write, nothing is written. With --write, applies the plan, then reads them again\n"
+            "and prints what is left: a second pass that still proposes something is a disagreement\n"
+            "between the tool and the forge. A project created by the run gets its fields, views and\n"
+            "links in the same run. Project workflows are only read: the forge has no API to set them.\n"
+            "Machine output: forgeron --json etabli."
         ),
         epilog=(
             "Symbols: + create  ~ update  > rename  - delete  ? undeclared  ! blocked  . skipped\n"
@@ -129,10 +135,13 @@ def _parser() -> argparse.ArgumentParser:
                              "(default: %(default)s)")
     etabli.add_argument("--repo", action="append", default=[], metavar="OWNER/NAME",
                         help="only this repository, which must be declared (repeatable)")
+    etabli.add_argument("--project", action="append", default=[], metavar="OWNER/TITLE",
+                        help="only this project, which must be declared (repeatable)")
     etabli.add_argument("--only", default="", metavar="DOMAINS",
-                        help="only the named domains, among " + ",".join(etabli_module.DOMAINS))
+                        help="only the named domains, among " + ",".join(ONLY_DOMAINS))
     etabli.add_argument("--write", action="store_true",
-                        help="apply the plan, then read each repository again. Without it: the plan only")
+                        help="apply the plan, then read each repository and project again. "
+                             "Without it: the plan only")
     etabli.set_defaults(handler=_etabli)
 
     return parser
@@ -357,8 +366,13 @@ def _forget(args: argparse.Namespace) -> int:
 
 def _etabli(args: argparse.Namespace) -> int:
     try:
-        desired = etabli_module.load(args.file)
-        desired = select_desired(desired, args.repo, args.only)
+        desired = select_desired(etabli_module.load(args.file), args.repo, args.only, projects=args.project)
+        projects = select_projects(etabli_projects.load_projects(args.file), args.project, args.repo,
+                                   args.only)
+        if not desired and not projects:
+            raise etabli_module.ConfigError("--repo, --project and --only leave nothing to check: a "
+                                            "project is checked only when \"projects\" is among --only, "
+                                            "a repository only when one of its domains is")
     except FileNotFoundError:
         print(f"{args.file} missing: start from forgeron/etabli.example.json", file=sys.stderr)
         return EXIT_USAGE
@@ -366,7 +380,8 @@ def _etabli(args: argparse.Namespace) -> int:
         print(str(failure), file=sys.stderr)
         return EXIT_USAGE
     journal = Journal(_journal_path(args.config), echo=None)
-    return run_etabli(desired, GhEtabli(), write=args.write, as_json=args.json, journal=journal)
+    return run_etabli(desired, GhEtabli(), write=args.write, as_json=args.json, journal=journal,
+                      projects=projects)
 
 
 def _journal_path(config_path: str) -> str:
@@ -381,72 +396,134 @@ def _journal_path(config_path: str) -> str:
 
 
 def select_desired(desired: tuple[etabli_module.Desired, ...], repos: list[str],
-                   only: str) -> tuple[etabli_module.Desired, ...]:
+                   only: str, projects: list[str] = ()) -> tuple[etabli_module.Desired, ...]:
     declared = {want.slug for want in desired}
     unknown = [repo for repo in repos if repo not in declared]
     if unknown:
         raise etabli_module.ConfigError(f"--repo {', '.join(unknown)}: not declared in the configuration "
                                         f"({', '.join(sorted(declared))})")
-    domains = [domain for domain in only.split(",") if domain]
-    wrong = [domain for domain in domains if domain not in etabli_module.DOMAINS]
-    if wrong:
-        raise etabli_module.ConfigError(f"--only {', '.join(wrong)}: unknown domain, expected "
-                                        f"{', '.join(etabli_module.DOMAINS)}")
+    domains = _only(only)
+    repo_domains = [domain for domain in domains if domain in etabli_module.DOMAINS]
+    if (projects and not repos) or (domains and not repo_domains):
+        return ()
     chosen = [want for want in desired if not repos or want.slug in repos]
-    if domains:
-        chosen = [dataclasses.replace(want, domains=tuple(d for d in want.domains if d in domains))
+    if repo_domains:
+        chosen = [dataclasses.replace(want, domains=tuple(d for d in want.domains if d in repo_domains))
                   for want in chosen]
     return tuple(chosen)
 
 
+def select_projects(projects: tuple[etabli_projects.DesiredProject, ...], names: list[str],
+                    repos: list[str], only: str) -> tuple[etabli_projects.DesiredProject, ...]:
+    declared = {project.key for project in projects}
+    unknown = [name for name in names if name not in declared]
+    if unknown:
+        raise etabli_module.ConfigError(f"--project {', '.join(unknown)}: not declared in the configuration "
+                                        f"({', '.join(sorted(declared)) or 'no project'})")
+    domains = _only(only)
+    if (domains and "projects" not in domains) or (repos and not names):
+        return ()
+    return tuple(project for project in projects if not names or project.key in names)
+
+
+def _only(only: str) -> list[str]:
+    domains = [domain for domain in only.split(",") if domain]
+    wrong = [domain for domain in domains if domain not in ONLY_DOMAINS]
+    if wrong:
+        raise etabli_module.ConfigError(f"--only {', '.join(wrong)}: unknown domain, expected "
+                                        f"{', '.join(ONLY_DOMAINS)}")
+    return domains
+
+
 def run_etabli(desired, adapter, *, write: bool, as_json: bool, journal=None, out=None,
-               err=None) -> int:
+               err=None, projects=()) -> int:
     out = out or sys.stdout
     err = err or sys.stderr
     journal = journal or Journal(None, echo=None)
     report = []
     for want in desired:
-        entry = {"repo": want.slug, "planned": [], "applied": [], "failed": [], "remaining": [],
-                 "error": "", "checked": ()}
-        try:
-            planned = etabli_module.plan(want, adapter.observe(want.slug))
-        except GhEtabliError as failure:
-            entry["error"] = str(failure)
-            report.append(entry)
-            continue
-        remaining = planned
-        applied, failed = [], []
-        if write and any(change.kind.actionable for change in planned):
-            for change in planned:
+        report.append(_settle(want.slug, partial(_plan_repository, want, adapter), adapter, write, journal,
+                              "repository", partial(_checked, want)))
+    projects_report = [_settle(project.key, partial(_plan_project, project, adapter), adapter, write, journal,
+                               "project", _project_checked)
+                       for project in projects]
+    everything = report + projects_report
+
+    if as_json:
+        print(json.dumps({"write": write, "repos": [_etabli_entry_json(entry) for entry in report],
+                          "projects": [_etabli_entry_json(entry, "project") for entry in projects_report],
+                          "exit": _etabli_exit(everything)}, ensure_ascii=False, indent=2), file=out)
+    else:
+        for entry in everything:
+            _print_etabli_entry(entry, out)
+        if not write and any(change.kind.actionable for entry in everything
+                             for change in entry["remaining"] or ()):
+            print("\nnothing was written: run again with --write to apply this plan", file=err)
+    return _etabli_exit(everything)
+
+
+def _plan_repository(want, adapter) -> list:
+    return etabli_module.plan(want, adapter.observe(want.slug))
+
+
+def _plan_project(project, adapter) -> list:
+    return etabli_projects.plan_project(project, adapter.observe_project(project))
+
+
+def _settle(name, observe_and_plan, adapter, write, journal, what, checked) -> dict:
+    entry = {"repo": name, "planned": [], "applied": [], "failed": [], "remaining": [],
+             "error": "", "checked": (), "what": what}
+    try:
+        planned = observe_and_plan()
+    except GhEtabliError as failure:
+        entry["error"] = str(failure)
+        return entry
+    remaining = planned
+    applied, failed = [], []
+    if write and any(change.kind.actionable for change in planned):
+        rounds = [_first_round(planned)]
+        catch_up = True
+        while rounds:
+            created = False
+            for change in rounds.pop():
                 if not change.kind.actionable:
                     continue
                 try:
                     adapter.apply(change)
                     applied.append(change)
+                    created = created or _creates_project(change)
                     journal.emit("etabli_applied", key=change.repo, **_journal_fields(change))
                 except GhEtabliError as failure:
                     failed.append((change, str(failure)))
                     journal.emit("etabli_failed", key=change.repo, error=str(failure),
                                  **_journal_fields(change))
             try:
-                remaining = etabli_module.plan(want, adapter.observe(want.slug))
+                remaining = observe_and_plan()
             except GhEtabliError as failure:
-                entry["error"] = f"could not read the repository again after writing: {failure}"
+                entry["error"] = f"could not read the {what} again after writing: {failure}"
                 remaining = None
-        entry.update(planned=planned, applied=applied, failed=failed, remaining=remaining,
-                     checked=_checked(want, planned))
-        report.append(entry)
+                break
+            if created and not failed and catch_up and not any(map(_creates_project, remaining)):
+                catch_up = False
+                rounds.append([change for change in remaining if not _creates_project(change)])
+    entry.update(planned=planned, applied=applied, failed=failed, remaining=remaining,
+                 checked=checked(planned))
+    return entry
 
-    if as_json:
-        print(json.dumps({"write": write, "repos": [_etabli_entry_json(entry) for entry in report],
-                          "exit": _etabli_exit(report)}, ensure_ascii=False, indent=2), file=out)
-    else:
-        for entry in report:
-            _print_etabli_entry(entry, out)
-        if not write and any(change.kind.actionable for entry in report
-                             for change in entry["remaining"] or ()):
-            print("\nnothing was written: run again with --write to apply this plan", file=err)
-    return _etabli_exit(report)
+
+def _creates_project(change) -> bool:
+    return change.domain == "project" and change.kind is etabli_module.Kind.CREATE
+
+
+def _first_round(planned) -> list:
+    creation = [change for change in planned if _creates_project(change)]
+    return creation or planned
+
+
+def _project_checked(planned) -> tuple[str, ...]:
+    if any(change.kind is etabli_module.Kind.SKIPPED for change in planned):
+        return ()
+    return ("project",)
 
 
 def _checked(want, planned) -> tuple[str, ...]:
@@ -474,21 +551,28 @@ def _etabli_exit(report) -> int:
     return EXIT_OK
 
 
-def _etabli_entry_json(entry) -> dict:
+def _etabli_entry_json(entry, what: str = "repo") -> dict:
     remaining = entry["remaining"]
+
+    def shown(change) -> dict:
+        fields = change.to_dict()
+        if what != "repo":
+            fields[what] = fields.pop("repo")
+        return fields
+
     return {
-        "repo": entry["repo"],
+        what: entry["repo"],
         "error": entry["error"],
         "checked": list(entry["checked"]),
-        "planned": [change.to_dict() for change in entry["planned"]],
-        "applied": [change.to_dict() for change in entry["applied"]],
-        "failed": [{**change.to_dict(), "error": reason} for change, reason in entry["failed"]],
-        "remaining": None if remaining is None else [change.to_dict() for change in remaining],
+        "planned": [shown(change) for change in entry["planned"]],
+        "applied": [shown(change) for change in entry["applied"]],
+        "failed": [{**shown(change), "error": reason} for change, reason in entry["failed"]],
+        "remaining": None if remaining is None else [shown(change) for change in remaining],
     }
 
 
 def _print_etabli_entry(entry, out) -> None:
-    print(entry["repo"], file=out)
+    print(f"project {entry['repo']}" if entry.get("what") == "project" else entry["repo"], file=out)
     if entry["error"] and not entry["planned"]:
         print(f"  ERROR {entry['error']}", file=out)
         return
@@ -533,7 +617,42 @@ def _describe(change) -> str:
                 f"bypass {_bypass_text(change.after)}")
     if change.domain == "rulesets" and change.kind is kind.UPDATE:
         return f"{change.name}  {change.note}  bypass after {_bypass_text(change.after)}"
+    if change.domain == "project" and change.kind is kind.UPDATE:
+        return " ; ".join(_setting_text(key, change.before.get(key), value)
+                          for key, value in change.after.items())
+    if change.domain == "fields" and change.kind is kind.CREATE:
+        options = ", ".join(option["name"] for option in change.after["options"])
+        return f"{change.name}  {change.after['type']}" + (f"  {options}" if options else "")
+    if change.domain == "fields" and change.kind is kind.UPDATE:
+        changes = _option_changes(change.before["options"], change.after["options"])
+        return f"{change.name}  " + " ; ".join(changes)
+    if change.domain == "views" and change.kind is kind.CREATE:
+        return f"{change.name}  {change.after['layout']}  {change.after.get('filter', '')}".rstrip()
     return f"{change.name}  {change.note}".rstrip()
+
+
+def _option_changes(before: list[dict], after: list[dict]) -> list[str]:
+    present = {option["name"].lower(): option for option in before}
+    wanted = {option["name"].lower() for option in after}
+    changes = [f"- {option['name']}" for option in before if option["name"].lower() not in wanted]
+    for option in after:
+        have = present.get(option["name"].lower())
+        if have is None:
+            changes.append(f"+ {option['name']}")
+            continue
+        if have["name"] != option["name"]:
+            changes.append(f"{have['name']} -> {option['name']}")
+        changes += [f"{option['name']} {key} {have[key]} -> {option[key]}"
+                    for key in ("color", "description") if have[key] != option[key]]
+    if not changes:
+        changes.append("order " + ", ".join(option["name"] for option in after))
+    return changes
+
+
+def _setting_text(key: str, before, after) -> str:
+    if key == "readme":
+        return f"readme {len((before or '').splitlines())} -> {len((after or '').splitlines())} lines"
+    return f"{key} {before!r} -> {after!r}"
 
 
 def _bypass_text(ruleset) -> str:

@@ -1,0 +1,250 @@
+{
+  "repos": {
+    "MasterLaplace/LplKernel": {}
+  },
+  "projects": {
+    "MasterLaplace/Laplace": {
+      "public": true,
+      "short_description": "The core of Laplace: what to take next, what waits for a review, where forgeron is, and where the project goes.",
+      "readme": "project-laplace-readme.md",
+      "repositories": [
+        "MasterLaplace/LplCraftSkills",
+        "MasterLaplace/LplKernel",
+        "MasterLaplace/LplPlugin",
+        "MasterLaplace/.github",
+        "MasterLaplace/LplKnowledge"
+      ],
+      "fields": {
+        "Status": {
+          "type": "single_select",
+          "options": [
+            {
+              "name": "Ready",
+              "color": "BLUE",
+              "description": "Triaged: anyone can take it."
+            },
+            {
+              "name": "In progress",
+              "color": "YELLOW",
+              "description": "Someone works on it. A linked pull request puts the issue here."
+            },
+            {
+              "name": "To review",
+              "color": "PURPLE",
+              "description": "The pull request waits for a review."
+            },
+            {
+              "name": "Changes requested",
+              "color": "ORANGE",
+              "description": "The review asked for changes."
+            },
+            {
+              "name": "To re-review",
+              "color": "PINK",
+              "description": "The author answered the review. Set by hand."
+            },
+            {
+              "name": "Approved",
+              "color": "GREEN",
+              "description": "The review approved the pull request."
+            },
+            {
+              "name": "Done",
+              "color": "GRAY",
+              "description": "Closed or merged."
+            }
+          ]
+        },
+        "Priority": {
+          "type": "single_select",
+          "options": [
+            {
+              "name": "Urgent",
+              "color": "RED",
+              "description": "Before anything else."
+            },
+            {
+              "name": "High",
+              "color": "ORANGE",
+              "description": "Next in line."
+            },
+            {
+              "name": "Medium",
+              "color": "YELLOW",
+              "description": "When the high ones are done."
+            },
+            {
+              "name": "Low",
+              "color": "GRAY",
+              "description": "Whenever there is room."
+            }
+          ]
+        },
+        "Forgeron": {
+          "type": "single_select",
+          "options": [
+            {
+              "name": "Queued",
+              "color": "GRAY",
+              "description": "forgeron has the issue and has not started."
+            },
+            {
+              "name": "Planning",
+              "color": "BLUE",
+              "description": "forgeron writes its plan."
+            },
+            {
+              "name": "Awaiting answer",
+              "color": "ORANGE",
+              "description": "forgeron asked a question and waits for the maintainer."
+            },
+            {
+              "name": "Working",
+              "color": "YELLOW",
+              "description": "forgeron implements, fixes checks or resolves a conflict."
+            },
+            {
+              "name": "In review",
+              "color": "PURPLE",
+              "description": "The pull request is out, or forgeron answers its review."
+            },
+            {
+              "name": "Blocked",
+              "color": "RED",
+              "description": "forgeron stopped: budget, rounds or an error it cannot recover from."
+            },
+            {
+              "name": "Done",
+              "color": "GREEN",
+              "description": "Merged, or abandoned by a human."
+            }
+          ]
+        },
+        "Start date": {
+          "type": "date"
+        },
+        "Target date": {
+          "type": "date"
+        }
+      },
+      "views": [
+        {
+          "name": "Next",
+          "layout": "table",
+          "filter": "is:issue is:open status:Ready",
+          "fields": [
+            "Title",
+            "Repository",
+            "Priority",
+            "Assignees",
+            "Milestone",
+            "Labels"
+          ],
+          "sort_by": [
+            [
+              "Priority",
+              "asc"
+            ]
+          ],
+          "group_by": "Repository"
+        },
+        {
+          "name": "To review",
+          "layout": "board",
+          "filter": "is:pr is:open -label:dependencies",
+          "fields": [
+            "Title",
+            "Repository",
+            "Assignees",
+            "Reviewers",
+            "Labels"
+          ],
+          "vertical_group_by": "Status"
+        },
+        {
+          "name": "Forgeron",
+          "layout": "board",
+          "filter": "label:forgeron",
+          "fields": [
+            "Title",
+            "Repository",
+            "Linked pull requests"
+          ],
+          "vertical_group_by": "Forgeron"
+        },
+        {
+          "name": "Roadmap",
+          "layout": "roadmap",
+          "filter": "is:issue",
+          "group_by": "Repository"
+        },
+        {
+          "name": "Waiting on me",
+          "layout": "table",
+          "filter": "is:open (forgeron:\"Awaiting answer\",\"Blocked\" OR reviewers:@me)",
+          "fields": [
+            "Title",
+            "Repository",
+            "Status",
+            "Forgeron"
+          ]
+        },
+        {
+          "name": "Stale",
+          "layout": "table",
+          "filter": "is:open updated:<@today-14d",
+          "fields": [
+            "Title",
+            "Repository",
+            "Status",
+            "Assignees"
+          ]
+        },
+        {
+          "name": "Shipped",
+          "layout": "table",
+          "filter": "(is:merged OR reason:completed)",
+          "fields": [
+            "Title",
+            "Repository",
+            "Milestone"
+          ],
+          "group_by": "Milestone"
+        },
+        {
+          "name": "Newcomers",
+          "layout": "table",
+          "filter": "is:open label:\"good first issue\" no:assignee",
+          "fields": [
+            "Title",
+            "Repository",
+            "Priority",
+            "Labels"
+          ],
+          "sort_by": [
+            [
+              "Priority",
+              "asc"
+            ]
+          ]
+        }
+      ],
+      "workflows": {
+        "Auto-add sub-issues to project": true,
+        "Auto-add to .github": true,
+        "Auto-add to LplCraftSkills": true,
+        "Auto-add to LplKernel": true,
+        "Auto-add to LplPlugin": true,
+        "Auto-close issue": true,
+        "Code changes requested": true,
+        "Code review approved": true,
+        "Item added to project": true,
+        "Item closed": true,
+        "Item reopened": true,
+        "Pull request linked to issue": true,
+        "Pull request merged": true,
+        "Auto-archive items": false
+      }
+    }
+  }
+}

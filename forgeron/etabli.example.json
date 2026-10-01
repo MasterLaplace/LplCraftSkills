@@ -65,5 +65,41 @@
       "required_checks": ["test"]
     },
     "SOMEONE-ELSE/shared-library": {}
+  },
+  "projects": {
+    "OWNER/Product": {
+      "public": true,
+      "short_description": "What to take next, what waits for a review, and where the product goes.",
+      "readme": "etabli.example.project.md",
+      "repositories": ["OWNER/application"],
+      "fields": {
+        "Status": {"type": "single_select", "options": [
+          {"name": "Ready", "color": "BLUE", "description": "Triaged: anyone can take it."},
+          {"name": "In progress", "color": "YELLOW", "description": "Someone works on it."},
+          {"name": "To review", "color": "PURPLE", "description": "The pull request waits for a review."},
+          {"name": "Changes requested", "color": "ORANGE", "description": "The review asked for changes."},
+          {"name": "Approved", "color": "GREEN", "description": "The review approved the pull request."},
+          {"name": "Done", "color": "GRAY", "description": "Closed or merged."}
+        ]},
+        "Priority": {"type": "single_select", "options": [
+          {"name": "High", "color": "ORANGE", "description": "Next in line."},
+          {"name": "Low", "color": "GRAY", "description": "Whenever there is room."}
+        ]},
+        "Target date": {"type": "date"}
+      },
+      "views": [
+        {"name": "Next", "layout": "table", "filter": "is:issue is:open status:Ready",
+         "fields": ["Title", "Repository", "Priority"], "sort_by": [["Priority", "asc"]]},
+        {"name": "To review", "layout": "board", "filter": "is:pr is:open -label:dependencies",
+         "vertical_group_by": "Status"},
+        {"name": "Roadmap", "layout": "roadmap", "filter": "is:issue"}
+      ],
+      "workflows": {
+        "Item added to project": true,
+        "Pull request merged": true,
+        "Item closed": true,
+        "Auto-archive items": false
+      }
+    }
   }
 }

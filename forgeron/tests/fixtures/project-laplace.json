@@ -1,0 +1,624 @@
+{
+ "data": {
+  "node": {
+   "id": "PVT_kwHOA59Rr84BlUb9",
+   "number": 7,
+   "url": "https://github.com/users/MasterLaplace/projects/7",
+   "title": "Laplace",
+   "public": true,
+   "shortDescription": "The core of Laplace: what to take next, what waits for a review, where forgeron is, and where the project goes.",
+   "readme": "The core of Laplace in one place: [LplKernel](https://github.com/MasterLaplace/LplKernel), [LplPlugin](https://github.com/MasterLaplace/LplPlugin), [LplKnowledge](https://github.com/MasterLaplace/LplKnowledge), [LplCraftSkills](https://github.com/MasterLaplace/LplCraftSkills) and [LplAssistant](https://github.com/Christian-guajardo/LplAssistant).\n\n## Which view answers which question\n\n| Question | View |\n|---|---|\n| What can I take next? | **Next** |\n| What waits for a review? | **To review** |\n| Where is forgeron? | **Forgeron** |\n| Where is the project going? | **Roadmap** |\n| What waits for the maintainer? | **Waiting on me** |\n| What has not moved for 14 days? | **Stale** |\n| What shipped, version by version? | **Shipped** |\n| What can a newcomer take? | **Newcomers** |\n\n## What each status means\n\n| Status | Meaning | Set by |\n|---|---|---|\n| *No status* | Just arrived, not triaged yet: this is the inbox. | nobody |\n| Ready | Triaged: anyone can take it. | the maintainer |\n| In progress | Someone works on it. | a pull request linked to the issue |\n| To review | The pull request waits for a review. | the pull request entering the project |\n| Changes requested | The review asked for changes. | the review |\n| To re-review | The author answered the review. | **the author, by hand** |\n| Approved | The review approved the pull request. | the review |\n| Done | Closed or merged. | closing or merging |\n\n**Priority** says what comes first. **Forgeron** shows where the [forgeron](https://github.com/MasterLaplace/LplCraftSkills/tree/main/forgeron) pilot is on the issues it works on.\n\n## How items get here\n\nNew issues and pull requests of the MasterLaplace repositories are added automatically, and a sub-issue follows its parent. Items of LplAssistant are added by forgeron or by hand.\n\n## The roadmap\n\nA goal is an issue of [MasterLaplace/.github](https://github.com/MasterLaplace/.github) with a **Start date** and a **Target date**. Its sub-issues live in the repositories that do the work. Milestones are the versions of each repository, and show as markers on the roadmap.\n\n## Contributing\n\nStart with the **Newcomers** view, then read [CONTRIBUTING](https://github.com/MasterLaplace/.github/blob/main/.github/CONTRIBUTING.md) and the [code of conduct](https://github.com/MasterLaplace/.github/blob/main/.github/CODE_OF_CONDUCT.md).\n",
+   "viewerCanUpdate": true,
+   "items": {
+    "totalCount": 27
+   },
+   "repositories": {
+    "nodes": [
+     {
+      "nameWithOwner": "MasterLaplace/.github"
+     },
+     {
+      "nameWithOwner": "MasterLaplace/LplCraftSkills"
+     },
+     {
+      "nameWithOwner": "MasterLaplace/LplKnowledge"
+     },
+     {
+      "nameWithOwner": "MasterLaplace/LplPlugin"
+     },
+     {
+      "nameWithOwner": "MasterLaplace/LplKernel"
+     }
+    ],
+    "pageInfo": {
+     "hasNextPage": false
+    }
+   },
+   "fields": {
+    "nodes": [
+     {
+      "id": "PVTF_lAHOA59Rr84BlUb9zhkBxJY",
+      "databaseId": 419546262,
+      "name": "Title",
+      "dataType": "TITLE"
+     },
+     {
+      "id": "PVTF_lAHOA59Rr84BlUb9zhkBxJc",
+      "databaseId": 419546263,
+      "name": "Assignees",
+      "dataType": "ASSIGNEES"
+     },
+     {
+      "id": "PVTSSF_lAHOA59Rr84BlUb9zhkBxJg",
+      "databaseId": 419546264,
+      "name": "Status",
+      "dataType": "SINGLE_SELECT",
+      "options": [
+       {
+        "id": "013d8abb",
+        "name": "Ready",
+        "color": "BLUE",
+        "description": "Triaged: anyone can take it."
+       },
+       {
+        "id": "47fc9ee4",
+        "name": "In progress",
+        "color": "YELLOW",
+        "description": "Someone works on it. A linked pull request puts the issue here."
+       },
+       {
+        "id": "4228d281",
+        "name": "To review",
+        "color": "PURPLE",
+        "description": "The pull request waits for a review."
+       },
+       {
+        "id": "3eb79833",
+        "name": "Changes requested",
+        "color": "ORANGE",
+        "description": "The review asked for changes."
+       },
+       {
+        "id": "9aafe621",
+        "name": "To re-review",
+        "color": "PINK",
+        "description": "The author answered the review. Set by hand."
+       },
+       {
+        "id": "87002869",
+        "name": "Approved",
+        "color": "GREEN",
+        "description": "The review approved the pull request."
+       },
+       {
+        "id": "98236657",
+        "name": "Done",
+        "color": "GRAY",
+        "description": "Closed or merged."
+       }
+      ]
+     },
+     {
+      "id": "PVTF_lAHOA59Rr84BlUb9zhkBxJk",
+      "databaseId": 419546265,
+      "name": "Labels",
+      "dataType": "LABELS"
+     },
+     {
+      "id": "PVTF_lAHOA59Rr84BlUb9zhkBxJo",
+      "databaseId": 419546266,
+      "name": "Linked pull requests",
+      "dataType": "LINKED_PULL_REQUESTS"
+     },
+     {
+      "id": "PVTF_lAHOA59Rr84BlUb9zhkBxJs",
+      "databaseId": 419546267,
+      "name": "Milestone",
+      "dataType": "MILESTONE"
+     },
+     {
+      "id": "PVTF_lAHOA59Rr84BlUb9zhkBxJw",
+      "databaseId": 419546268,
+      "name": "Repository",
+      "dataType": "REPOSITORY"
+     },
+     {
+      "id": "PVTF_lAHOA59Rr84BlUb9zhkBxJ4",
+      "databaseId": 419546270,
+      "name": "Reviewers",
+      "dataType": "REVIEWERS"
+     },
+     {
+      "id": "PVTF_lAHOA59Rr84BlUb9zhkBxJ8",
+      "databaseId": 419546271,
+      "name": "Parent issue",
+      "dataType": "PARENT_ISSUE"
+     },
+     {
+      "id": "PVTF_lAHOA59Rr84BlUb9zhkBxKA",
+      "databaseId": 419546272,
+      "name": "Sub-issues progress",
+      "dataType": "SUB_ISSUES_PROGRESS"
+     },
+     {
+      "id": "PVTF_lAHOA59Rr84BlUb9zhkBxKE",
+      "databaseId": 419546273,
+      "name": "Created",
+      "dataType": "CREATED"
+     },
+     {
+      "id": "PVTF_lAHOA59Rr84BlUb9zhkBxKI",
+      "databaseId": 419546274,
+      "name": "Updated",
+      "dataType": "UPDATED"
+     },
+     {
+      "id": "PVTF_lAHOA59Rr84BlUb9zhkBxKM",
+      "databaseId": 419546275,
+      "name": "Closed",
+      "dataType": "CLOSED"
+     },
+     {
+      "id": "PVTSSF_lAHOA59Rr84BlUb9zhkBxKQ",
+      "databaseId": 419546276,
+      "name": "Priority",
+      "dataType": "SINGLE_SELECT",
+      "options": [
+       {
+        "id": "7f38f7c1",
+        "name": "Urgent",
+        "color": "RED",
+        "description": "Before anything else."
+       },
+       {
+        "id": "c95e7159",
+        "name": "High",
+        "color": "ORANGE",
+        "description": "Next in line."
+       },
+       {
+        "id": "4c206041",
+        "name": "Medium",
+        "color": "YELLOW",
+        "description": "When the high ones are done."
+       },
+       {
+        "id": "612d064d",
+        "name": "Low",
+        "color": "GRAY",
+        "description": "Whenever there is room."
+       }
+      ]
+     },
+     {
+      "id": "PVTSSF_lAHOA59Rr84BlUb9zhkBxLQ",
+      "databaseId": 419546292,
+      "name": "Forgeron",
+      "dataType": "SINGLE_SELECT",
+      "options": [
+       {
+        "id": "20aa89d4",
+        "name": "Queued",
+        "color": "GRAY",
+        "description": "forgeron has the issue and has not started."
+       },
+       {
+        "id": "6be0ae51",
+        "name": "Planning",
+        "color": "BLUE",
+        "description": "forgeron writes its plan."
+       },
+       {
+        "id": "d20b39ce",
+        "name": "Awaiting answer",
+        "color": "ORANGE",
+        "description": "forgeron asked a question and waits for the maintainer."
+       },
+       {
+        "id": "b04dc26d",
+        "name": "Working",
+        "color": "YELLOW",
+        "description": "forgeron implements, fixes checks or resolves a conflict."
+       },
+       {
+        "id": "eee28825",
+        "name": "In review",
+        "color": "PURPLE",
+        "description": "The pull request is out, or forgeron answers its review."
+       },
+       {
+        "id": "0b1482e2",
+        "name": "Blocked",
+        "color": "RED",
+        "description": "forgeron stopped: budget, rounds or an error it cannot recover from."
+       },
+       {
+        "id": "bf76b03d",
+        "name": "Done",
+        "color": "GREEN",
+        "description": "Merged, or abandoned by a human."
+       }
+      ]
+     },
+     {
+      "id": "PVTF_lAHOA59Rr84BlUb9zhkBxLU",
+      "databaseId": 419546293,
+      "name": "Start date",
+      "dataType": "DATE"
+     },
+     {
+      "id": "PVTF_lAHOA59Rr84BlUb9zhkBxMU",
+      "databaseId": 419546309,
+      "name": "Target date",
+      "dataType": "DATE"
+     }
+    ],
+    "pageInfo": {
+     "hasNextPage": false
+    }
+   },
+   "views": {
+    "nodes": [
+     {
+      "id": "PVTV_lAHOA59Rr84BlUb9zgL3wIA",
+      "number": 3,
+      "name": "Next",
+      "layout": "TABLE_LAYOUT",
+      "filter": "is:issue is:open status:Ready",
+      "fields": {
+       "nodes": [
+        {
+         "name": "Title"
+        },
+        {
+         "name": "Assignees"
+        },
+        {
+         "name": "Labels"
+        },
+        {
+         "name": "Milestone"
+        },
+        {
+         "name": "Repository"
+        },
+        {
+         "name": "Priority"
+        }
+       ]
+      },
+      "groupByFields": {
+       "nodes": [
+        {
+         "name": "Repository"
+        }
+       ]
+      },
+      "verticalGroupByFields": {
+       "nodes": []
+      },
+      "sortByFields": {
+       "nodes": [
+        {
+         "direction": "ASC",
+         "field": {
+          "name": "Priority"
+         }
+        }
+       ]
+      }
+     },
+     {
+      "id": "PVTV_lAHOA59Rr84BlUb9zgL3wIE",
+      "number": 4,
+      "name": "To review",
+      "layout": "BOARD_LAYOUT",
+      "filter": "is:pr is:open -label:dependencies",
+      "fields": {
+       "nodes": [
+        {
+         "name": "Title"
+        },
+        {
+         "name": "Assignees"
+        },
+        {
+         "name": "Labels"
+        },
+        {
+         "name": "Repository"
+        },
+        {
+         "name": "Reviewers"
+        }
+       ]
+      },
+      "groupByFields": {
+       "nodes": []
+      },
+      "verticalGroupByFields": {
+       "nodes": [
+        {
+         "name": "Status"
+        }
+       ]
+      },
+      "sortByFields": {
+       "nodes": []
+      }
+     },
+     {
+      "id": "PVTV_lAHOA59Rr84BlUb9zgL3wII",
+      "number": 5,
+      "name": "Forgeron",
+      "layout": "BOARD_LAYOUT",
+      "filter": "label:forgeron",
+      "fields": {
+       "nodes": [
+        {
+         "name": "Title"
+        },
+        {
+         "name": "Linked pull requests"
+        },
+        {
+         "name": "Repository"
+        }
+       ]
+      },
+      "groupByFields": {
+       "nodes": []
+      },
+      "verticalGroupByFields": {
+       "nodes": [
+        {
+         "name": "Forgeron"
+        }
+       ]
+      },
+      "sortByFields": {
+       "nodes": []
+      }
+     },
+     {
+      "id": "PVTV_lAHOA59Rr84BlUb9zgL3wIM",
+      "number": 6,
+      "name": "Roadmap",
+      "layout": "ROADMAP_LAYOUT",
+      "filter": "is:issue",
+      "fields": {
+       "nodes": [
+        {
+         "name": "Title"
+        },
+        {
+         "name": "Assignees"
+        },
+        {
+         "name": "Status"
+        },
+        {
+         "name": "Linked pull requests"
+        },
+        {
+         "name": "Sub-issues progress"
+        }
+       ]
+      },
+      "groupByFields": {
+       "nodes": [
+        {
+         "name": "Repository"
+        }
+       ]
+      },
+      "verticalGroupByFields": {
+       "nodes": []
+      },
+      "sortByFields": {
+       "nodes": []
+      }
+     },
+     {
+      "id": "PVTV_lAHOA59Rr84BlUb9zgL3wIQ",
+      "number": 7,
+      "name": "Waiting on me",
+      "layout": "TABLE_LAYOUT",
+      "filter": "is:open (forgeron:\"Awaiting answer\",\"Blocked\" OR reviewers:@me)",
+      "fields": {
+       "nodes": [
+        {
+         "name": "Title"
+        },
+        {
+         "name": "Status"
+        },
+        {
+         "name": "Repository"
+        },
+        {
+         "name": "Forgeron"
+        }
+       ]
+      },
+      "groupByFields": {
+       "nodes": []
+      },
+      "verticalGroupByFields": {
+       "nodes": []
+      },
+      "sortByFields": {
+       "nodes": []
+      }
+     },
+     {
+      "id": "PVTV_lAHOA59Rr84BlUb9zgL3wIY",
+      "number": 8,
+      "name": "Stale",
+      "layout": "TABLE_LAYOUT",
+      "filter": "is:open updated:<@today-14d",
+      "fields": {
+       "nodes": [
+        {
+         "name": "Title"
+        },
+        {
+         "name": "Assignees"
+        },
+        {
+         "name": "Status"
+        },
+        {
+         "name": "Repository"
+        }
+       ]
+      },
+      "groupByFields": {
+       "nodes": []
+      },
+      "verticalGroupByFields": {
+       "nodes": []
+      },
+      "sortByFields": {
+       "nodes": []
+      }
+     },
+     {
+      "id": "PVTV_lAHOA59Rr84BlUb9zgL3wIc",
+      "number": 9,
+      "name": "Shipped",
+      "layout": "TABLE_LAYOUT",
+      "filter": "(is:merged OR reason:completed)",
+      "fields": {
+       "nodes": [
+        {
+         "name": "Title"
+        },
+        {
+         "name": "Milestone"
+        },
+        {
+         "name": "Repository"
+        }
+       ]
+      },
+      "groupByFields": {
+       "nodes": [
+        {
+         "name": "Milestone"
+        }
+       ]
+      },
+      "verticalGroupByFields": {
+       "nodes": []
+      },
+      "sortByFields": {
+       "nodes": []
+      }
+     },
+     {
+      "id": "PVTV_lAHOA59Rr84BlUb9zgL3wIg",
+      "number": 10,
+      "name": "Newcomers",
+      "layout": "TABLE_LAYOUT",
+      "filter": "is:open label:\"good first issue\" no:assignee",
+      "fields": {
+       "nodes": [
+        {
+         "name": "Title"
+        },
+        {
+         "name": "Labels"
+        },
+        {
+         "name": "Repository"
+        },
+        {
+         "name": "Priority"
+        }
+       ]
+      },
+      "groupByFields": {
+       "nodes": []
+      },
+      "verticalGroupByFields": {
+       "nodes": []
+      },
+      "sortByFields": {
+       "nodes": [
+        {
+         "direction": "ASC",
+         "field": {
+          "name": "Priority"
+         }
+        }
+       ]
+      }
+     }
+    ],
+    "pageInfo": {
+     "hasNextPage": false
+    }
+   },
+   "workflows": {
+    "nodes": [
+     {
+      "name": "Auto-add sub-issues to project",
+      "enabled": true
+     },
+     {
+      "name": "Auto-add to .github",
+      "enabled": true
+     },
+     {
+      "name": "Auto-add to LplCraftSkills",
+      "enabled": true
+     },
+     {
+      "name": "Auto-add to LplKernel",
+      "enabled": true
+     },
+     {
+      "name": "Auto-add to LplPlugin",
+      "enabled": true
+     },
+     {
+      "name": "Auto-close issue",
+      "enabled": true
+     },
+     {
+      "name": "Code changes requested",
+      "enabled": true
+     },
+     {
+      "name": "Code review approved",
+      "enabled": true
+     },
+     {
+      "name": "Item added to project",
+      "enabled": true
+     },
+     {
+      "name": "Item closed",
+      "enabled": true
+     },
+     {
+      "name": "Item reopened",
+      "enabled": true
+     },
+     {
+      "name": "Pull request linked to issue",
+      "enabled": true
+     },
+     {
+      "name": "Pull request merged",
+      "enabled": true
+     }
+    ],
+    "pageInfo": {
+     "hasNextPage": false
+    }
+   }
+  }
+ }
+}

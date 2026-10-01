@@ -3,10 +3,13 @@ from __future__ import annotations
 import dataclasses
 import io
 import json
+import pathlib
+import tempfile
 import unittest
 
 from forgeron import cli
-from forgeron.etabli import ConfigError, Desired, Kind, Label, Observed, ObservedLabel
+from forgeron.etabli import Change, ConfigError, Desired, Kind, Label, Observed, ObservedLabel
+from forgeron.etabli_projects import DesiredProject, ObservedProject
 from forgeron.gh_etabli import GhEtabliError
 from forgeron.journal import Journal
 
@@ -67,6 +70,129 @@ def fresh() -> Observed:
 def converged() -> Observed:
     return dataclasses.replace(fresh(), settings={"allow_squash_merge": False},
                                labels=(ObservedLabel(BUG.name, BUG.color, BUG.description, 0),))
+
+
+BOARD = DesiredProject(key="o/Board", owner="o", title="Board",
+                       views=({"name": "Next", "layout": "table", "filter": "is:open"},),
+                       workflows=(("Item closed", True),))
+
+NEXT = {"id": "PVTV_next", "name": "Next", "layout": "table", "filter": "is:open", "fields": [],
+        "sort_by": [], "group_by": [], "vertical_group_by": []}
+
+
+def board(**changes) -> ObservedProject:
+    base = {"key": "o/Board", "exists": True, "can_update": True, "id": "PVT_1", "number": 1,
+            "url": "https://github.com/users/o/projects/1", "views": (NEXT,),
+            "workflows": {"Item closed": True}}
+    base.update(changes)
+    return ObservedProject(**base)
+
+
+class MemoryProjects:
+    def __init__(self, state: ObservedProject, stuck: bool = False) -> None:
+        self.state = state
+        self.stuck = stuck
+        self.applied: list[str] = []
+        self.observed = 0
+
+    def observe_project(self, desired: DesiredProject) -> ObservedProject:
+        self.observed += 1
+        return self.state
+
+    def apply(self, change) -> None:
+        self.applied.append(f"{change.kind.name} {change.domain} {change.name}")
+        if self.stuck:
+            return
+        if change.domain == "project" and change.kind is Kind.CREATE:
+            self.state = board(views=())
+        elif change.domain == "views" and change.kind is Kind.CREATE:
+            self.state = dataclasses.replace(self.state, views=self.state.views + (NEXT,))
+
+
+def run_projects(forge: MemoryProjects, write: bool, as_json: bool = False) -> tuple[int, str, str]:
+    out, err = io.StringIO(), io.StringIO()
+    code = cli.run_etabli((), forge, write=write, as_json=as_json, out=out, err=err, projects=(BOARD,))
+    return code, out.getvalue(), err.getvalue()
+
+
+class Projects(unittest.TestCase):
+    def test_a_converged_project_exits_zero(self) -> None:
+        code, out, _ = run_projects(MemoryProjects(board()), write=False)
+        self.assertEqual(code, cli.EXIT_OK)
+        self.assertIn("o/Board", out)
+        self.assertIn("= nothing to change", out)
+
+    def test_a_missing_view_is_planned_and_left_without_write(self) -> None:
+        forge = MemoryProjects(board(views=()))
+        code, out, _ = run_projects(forge, write=False)
+        self.assertEqual((code, forge.applied), (cli.EXIT_DRIFT, []))
+        self.assertIn("+ views     Next", out)
+
+    def test_write_creates_the_view_and_reads_the_project_again(self) -> None:
+        forge = MemoryProjects(board(views=()))
+        code, _, _ = run_projects(forge, write=True)
+        self.assertEqual((code, forge.applied, forge.observed), (cli.EXIT_OK, ["CREATE views Next"], 2))
+
+    def test_a_project_created_by_the_run_gets_its_content_in_the_same_run(self) -> None:
+        forge = MemoryProjects(ObservedProject(key="o/Board", exists=False))
+        code, out, _ = run_projects(forge, write=True)
+        self.assertEqual(forge.applied, ["CREATE project Board", "CREATE views Next"])
+        self.assertEqual(code, cli.EXIT_OK)
+        self.assertIn("+ views     Next", out.split("after reading again")[0])
+
+    def test_a_project_the_forge_never_shows_is_created_once_and_reported(self) -> None:
+        forge = MemoryProjects(ObservedProject(key="o/Board", exists=False), stuck=True)
+        code, _, _ = run_projects(forge, write=True)
+        self.assertEqual(forge.applied, ["CREATE project Board"])
+        self.assertEqual(code, cli.EXIT_DRIFT)
+
+    def test_the_plan_of_a_missing_project_shows_what_follows_its_creation(self) -> None:
+        code, out, _ = run_projects(MemoryProjects(ObservedProject(key="o/Board", exists=False)), write=False)
+        self.assertEqual(code, cli.EXIT_DRIFT)
+        self.assertIn("+ project   Board", out)
+        self.assertIn("+ views     Next", out)
+
+    def test_the_text_output_says_a_project_is_a_project(self) -> None:
+        _, out, _ = run_projects(MemoryProjects(board()), write=False)
+        self.assertIn("project o/Board", out)
+
+    def test_a_workflow_left_off_exits_blocked_and_says_where_to_switch_it(self) -> None:
+        code, out, _ = run_projects(MemoryProjects(board(workflows={"Item closed": False})), write=False)
+        self.assertEqual(code, cli.EXIT_BLOCKED)
+        self.assertIn("https://github.com/users/o/projects/1/workflows", out)
+
+    def test_a_project_nobody_can_update_is_nothing_checked(self) -> None:
+        code, out, _ = run_projects(MemoryProjects(board(can_update=False)), write=False)
+        self.assertEqual(code, cli.EXIT_BLOCKED)
+        self.assertIn("nothing checked", out)
+
+    def test_an_option_update_shows_what_changes_in_each_option(self) -> None:
+        change = Change("o/Board", "fields", Kind.UPDATE, "Priority",
+                        before={"id": "f", "options": [
+                            {"name": "High", "color": "ORANGE", "description": "Next."},
+                            {"name": "Low", "color": "GRAY", "description": "Later."}]},
+                        after={"options": [
+                            {"name": "High", "color": "RED", "description": "Next.", "id": "a"},
+                            {"name": "Urgent", "color": "RED", "description": "Now."}]})
+        text = cli._describe(change)
+        self.assertIn("High color ORANGE -> RED", text)
+        self.assertIn("+ Urgent", text)
+        self.assertIn("- Low", text)
+
+    def test_an_option_whose_name_changes_case_says_so(self) -> None:
+        change = Change("o/Board", "fields", Kind.UPDATE, "Priority",
+                        before={"id": "f", "options": [{"name": "high", "color": "RED", "description": ""}]},
+                        after={"options": [{"name": "High", "color": "RED", "description": "", "id": "a"}]})
+        self.assertIn("high -> High", cli._describe(change))
+
+    def test_json_lists_projects_apart_from_repositories(self) -> None:
+        _, out, _ = run_projects(MemoryProjects(board(views=())), write=False, as_json=True)
+        payload = json.loads(out)
+        self.assertEqual(payload["repos"], [])
+        self.assertEqual(payload["projects"][0]["project"], "o/Board")
+        self.assertEqual(payload["projects"][0]["planned"][0]["domain"], "views")
+        self.assertEqual(payload["projects"][0]["planned"][0]["project"], "o/Board")
+        self.assertNotIn("repo", payload["projects"][0]["planned"][0])
 
 
 class Plan(unittest.TestCase):
@@ -192,6 +318,34 @@ class Selection(unittest.TestCase):
             cli.select_desired(wants, ["o/zzz"], "")
         with self.assertRaises(ConfigError):
             cli.select_desired(wants, [], "labels,colour")
+
+    def test_projects_is_a_domain_of_only(self) -> None:
+        wants = (Desired(slug="o/a"),)
+        self.assertEqual(cli.select_desired(wants, [], "projects"), ())
+        self.assertEqual(cli.select_projects((BOARD,), [], [], "projects"), (BOARD,))
+
+    def test_naming_repositories_leaves_projects_out_and_the_reverse(self) -> None:
+        wants = (Desired(slug="o/a"),)
+        self.assertEqual(cli.select_projects((BOARD,), [], ["o/a"], ""), ())
+        self.assertEqual(cli.select_desired(wants, [], "", projects=["o/Board"]), ())
+        self.assertEqual(cli.select_projects((BOARD,), ["o/Board"], ["o/a"], ""), (BOARD,))
+
+    def test_a_repository_domain_in_only_leaves_projects_out(self) -> None:
+        self.assertEqual(cli.select_projects((BOARD,), [], [], "labels"), ())
+
+    def test_an_undeclared_project_is_refused(self) -> None:
+        with self.assertRaises(ConfigError) as caught:
+            cli.select_projects((BOARD,), ["o/Other"], [], "")
+        self.assertIn("o/Board", str(caught.exception))
+
+    def test_a_selection_that_leaves_nothing_is_a_usage_error(self) -> None:
+        declaration = {"repos": {"o/a": {}}, "projects": {"o/Board": {"views": []}}}
+        with tempfile.TemporaryDirectory() as folder:
+            path = pathlib.Path(folder) / "etabli.json"
+            path.write_text(json.dumps(declaration), encoding="utf-8")
+            for argv in (["--only", "labels", "--project", "o/Board"],
+                         ["--only", "projects", "--repo", "o/a"]):
+                self.assertEqual(cli.main(["etabli", "--file", str(path), *argv]), cli.EXIT_USAGE, argv)
 
     def test_a_missing_configuration_file_is_a_usage_error(self) -> None:
         code = cli.main(["etabli", "--file", "/definitely/missing/etabli.json"])

@@ -187,7 +187,7 @@ MUTATIONS = [
 
     ("etabli: --write does not read the repository again",
      "forgeron/cli.py",
-     "                remaining = etabli_module.plan(want, adapter.observe(want.slug))",
+     "                remaining = observe_and_plan()",
      "                remaining = []"),
 
     ("etabli: a write leaves no trace",
@@ -234,6 +234,93 @@ MUTATIONS = [
      "forgeron/cli.py",
      '            or any(not entry["checked"] for entry in report):',
      "            or False:"),
+
+    ("etabli: removing an option clears items through the tool",
+     "forgeron/etabli_projects.py",
+     "    if removed and items:",
+     "    if False:"),
+
+    ("etabli: an option of a project without items cannot be removed",
+     "forgeron/etabli_projects.py",
+     "    if removed and items:",
+     "    if removed:"),
+
+    ("etabli: a field of another type is rewritten",
+     "forgeron/etabli_projects.py",
+     "        elif have.type != FIELD_TYPES[field.type]:",
+     "        elif False:"),
+
+    ("etabli: a workflow wanted off is never checked",
+     "forgeron/etabli_projects.py",
+     "        elif enabled and not wanted:",
+     "        elif False:"),
+
+    ("etabli: a sort change goes in place, which the API cannot do",
+     "forgeron/etabli_projects.py",
+     '"rebuild": bool(moved)}',
+     '"rebuild": False}'),
+
+    ("etabli: a project the viewer cannot update is written to",
+     "forgeron/etabli_projects.py",
+     "    if not observed.can_update:",
+     "    if False:"),
+
+    ("etabli: a project can link a repository of another owner",
+     "forgeron/etabli_projects.py",
+     "        if other.lower() != owner.lower():",
+     "        if False:"),
+
+    ("etabli: a project created by the run is left empty",
+     "forgeron/cli.py",
+     "            if created and not failed and catch_up and not any(map(_creates_project, remaining)):",
+     "            if False:"),
+
+    ("etabli: a half-read project passes as a whole one",
+     "forgeron/gh_etabli.py",
+     '            if ((node.get(block) or {}).get("pageInfo") or {}).get("hasNextPage"):',
+     "            if False:"),
+
+    ("etabli: a project the forge does not show yet gets writes meant for it",
+     "forgeron/cli.py",
+     "            if created and not failed and catch_up and not any(map(_creates_project, remaining)):",
+     "            if created and not failed and catch_up:"),
+
+    ("etabli: a rebuilt view is deleted before its replacement exists",
+     "forgeron/gh_etabli.py",
+     "            self._create_view(state, _carried(change.before, change.after))\n"
+     "            self._mutate(\"deleteProjectV2View\", {\"viewId\": change.before[\"id\"]})",
+     "            self._mutate(\"deleteProjectV2View\", {\"viewId\": change.before[\"id\"]})\n"
+     "            self._create_view(state, _carried(change.before, change.after))"),
+
+    ("etabli: a rebuilt view forgets what the declaration does not say",
+     "forgeron/gh_etabli.py",
+     "            self._create_view(state, _carried(change.before, change.after))",
+     "            self._create_view(state, change.after)"),
+
+    ("etabli: a README outside the configuration folder is published",
+     "forgeron/etabli_projects.py",
+     '    if parts.is_absolute() or ".." in parts.parts or re.match(r"^[A-Za-z]:", value):',
+     "    if False:"),
+
+    ("etabli: of two projects with the same title, the first one wins",
+     "forgeron/gh_etabli.py",
+     "        if len(found) > 1:",
+     "        if False:"),
+
+    ("etabli: archived items do not count against removing an option",
+     "forgeron/gh_etabli.py",
+     "items(archivedStates: [ARCHIVED, NOT_ARCHIVED])",
+     "items"),
+
+    ("etabli: a selection that leaves nothing exits green",
+     "forgeron/cli.py",
+     "        if not desired and not projects:",
+     "        if False:"),
+
+    ("etabli: a view is created with node ids the REST API refuses",
+     "forgeron/gh_etabli.py",
+     "        ids = self._field_ids(state, \"database_id\")",
+     "        ids = self._field_ids(state, \"id\")"),
 ]
 
 

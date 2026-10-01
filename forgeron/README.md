@@ -100,12 +100,12 @@ Le reste des options : `python3 -m forgeron --help`. Elles ne sont pas recopié
 liste d'options dans un README finit toujours par mentir — c'est ce que dit le skill
 [`doc-derivee`](../skills/doc-derivee/SKILL.md).
 
-## Poser la config d'un dépôt : `forgeron etabli`
+## Poser la config d'un dépôt et d'un projet : `forgeron etabli`
 
 Un second verbe, qui ne code rien : il lit une config déclarée (étiquettes, réglages, sécurité,
-règles de branche), la compare à chaque dépôt, et affiche le plan. `--write` l'applique, puis relit le
-dépôt pour vérifier qu'il ne reste rien. Il suit la section 2 du skill
-[`tenir-la-forge`](../skills/tenir-la-forge/SKILL.md), et part de
+règles de branche, et pour un projet ses champs, ses vues et ses liens), la compare à chaque dépôt et
+à chaque projet, et affiche le plan. `--write` l'applique, puis relit pour vérifier qu'il ne reste
+rien. Il suit la section 2 du skill [`tenir-la-forge`](../skills/tenir-la-forge/SKILL.md), et part de
 [`etabli.example.json`](etabli.example.json).
 
 ```bash
@@ -113,7 +113,8 @@ python3 -m forgeron etabli --file ~/.forgeron/etabli.json            # le plan, 
 python3 -m forgeron etabli --file ~/.forgeron/etabli.json --write    # applique, puis relit
 ```
 
-Ce qu'il refuse, ce qu'il ne fait pas encore (le board) et pourquoi pas une autre solution :
+Ce qu'il refuse, ce que l'API ne lui permet pas (les workflows d'un projet) et pourquoi pas une autre
+solution :
 **[docs/ETABLI.md](docs/ETABLI.md)**.
 
 ## Comment tu t'en sers, côté humain
@@ -143,8 +144,8 @@ Pour reprendre la main sans rien casser : étiquette `forgeron:hold`. Pour tout
 
 ## Ce qui est vérifié, et ce qui ne l'est pas
 
-Vérifié hors ligne, à chaque `./tests/run.sh` : **202 tests** dont le trajet complet issue → fusion
-avec un build rouge et un tour de revue au milieu, plus **38 sondes de mutation** qui cassent une
+Vérifié hors ligne, à chaque `./tests/run.sh` : **291 tests** dont le trajet complet issue → fusion
+avec un build rouge et un tour de revue au milieu, plus **55 sondes de mutation** qui cassent une
 règle chacune et vérifient que la suite s'en aperçoit. Une suite verte au premier coup ne prouve
 rien ; c'est la sonde qui prouve qu'elle *pouvait* échouer.
 
@@ -171,7 +172,7 @@ disparaître la sortie structurée, et ses hooks ne se déclenchent qu'au niveau
 
 Sous Windows natif, **4 tests échouent** parce qu'ils supposent un shell POSIX : un script de hook
 lancé directement, et un `;` qui n'est pas un séparateur pour `cmd.exe`. forgeron vise Linux et WSL, où
-ils passent ; les 198 autres passent aussi sous Windows.
+ils passent ; les 287 autres passent aussi sous Windows.
 
 **Pas encore vérifié de bout en bout**, et c'est dit à chaque fois dans les fichiers concernés :
 le chemin d'**écriture** sur la forge (créer le brouillon, le passer prêt, commenter), qui demande un

@@ -62,8 +62,9 @@ file de fusion https://docs.github.com/en/repositories/configuring-branches-and-
   cinquième dépôt suivi a été refusé : 4 dépôts au plus. Mesuré le 2026-10-01 sur un projet de compte
   personnel ; la doc ne le dit pas, et https://github.com/orgs/community/discussions/137767 rapporte la
   même limite ;
-- un projet neuf n'expose pas les champs de date « Updated » et « Closed » à l'API : une vue créée
-  par l'API ne peut pas encore trier dessus. Mesuré le 2026-10-01 ;
+- l'API REST des vues refuse Created, Updated et Closed (`400 unsupported_ids`), et sa liste des
+  champs les omet ; GraphQL les liste, et une vue réglée dans l'interface peut trier dessus. Mesuré
+  le 2026-10-01 ;
 - le workflow « pull request liée à une issue » existe depuis le 2025-11-06 et passe
   l'issue « en cours ». Source : https://github.blog/changelog/2025-11-06-improved-onboarding-flow-for-github-projects/ ;
 - les points d'étape (*status updates*) se publient par l'API (`createProjectV2StatusUpdate`) ; les

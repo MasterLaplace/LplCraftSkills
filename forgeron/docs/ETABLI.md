@@ -1,13 +1,15 @@
-# `forgeron etabli` : poser la config déclarée d'un dépôt
+# `forgeron etabli` : poser la config déclarée d'un dépôt et d'un projet
 
 Le verbe applique la première couche de `tenir-la-forge` (section 2) : la config déclarée dans un
 fichier, appliquée par un outil qui montre son plan avant d'écrire. Il couvre les étiquettes, les
-réglages du dépôt, sa sécurité et ses règles de branche.
+réglages du dépôt, sa sécurité et ses règles de branche, et pour un projet GitHub ses réglages, ses
+champs, ses vues et ses liens vers les dépôts.
 
 ```bash
 cd forgeron
 python3 -m forgeron etabli --file ~/.forgeron/etabli.json                 # le plan, rien n'est écrit
 python3 -m forgeron etabli --file ~/.forgeron/etabli.json --repo OWNER/NAME --only labels
+python3 -m forgeron etabli --file ~/.forgeron/etabli.json --project "OWNER/TITLE"   # un projet seul
 python3 -m forgeron etabli --file ~/.forgeron/etabli.json --write         # applique, puis relit
 python3 -m forgeron --json etabli --file ~/.forgeron/etabli.json          # la sortie machine
 ```
@@ -67,6 +69,46 @@ ensemble, et la forge n'accepte que certaines combinaisons, listées dans le mes
 chose pour les deux clés du squash. Les réglages d'un dépôt partent en une seule écriture, pour que la
 forge voie la paire entière.
 
+## Les projets
+
+Un projet couvre plusieurs dépôts, donc il a sa propre section, `projects`, à côté de `repos`. Sa clé
+est `OWNER/TITLE` : le titre est ce qui identifie le projet, puisque son numéro n'existe qu'une fois
+créé.
+
+- `readme` est le chemin d'un fichier Markdown, relatif au fichier de config : le mode d'emploi du
+  projet se relit dans une PR, comme le reste. Le chemin ne sort pas du dossier de la config, puisque
+  son contenu est publié sur le projet ;
+- `repositories` liste les dépôts où le projet apparaît, dans l'onglet Projects. La forge n'y accepte
+  que les dépôts du même propriétaire que le projet, donc le fichier refuse les autres ;
+- `fields` déclare les champs, de type `single_select`, `date`, `number` ou `text`. Les champs intégrés
+  (Title, Assignees, Labels, Repository…) existent sur tout projet et ne se déclarent pas, sauf
+  `Status`, dont on déclare les options ;
+- `views` déclare les vues, avec leur `layout` (`table`, `board` ou `roadmap`). Le filtre, les champs
+  visibles, le tri, le regroupement et les colonnes d'un board ne sont tenus que s'ils sont déclarés :
+  ce que la déclaration ne dit pas reste tel que l'interface l'a réglé. Les champs visibles se
+  comparent comme un ensemble, parce que l'API les rend dans l'ordre du projet et non dans celui de la
+  vue ;
+- `workflows` dit, pour chaque workflow nommé, s'il doit être actif ou éteint. L'API sait les lire,
+  pas les écrire : un écart bloque, et le message donne l'adresse où le corriger. Un workflow jamais
+  configuré compte comme éteint.
+
+| Élément | Absent | Différent | Non déclaré |
+|---|---|---|---|
+| le projet | créé, puis rempli dans le même passage ; sans `--write`, le plan montre aussi ce qui suivra la création | visibilité, description, README mis à jour | |
+| un lien | posé | | listé, jamais retiré |
+| un champ | créé | options mises à jour, avec leurs identifiants, donc les items gardent leur valeur | listé, jamais supprimé |
+| une vue | créée | filtre, disposition et champs visibles mis à jour sur place ; tri et regroupement en la recréant puis en supprimant l'ancienne, puisqu'elle ne contient aucune donnée | listée |
+| un workflow | bloqué | bloqué | ignoré |
+
+**Recréer une vue a un prix.** La nouvelle vue reprend ce que la déclaration ne dit pas et que l'API
+sait poser (champs visibles, tri, regroupement, colonnes), mais elle perd ce que l'API ne porte pas :
+les dates d'une feuille de route, les sommes, la découpe. Elle change aussi de numéro, donc d'adresse.
+Elle est créée avant que l'ancienne soit supprimée : si la création échoue, l'ancienne reste.
+
+Un projet se retrouve par son titre : deux projets du même propriétaire avec le même titre sont
+refusés, plutôt que d'en choisir un. Une sélection (`--repo`, `--project`, `--only`) qui ne laisse rien
+à vérifier est une erreur d'usage, pas un succès.
+
 ## Les choix de l'exemple
 
 - **fusion en squash seulement**, titre et message pris de la PR (`PR_TITLE`, `PR_BODY`) : avec des
@@ -94,6 +136,11 @@ forge voie la paire entière.
 | affaiblir un ruleset | baisser son application, lui retirer une règle, lui ajouter un contournement : même raison que pour la sécurité |
 | perdre un paramètre que seule la forge porte | une mise à jour remplace le ruleset en entier : le plan nomme le paramètre, qu'il faut déclarer pour le garder ou retirer à la main |
 | toucher un dépôt archivé | il est en lecture seule : tout est sauté, et la sortie dit que rien n'a été vérifié |
+| supprimer un champ de projet non déclaré | un champ supprimé emporte la valeur qu'il portait sur chaque item |
+| retirer une option qu'un item peut porter | l'option disparaît de chaque item qui la porte ; sur un projet sans item, archivés compris, rien n'est perdu et le retrait passe |
+| changer le type d'un champ | la forge ne le permet qu'en le recréant, donc en perdant ses valeurs |
+| régler un workflow de projet | l'API ne sait que le lire ; un écart est bloqué, avec l'adresse de la page où le régler |
+| lier un projet au dépôt d'un autre propriétaire | la forge ne liste un projet que chez son propriétaire |
 
 Les rulesets hérités d'une organisation ne sont ni lus ni modifiés : ils appartiennent à qui les a
 posés.
@@ -116,10 +163,10 @@ quand » que la forge ne donne qu'à moitié.
 
 ## Ce qu'il ne fait pas, délibérément
 
-- **le board.** La portée `project` manque au jeton tant qu'on ne l'a pas demandée
-  (`gh auth refresh -s project`), et les workflows d'un projet n'ont pas d'API : ils se règlent sur un
-  projet de référence, puis se copient (`tenir-la-forge`, `references/github.md`). C'est le prochain
-  domaine ;
+- **les workflows et les graphiques d'un projet.** Ils n'ont pas d'API d'écriture : on les règle une
+  fois dans l'interface, et le fichier déclare l'état attendu des workflows pour qu'un écart se voie ;
+- **les items d'un projet et ses points d'étape** : c'est le travail, pas la config. Que forgeron
+  les tienne au fil de son travail est prévu, pas encore fait ;
 - **les fichiers du dépôt** (`CODEOWNERS`, gabarits, `SECURITY.md`) : ce sont des fichiers, ils passent
   par une PR relue comme le code, pas par l'API des réglages ;
 - **reporter les items d'une étiquette sur une autre**, créer ou supprimer un dépôt.
@@ -148,6 +195,21 @@ Lus le 2026-09-30 sur six dépôts réels (cinq pour ce qui demande d'être admi
   dépôt où ils sont inactifs, et les deux champs de `security_and_analysis` sont lisibles par l'admin ;
 - sur un dépôt dont on n'a que l'écriture, `permissions.admin` est faux et les étiquettes restent
   lisibles.
+
+Lus et écrits le 2026-10-01, avec la portée `project` en plus, sur le projet `MasterLaplace/Laplace`
+en lecture seule puis sur un projet jetable, créé et supprimé pour l'occasion :
+
+- la déclaration du projet Laplace, rejouée contre le vrai projet, ne propose aucun changement ;
+- sur un premier projet jetable, un seul `--write` a créé le projet puis posé ses réglages, son lien,
+  ses champs et ses vues, puis une mise à jour d'option, un filtre changé sur place et un tri
+  reconstruit. Sur un second, après la relecture séparée, la vue recréée a gardé le regroupement que
+  la déclaration ne disait pas, et les champs visibles comme la disposition ont changé sur place.
+  Chaque relecture n'a plus rien proposé ;
+- un projet neuf arrive avec `Status` à trois options (Todo, In Progress, Done) et une vue « View 1 » ;
+- l'API REST des vues prend le login du propriétaire dans le chemin
+  (`users/MasterLaplace/projectsV2/7/views`) : l'identifiant numérique que nomme la documentation répond
+  404. Elle refuse Created, Updated et Closed dans une vue (`400 unsupported_ids`), et sa liste de
+  champs les omet, alors que GraphQL les liste.
 
 Le premier `--write`, sur le dépôt pilote `MasterLaplace/LplCraftSkills` le 2026-09-30, a fait
 17 écritures sans échec, et la relecture n'a plus rien proposé. Il a appris un fait : **la forge ajoute

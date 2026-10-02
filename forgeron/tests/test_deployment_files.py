@@ -15,6 +15,7 @@ from __future__ import annotations
 import dataclasses
 import json
 import pathlib
+import re
 import unittest
 
 from forgeron.config import Config, RepoConfig
@@ -66,6 +67,45 @@ class ConfigMap(unittest.TestCase):
         if configmap_json().get("agent", Config().agent):
             self.assertIn("/opt/craft/install.sh", dockerfile)
             self.assertIn("nodejs", dockerfile)
+
+
+class TheTutorialConfiguration(unittest.TestCase):
+    """The tutorial's configuration block, read back by the REAL loader.
+
+    It exists because a reader followed the tutorial to the letter and stopped on
+    "config.json missing": the step was not there. Writing it is not enough, since
+    prose in a doc drifts in silence. Paired with this test it breaks when it lies.
+    """
+
+    def block(self) -> dict:
+        text = (ROOT / "docs" / "INSTALLATION.md").read_text(encoding="utf-8")
+        found = re.search(r"cat > ~/\.forgeron/config\.json <<'JSON'\n(.*?)\nJSON",
+                          text, re.S)
+        self.assertIsNotNone(found, "the tutorial no longer carries a configuration block")
+        return json.loads(found.group(1).replace("TON_LOGIN", "MasterLaplace"))
+
+    def test_the_loader_accepts_it(self) -> None:
+        from forgeron import config as config_module
+        raw = self.block()
+        known = {field.name for field in dataclasses.fields(config_module.Config)}
+        self.assertEqual(set(raw) - known, set(), "a key the loader does not know")
+        known_repo = {field.name for field in dataclasses.fields(config_module.RepoConfig)}
+        for repo in raw["repos"]:
+            self.assertEqual(set(repo) - known_repo, set())
+
+    def test_the_paths_are_the_ones_the_container_sees(self) -> None:
+        # The compose mount decides this path. A host path here and `gh` answers
+        # correctly while `git` fails, with nothing that points at the cause.
+        compose = (ROOT / "docker" / "compose.yaml").read_text(encoding="utf-8")
+        for repo in self.block()["repos"]:
+            self.assertTrue(repo["path"].startswith("/repos/"))
+            self.assertIn(f":{repo['path']}", compose,
+                          "the tutorial names a path that compose does not mount")
+
+    def test_home_is_left_out_so_one_file_serves_both_sides(self) -> None:
+        # `home` is derived from $HOME at run time: written out, it would break
+        # exactly what its absence makes work.
+        self.assertNotIn("home", self.block())
 
 
 class ImageNaming(unittest.TestCase):

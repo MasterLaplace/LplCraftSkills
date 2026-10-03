@@ -12,14 +12,13 @@ precisely the ones that cost the most to discover in a pod:
 
 from __future__ import annotations
 
-import dataclasses
 import json
 import pathlib
 import re
+import tempfile
 import unittest
 
-from forgeron.config import Config, RepoConfig
-from forgeron.states import Limits
+from forgeron.config import Config, load
 
 ROOT = pathlib.Path(__file__).resolve().parents[1]
 
@@ -32,17 +31,21 @@ def configmap_json() -> dict:
     return json.loads(dedented)
 
 
+def load_through_a_file(raw: dict) -> Config:
+    with tempfile.TemporaryDirectory() as folder:
+        path = pathlib.Path(folder) / "config.json"
+        path.write_text(json.dumps(raw), encoding="utf-8")
+        return load(str(path))
+
+
+def compose_mount_points() -> set[str]:
+    compose = (ROOT / "docker" / "compose.yaml").read_text(encoding="utf-8")
+    return set(re.findall(r"^\s*- [^\s:]+:(/[^\s:]+)", compose, re.M))
+
+
 class ConfigMap(unittest.TestCase):
     def test_the_embedded_configuration_is_one_the_loader_accepts(self) -> None:
-        raw = configmap_json()
-        for holder, payload in ((Config, raw),
-                                (Limits, raw.get("limits", {}))):
-            known = {field.name for field in dataclasses.fields(holder)}
-            with self.subTest(holder=holder.__name__):
-                self.assertEqual(set(payload) - known - {"repos"}, set())
-        known_repo = {field.name for field in dataclasses.fields(RepoConfig)}
-        for repo in raw["repos"]:
-            self.assertEqual(set(repo) - known_repo, set())
+        load_through_a_file(configmap_json())
 
     def test_paths_are_the_ones_the_job_mounts(self) -> None:
         raw = configmap_json()
@@ -82,27 +85,22 @@ class TheTutorialConfiguration(unittest.TestCase):
         found = re.search(r"cat > ~/\.forgeron/config\.json <<'JSON'\n(.*?)\nJSON",
                           text, re.S)
         self.assertIsNotNone(found, "the tutorial no longer carries a configuration block")
-        return json.loads(found.group(1).replace("TON_LOGIN", "MasterLaplace"))
+        return json.loads(found.group(1))
 
     def test_the_loader_accepts_it(self) -> None:
-        from forgeron import config as config_module
-        raw = self.block()
-        known = {field.name for field in dataclasses.fields(config_module.Config)}
-        self.assertEqual(set(raw) - known, set(), "a key the loader does not know")
-        known_repo = {field.name for field in dataclasses.fields(config_module.RepoConfig)}
-        for repo in raw["repos"]:
-            self.assertEqual(set(repo) - known_repo, set())
+        load_through_a_file(self.block())
 
     def test_the_paths_are_the_ones_the_container_sees(self) -> None:
         # The compose mount decides this path. A host path here and `gh` answers
         # correctly while `git` fails, with nothing that points at the cause.
-        compose = (ROOT / "docker" / "compose.yaml").read_text(encoding="utf-8")
+        mounted = compose_mount_points()
         for repo in self.block()["repos"]:
-            self.assertTrue(repo["path"].startswith("/repos/"))
-            self.assertIn(f":{repo['path']}", compose,
+            self.assertTrue(repo["path"].startswith("/repos/"),
+                            "a repository path must be the one seen from the container")
+            self.assertIn(repo["path"], mounted,
                           "the tutorial names a path that compose does not mount")
 
-    def test_home_is_left_out_so_one_file_serves_both_sides(self) -> None:
+    def test_home_is_left_out_since_it_is_derived_at_run_time(self) -> None:
         # `home` is derived from $HOME at run time: written out, it would break
         # exactly what its absence makes work.
         self.assertNotIn("home", self.block())

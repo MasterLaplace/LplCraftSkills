@@ -1,0 +1,10 @@
+cff-version: 1.2.0
+message: "If you use this software, please cite it as below."
+title: "LplCraftSkills"
+abstract: "Des skills Claude Code indépendants du langage, qui encodent une façon de développer, avec les agents qui les appliquent."
+authors:
+  - alias: "MasterLaplace"
+    orcid: "https://orcid.org/0009-0006-1371-4119"
+    website: "https://github.com/MasterLaplace"
+repository-code: "https://github.com/MasterLaplace/LplCraftSkills"
+license: MIT

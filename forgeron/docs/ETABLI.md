@@ -116,10 +116,10 @@ refusés, plutôt que d'en choisir un. Une sélection (`--repo`, `--project`, `-
   fusion, et les tours de revue d'un bot y ajoutent du bruit (`tracer-le-travail`, section 9). Le
   titre de la PR devient donc le commit sur la branche principale, et il suit les commits
   conventionnels ;
-- **un contournement admin permanent**, pour que le mainteneur puisse réécrire l'histoire. Il le
-  dispense aussi de la PR, et un bot qui parle avec son jeton en hérite : choisi le 2026-09-30 en
-  connaissant ce prix. Ajouter un contournement à un ruleset qui existe est un affaiblissement, que
-  le verbe refuse ; on le pose donc une fois à la main, et le fichier le déclare ensuite ;
+- **un contournement admin qui ne passe que par une PR** (`bypass_mode: pull_request`), et des commits
+  signés : le mainteneur ouvre une PR comme tout le monde, et un bot qui parle avec son jeton n'hérite
+  d'aucun push direct. Ajouter un contournement à un ruleset qui existe est un affaiblissement, que le
+  verbe refuse ; on le pose donc une fois à la main, et le fichier le déclare ensuite ;
 - **les étiquettes du pilote s'appellent `forgeron` et `forgeron:hold`** : une étiquette nomme
   l'outil du projet, pas le modèle qui tourne derrière.
 
@@ -216,3 +216,7 @@ Le premier `--write`, sur le dépôt pilote `MasterLaplace/LplCraftSkills` le 20
 d'elle-même `require_extra_approval_for_unattributed_changes: true` à une règle `pull_request`
 neuve.** Non déclaré, ce paramètre bloquerait la mise à jour suivante du ruleset, puisque la perdre
 affaiblirait la règle : l'exemple le déclare donc.
+
+**Sur un dépôt d'un compte personnel, GitHub refuse GitHub Actions comme contournement** (`422 Actor
+GitHub Actions integration must be part of the ruleset source or owner organization`) : un workflow
+n'y passe une règle qu'avec le jeton d'une application GitHub à soi.

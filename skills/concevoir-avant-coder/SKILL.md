@@ -72,6 +72,13 @@ Les trois exceptions où anticiper est justifié, et elles se **prouvent** :
 **Le corollaire qu'on oublie** : YAGNI s'applique aussi aux options, aux drapeaux et aux modes. Un mode
 que personne n'active est du code non testé en production.
 
+**Et il s'applique aux fonctionnalités qu'on propose soi-même.** Chaque comportement d'une PR se
+rattache à une phrase de la demande : le ticket, le fil de discussion, une réponse écrite. Une maquette
+que le demandeur valide valide le besoin, pas chaque ornement qu'on y a mis. Un surlignage, un
+classement plus fin ou un repli « chercher ailleurs » sont des propositions : elles vont dans leur
+propre PR ou dans un item, jamais dans la PR qui livre le besoin. Le relecteur qui découvre un ornement
+le prend pour un effet de démonstration, et il a raison de demander qu'on le retire.
+
 ### Le deuxième axe : le diff minimal
 
 Ce qui précède porte sur **ce qu'on construit**. Il existe une seconde lecture, qui porte sur
@@ -115,6 +122,12 @@ se relit en une minute ; vingt lignes réparties sur cinq sous-systèmes, non. 
 **surface de relecture**, ce qui interdit au passage la fausse victoire du « je n'ai touché que trois
 lignes, en passant par une variable globale ».
 
+**Et le minimum se mesure contre la branche d'intégration, jamais contre sa propre première version.**
+Réduire une PR déjà écrite pousse à élaguer la solution : retirer des tests, de la doc, une option. La
+réduction qui compte repart du **point d'appel existant**, l'endroit où le comportement à changer est
+produit aujourd'hui, et refait le plus court chemin jusqu'au résultat demandé. Une PR élaguée de moitié
+peut rester huit fois plus grosse que celle qu'on obtient en repartant de là.
+
 ### L'échelle de décision, forme opérationnelle des deux axes
 
 Les deux axes ci-dessus sont des principes, donc ils demandent un jugement. Une **échelle ordonnée**
@@ -123,7 +136,7 @@ est actionnable : on la descend, on s'arrête au premier barreau qui répond, o
 ```mermaid
 flowchart TD
   Q0["should it exist at all?"]
-  Q1["is it already in the project code?"]
+  Q1["is it already in the project code, even partly?"]
   Q2["is it in the standard library?"]
   Q3["does the platform do it natively?"]
   Q4["does an ALREADY installed dependency do it?"]
@@ -132,6 +145,7 @@ flowchart TD
   Q0 -->|no| S0["write nothing"]
   Q0 -->|yes| Q1
   Q1 -->|yes| S1["reuse, do not rewrite"]
+  Q1 -->|partly| S1b["extend it: a parameter, a filter,<br/>one more case, never a twin beside it"]
   Q1 -->|no| Q2
   Q2 -->|yes| S2["use it"]
   Q2 -->|no| Q3
@@ -154,6 +168,15 @@ ne répond pas au besoin, ce qui coûte plus cher que du code neuf. Et le barrea
 on a vraiment cherché : « je n'ai rien trouvé dans le projet » et « je n'ai pas su chercher » se disent
 avec les mêmes mots, et seul le premier autorise à descendre au barreau suivant (la façon de chercher
 est dans `explorer-le-code`).
+
+**Le barreau 1 a trois réponses, pas deux : oui, non, et en partie.** La troisième est la plus chère,
+parce qu'elle se range d'elle-même dans le non : l'existant ne fait pas tout, donc on écrit à côté. Le
+test qui tranche : *ce que je construis rend-il la même chose qu'un existant* (la même entité, la même
+table, le même modèle de réponse) ? Si oui, l'existant se prolonge par un paramètre, un filtre ou un
+cas de plus, et ce qui lui manque devient tout le diff. Payé sur une recherche de branche : une route
+neuve, une classe de classement et un modèle de réponse posés à côté de la route qui listait déjà les
+mêmes branches. Le relecteur a demandé plus simple, et le correctif tenait en un paramètre de plus sur
+la route existante, filtré par la base : la PR est passée de 830 lignes à 100.
 
 Et **deux gardes à ajouter**, qui viennent du reste de ce document :
 

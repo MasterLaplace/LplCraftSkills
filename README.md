@@ -121,9 +121,16 @@ Deux règles ne dépendent pas de sa bonne volonté, parce que ce sont des hooks
 
 - **aucune écriture avant la carte** : `Edit` et `Write` sont refusés tant que `cycle-de-dev` n'a pas
   été chargé depuis le début de la session ou depuis sa dernière compaction, qui n'en garde pas
-  toujours le contenu. Lire et explorer restent permis ;
+  toujours le contenu. Lire et explorer restent permis, comme écrire dans `~/.claude` ou dans le
+  dossier temporaire ;
 - **aucun arrêt sur une écriture non prouvée** : un fichier modifié après la dernière commande fait
   refuser le premier arrêt, une fois. Le hook sait qu'une commande a tourné, pas que c'était la bonne.
+
+Le premier rail sert aussi hors de l'agent, déclaré dans `~/.claude/settings.json` sur `PreToolUse`
+(matcher `Edit|Write|NotebookEdit|MultiEdit`) : `node <craft-skills>/agents/hooks/artisan-gate.cjs pre any`
+y accepte n'importe quel skill à la place de la carte, pour une session qui n'est pas un cycle de
+développement complet. Sous Windows, `<craft-skills>` s'écrit `C:/...`, comme dans le chemin
+qu'`install.sh` pose dans `~/.claude/agents/artisan.md`.
 
 Les hooks demandent `node`. Et l'agent doit vivre au niveau utilisateur, là où `install.sh` le pose :
 dans le `.claude/agents/` d'un projet, ses hooks ne se déclenchent pas. C'est mesuré, comme le reste

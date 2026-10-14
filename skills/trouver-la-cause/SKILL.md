@@ -36,6 +36,17 @@ Les moments ou la tentation est maximale sont exactement ceux ou il faut resiste
 
 ## Phase 1 : l'enquete, avant tout correctif
 
+### D'abord : est-ce deja connu ?
+
+La panne la plus chere est celle qu'on a deja resolue : on refait l'enquete entiere. Avant le premier
+outil, deux minutes : le journal des cas et la carte du systeme touche (`tenir-le-savoir`), les tickets
+et les PR fermees, les anciennes sessions de travail, cherches par le **texte exact** du message
+d'erreur. Une PR ouverte par quelqu'un d'autre corrige peut-etre deja le meme defaut.
+
+Et pour chaque famille de symptome, une **carte des pannes** dit ou regarder d'abord : la couche qui
+portait la cause et l'observation qui l'a prouvee, tirees des incidents reels et classees par
+frequence mesuree. L'intuition classe par souvenir, donc par le cas le plus marquant.
+
 ### Lire le message d'erreur en ENTIER
 
 C'est la marche la plus rentable et la plus sautee. **Le message contient souvent la solution
@@ -66,6 +77,11 @@ celle qui marche.
 La question qui cadre : **qu'est-ce qui etait vrai hier et ne l'est plus ?** Et quand « hier » est loin
 ou inconnu, l'histoire se lit : `git bisect run` trouve le commit qui a change le comportement,
 `git log -S` celui ou une chaine est apparue (voir `explorer-le-code`, section 6).
+
+Et avant de lire le code, verifier que c'est **celui qui tourne** : la version deployee, lue sur
+l'environnement et pas deduite de la branche ; un environnement en veille ou en cours de deploiement ;
+l'horloge et le fuseau de chaque source, pour chercher dans la bonne fenetre. Une cause lue dans un
+code qui ne tourne pas est une hypothese sur un autre programme.
 
 ### Trouver OU ca casse avant de chercher POURQUOI
 
@@ -110,7 +126,9 @@ une deuxieme route) est dans `challenger-le-sujet`.
 
 **Et avant d'accuser le produit, la bibliotheque ou l'environnement, lire leur source.** Deux
 recherches dans le code coutent moins qu'un essai, et la cause d'un blocage est souvent ecrite en
-clair. Une accusation sans lecture est une hypothese, pas un diagnostic.
+clair. Une accusation sans lecture est une hypothese, pas un diagnostic. Ce qu'on observe (« notre
+outil ne voit pas ce champ ») n'est pas ce qu'on en deduit (« le produit ne l'expose pas ») :
+l'accusation cite les maillons lus dans leur source, du symptome a la cause.
 
 ## Phase 3 : corriger la cause, et prouver que le symptome disparait
 
@@ -163,7 +181,9 @@ deux reponses differentes.**
 3. le **symptome d'origine** a ete rejoue, et il a disparu ;
 4. un **test** empeche son retour, et il a ete vu rouge ;
 5. si la cause n'etait pas accessible, l'ecart est **ecrit**, avec la condition de retrait du
-   contournement.
+   contournement ;
+6. le cas a ete **cherche dans le deja connu** avant l'enquete, et la cause a ete lue dans la version
+   qui **tourne vraiment**.
 
 Si le point 1 ou le point 2 manque, l'enquete n'est pas finie, meme si le symptome a disparu. Un
 defaut dont on ne sait pas pourquoi il est parti est un defaut qui reviendra.

@@ -124,6 +124,9 @@ l'écart qu'on lit peut venir d'un TROISIÈME changement. La discipline :
 - **même machine, même arbre**, et **enregistrer l'état de l'arbre avec la mesure** : commit, présence de
   modifications non commitées, empreinte du diff. Deux mesures ne sont comparables que si les deux le
   portent ;
+- **même environnement aussi**, noté avec la mesure : un chiffre qui bouge sans qu'aucun code ne
+  change mesure l'environnement (une image de CI, une chaîne d'outils), pas le code, et une mesure
+  prise pendant une migration ne mesure rien ;
 - **refuser de conclure** quand un fichier modifié est présent dans les deux bras : il serait des deux
   côtés, donc le pairage ne peut rendre que « pareil ».
 
@@ -218,6 +221,29 @@ pas une lenteur.
 > celui qui a construit. C'est la même exigence que « un garde qu'aucune commande ne lance n'est pas un
 > garde ».
 
+## 9. Avant de lancer : annoncer, plafonner, prédire
+
+**Une opération longue annonce sa durée avant de partir, et la décompose** : l'attente imposée (une
+fenêtre d'observation, un déploiement) et le surcoût (une préparation refaite à chaque tour, des tests
+sans rapport relancés). Le surcoût s'optimise d'abord. Une fenêtre ne se raccourcit qu'après avoir
+calculé ce qu'elle doit contenir, et son plancher s'écrit avec ce calcul : trop courte, elle rend
+« signal insuffisant ». **Une vérification a aussi un plafond de coût**, proportionné à ce qu'elle
+protège : des tests de mutation (altérer une ligne, voir un test rougir) ciblés sur les lignes changées
+plutôt que sur tout le projet, aucun relecteur séparé pour une retouche de doc.
+
+**La prédiction s'écrit avant la mesure**, l'observé après, dans le même tableau. Rempli après coup,
+il ne calibre rien. Un écart inexpliqué dit que le modèle de la mesure était faux, et c'est lui qu'on
+corrige avant la prédiction suivante.
+
+| Grandeur | Prédit, avant | Observé, après | Écart, et ce qui l'explique |
+|---|---|---|---|
+| durée de la passe complète | 30 min | 1 h 50 | la base de test recréée à chaque tour |
+
+**Un compte obtenu par un motif** (une recherche, une expression régulière) n'est une mesure que si le
+motif est copié de la définition de production, en le disant, cherché là où la production l'écrit, et
+recoupé par un échantillon lu à la main (le principe est dans `journal-et-debogueur`, partie 1).
+Le script qui compte imprime sa limite et son dénominateur.
+
 ## La porte de sortie
 
 1. chaque banc porte un **budget**, une **distribution** et un **nombre de tirages** ;
@@ -225,4 +251,6 @@ pas une lenteur.
 3. toute comparaison A/B est **appariée et entrelacée**, et porte l'état de l'arbre ;
 4. aucune optimisation n'est expédiée sans une mesure **de bout en bout** ;
 5. l'artefact de production **garde** sa télémétrie et **perd** sa machinerie, vérifié par un contrôle
-   automatique.
+   automatique ;
+6. une opération longue a annoncé sa **durée décomposée**, une vérification a son plafond de coût,
+   et chaque mesure a sa **prédiction** écrite avant, puis son écart expliqué.

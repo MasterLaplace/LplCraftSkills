@@ -93,6 +93,7 @@ autre interpréteur passerait. C'est un garde-fou, pas une frontière de sécuri
 | un visuel qui prétend montrer un état | `rendre-l-etat-visible` |
 | la description, la branche, les commits | `tracer-le-travail` |
 | un réglage de dépôt, une étiquette, un gabarit, une règle de branche, un workflow de board | `tenir-la-forge` |
+| un défaut déjà connu : le journal des cas, la carte du système touché | `tenir-le-savoir` |
 | l'étape du cycle que la PR prétend avoir franchie | `cycle-de-dev` |
 | rédiger le rapport pour qu'il soit compris | `se-faire-comprendre` |
 

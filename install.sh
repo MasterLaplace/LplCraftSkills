@@ -32,6 +32,7 @@ SKILLS=(
   relire-une-pr
   garder-les-frontieres
   tenir-la-forge
+  tenir-le-savoir
 )
 
 AGENTS=(

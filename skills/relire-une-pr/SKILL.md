@@ -196,6 +196,23 @@ trouvé et demande pourquoi le diff ne le prolonge pas, ou écrit « rien trouv
 regardés. Partir de la description fait relire le design qu'on présente ; seule la base montre ce que
 le diff aurait pu ne pas écrire.
 
+**Puis « pourquoi cette ligne ? », hunk par hunk**, un hunk étant un bloc contigu du diff. Le tableau
+part des questions ; cette lentille part du diff, et aucun hunk ne passe sans réponse :
+
+- quel défaut prouvé corrige-t-il, ou quelle phrase de la demande sert-il ?
+- retire-t-il une information visible, un message, un garde-fou ? Un garde-fou qui n'a jamais tiré n'est
+  pas du code mort pour autant (`concevoir-avant-coder`, section 8, règle 3).
+- ajoute-t-il un `try`/`catch` ou un réessai pour une panne jamais vue (`trouver-la-cause`, les
+  correctifs qui masquent), une configuration là où une constante suffit, une requête dans une boucle,
+  une variable ou une branche de confort, un helper de test que le projet a déjà ?
+- sa raison se lit-elle dans le diff seul, sans la conversation de l'auteur ?
+- et chaque test : rougit-il quand on retire le hunk qu'il garde ? Sinon, il est à retirer ou à refaire.
+
+**Le budget s'écrit avant de lire les hunks** : ce que le changement devrait coûter en fichiers, en
+lignes et en concepts, depuis le point d'appel existant (`concevoir-avant-coder`, section 2), ou celui
+que le plan a fixé (`cadrer-et-planifier`). Ce qui le dépasse est ce que le relecteur humain trouvera
+de trop, et chaque dépassement demande sa raison dans le rapport.
+
 ## 6. La convention du dépôt gagne sur la préférence du pack
 
 Une règle de ce pack que le dépôt relu contredit par une **convention constante** (un fichier de
@@ -285,7 +302,7 @@ Le gabarit du rapport est dans `references/rapport.md`.
 
 ## La porte de sortie
 
-Avant de rendre une revue, ces sept réponses doivent exister :
+Avant de rendre une revue, ces huit réponses doivent exister :
 
 1. **rien n'a été publié**, la revue a été faite dans un worktree (ou en place, en lecture seule, pour
    un changement non commité, et le rapport le dit), et le commit relu est noté ;
@@ -299,4 +316,6 @@ Avant de rendre une revue, ces sept réponses doivent exister :
    l'aurait attrapé ;
 6. les constats ont survécu à **une passe hostile**, ou l'absence de cette passe est écrite, avec sa
    raison ;
-7. **les écartés et le non vérifié** sont écrits.
+7. **les écartés et le non vérifié** sont écrits ;
+8. chaque hunk a répondu à « pourquoi cette ligne ? », et le diff a été mesuré contre un **budget**
+   écrit avant la lecture.

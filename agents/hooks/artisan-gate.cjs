@@ -4,6 +4,7 @@
 const fs = require('node:fs');
 
 const MAP_SKILL = 'cycle-de-dev';
+const COMPACTION = 'compaction';
 const WRITE_TOOLS = new Set(['Edit', 'Write', 'NotebookEdit', 'MultiEdit']);
 const COMMAND_TOOLS = new Set(['Bash', 'PowerShell']);
 
@@ -35,21 +36,23 @@ function decide(mode, input) {
   if (mode === 'pre' && !WRITE_TOOLS.has(input.tool_name)) return ALLOW;
   if (mode === 'stop' && input.stop_hook_active) return ALLOW;
 
-  const toolUses = readToolUses(input.transcript_path);
-  if (toolUses === null) {
+  const timeline = readTimeline(input.transcript_path);
+  if (timeline === null) {
     process.stderr.write(`artisan-gate: transcript not found or unreadable (${input.transcript_path}). `
       + `The '${mode}' rail was not checked for this call.\n`);
     return NOT_CHECKED;
   }
-  return mode === 'pre' ? mapLoadedBeforeWriting(toolUses) : provedAfterLastWrite(toolUses);
+  return mode === 'pre' ? mapLoadedBeforeWriting(timeline) : provedAfterLastWrite(timeline);
 }
 
-function mapLoadedBeforeWriting(toolUses) {
-  const loaded = toolUses.some((use) => use.name === 'Skill' && isMapSkill(use.input && use.input.skill));
+function mapLoadedBeforeWriting(timeline) {
+  const lastCompaction = findLastIndex(timeline, (use) => use.name === COMPACTION);
+  const loaded = timeline.slice(lastCompaction + 1).some((use) => use.name === 'Skill' && isMapSkill(use.input && use.input.skill));
   if (loaded) return ALLOW;
-  process.stderr.write(`Before writing any file, load the map: Skill tool, skill `
-    + `'${MAP_SKILL}'. It says which skill to load at each step of the work. Reading and exploring `
-    + `stay allowed without it.\n`);
+  const sinceCompaction = lastCompaction < 0 ? '' : ' since the last compaction, which may have dropped it';
+  process.stderr.write(`Before writing any file, load the map: Skill tool, skill '${MAP_SKILL}', not loaded`
+    + `${sinceCompaction}. It says which skill to load at each step of the work. Reading and exploring stay allowed `
+    + `without it.\n`);
   return BLOCK;
 }
 
@@ -57,10 +60,10 @@ function isMapSkill(name) {
   return typeof name === 'string' && (name === MAP_SKILL || name.endsWith(`:${MAP_SKILL}`));
 }
 
-function provedAfterLastWrite(toolUses) {
-  const lastWrite = findLastIndex(toolUses, (use) => WRITE_TOOLS.has(use.name));
+function provedAfterLastWrite(timeline) {
+  const lastWrite = findLastIndex(timeline, (use) => WRITE_TOOLS.has(use.name));
   if (lastWrite < 0) return ALLOW;
-  const lastCommand = findLastIndex(toolUses, (use) => COMMAND_TOOLS.has(use.name));
+  const lastCommand = findLastIndex(timeline, (use) => COMMAND_TOOLS.has(use.name));
   if (lastCommand > lastWrite) return ALLOW;
   process.stderr.write(`Files were modified after your last command. Before concluding, `
     + `run right now the command that proves what you are about to claim (tests, build, check), `
@@ -68,29 +71,36 @@ function provedAfterLastWrite(toolUses) {
   return BLOCK;
 }
 
-function readToolUses(transcriptPath) {
+function readTimeline(transcriptPath) {
   let text;
   try {
     text = fs.readFileSync(transcriptPath, 'utf8');
   } catch {
     return null;
   }
-  const uses = [];
+  const timeline = [];
+  const seenEntries = new Set();
   for (const line of text.split('\n')) {
-    if (!line.includes('"tool_use"')) continue;
+    if (!line.includes('"tool_use"') && !line.includes('"isCompactSummary"')) continue;
     let entry;
     try {
       entry = JSON.parse(line);
     } catch {
       continue;
     }
-    const content = entry && entry.message && entry.message.content;
+    if (!entry || seenEntries.has(entry.uuid)) continue;
+    if (entry.uuid) seenEntries.add(entry.uuid);
+    if (entry.isCompactSummary) {
+      timeline.push({ name: COMPACTION });
+      continue;
+    }
+    const content = entry.message && entry.message.content;
     if (!Array.isArray(content)) continue;
     for (const block of content) {
-      if (block && block.type === 'tool_use') uses.push({ name: block.name, input: block.input });
+      if (block && block.type === 'tool_use') timeline.push({ name: block.name, input: block.input });
     }
   }
-  return uses;
+  return timeline;
 }
 
 function findLastIndex(items, predicate) {

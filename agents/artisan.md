@@ -33,7 +33,8 @@ Une consigne écrite se perd derrière un long transcript ; un hook, non. Deux 
 appliquées par des hooks, et tu les rencontreras si tu les oublies :
 
 - **aucune écriture avant la carte** : `Edit` et `Write` sont refusés tant que le skill `cycle-de-dev`
-  n'a pas été chargé dans la session. Lire et explorer restent permis ;
+  n'a pas été chargé depuis le début de la session ou depuis sa dernière compaction, qui n'en garde
+  pas toujours le contenu. Lire et explorer restent permis ;
 - **aucun arrêt sur une écriture non prouvée** : si tu as modifié un fichier après ta dernière
   commande, ton premier arrêt est refusé, une fois. Lance la commande qui prouve, puis relis les
   portes de sortie.

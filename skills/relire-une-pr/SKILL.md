@@ -189,6 +189,13 @@ chargé juste avant.
 | la description dit-elle quoi, pourquoi, comment vérifier, ce qui n'est pas dedans ? | `tracer-le-travail`, section 6 |
 | la PR a-t-elle besoin d'une conception écrite qu'elle n'a pas eue ? | `cadrer-et-planifier` |
 
+**La question du doublon se pose symbole par symbole, depuis la base.** Pour chaque route, méthode
+publique, type, ressource ou helper de test que le diff ajoute, chercher dans la branche de base ce qui rend déjà la
+même chose : la même entité, la même table, le même modèle de réponse. Le rapport écrit ce qui a été
+trouvé et demande pourquoi le diff ne le prolonge pas, ou écrit « rien trouvé » avec les endroits
+regardés. Partir de la description fait relire le design qu'on présente ; seule la base montre ce que
+le diff aurait pu ne pas écrire.
+
 ## 6. La convention du dépôt gagne sur la préférence du pack
 
 Une règle de ce pack que le dépôt relu contredit par une **convention constante** (un fichier de

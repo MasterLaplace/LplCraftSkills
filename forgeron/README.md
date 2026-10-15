@@ -92,6 +92,7 @@ python3 -m forgeron once                    # une passe, SANS ecrire : dit ce qu
 python3 -m forgeron once --write            # une passe, pour de vrai
 python3 -m forgeron run --write --interval 60   # la boucle
 python3 -m forgeron status                  # ou en est chaque issue
+python3 -m forgeron journey owner/repo 42   # les runs d'une issue, relus dans le journal
 ```
 
 Sans `--write`, les lectures sont réelles et les écritures sont refusées et journalisées. Ce n'est
@@ -146,8 +147,8 @@ Pour reprendre la main sans rien casser : étiquette `forgeron:hold`. Pour tout
 
 ## Ce qui est vérifié, et ce qui ne l'est pas
 
-Vérifié hors ligne, à chaque `./tests/run.sh` : **342 tests** dont le trajet complet issue → fusion
-avec un build rouge et un tour de revue au milieu, plus **80 sondes de mutation** qui cassent une
+Vérifié hors ligne, à chaque `./tests/run.sh` : **362 tests** dont le trajet complet issue → fusion
+avec un build rouge et un tour de revue au milieu, plus **94 sondes de mutation** qui cassent une
 règle chacune et vérifient que la suite s'en aperçoit. Une suite verte au premier coup ne prouve
 rien ; c'est la sonde qui prouve qu'elle *pouvait* échouer.
 

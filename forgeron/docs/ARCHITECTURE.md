@@ -152,6 +152,24 @@ lance donc pas tel quel derrière `--json-schema` : forgeron ne le fait pas, il
   reprise. D'où deux décisions : le worktree est indexé par **numéro d'issue** et jamais par nom de
   branche (renommer une branche est gratuit, déplacer un dossier perd la conversation), et la
   réponse en cluster est `continuity="rebuild"`, pas un volume partagé.
+- **Ce que forgeron lit dans le transcript d'une session**, pour journaliser les skills de chaque run
+  (mesuré le 2026-10-15 sur 151 transcripts de Claude Code 2.1.274 à 2.1.289, Windows et Linux). Deux
+  lecteurs en dépendent, `agents/hooks/artisan-gate.cjs` et `forgeron/transcript.py` 
+  - un skill chargé est un bloc `tool_use` nommé `Skill`, dont `input.skill` porte le nom (418 et 103
+    appels, aucun autre outil n'a de `input.skill`) 
+  - une compaction laisse une entrée `user` marquée `isCompactSummary`, avec son `uuid` 
+  - une compaction peut réécrire des milliers de lignes déjà écrites, avec les mêmes `uuid` et les mêmes
+    identifiants de `tool_use`. On compte donc un appel par identifiant, jamais par ligne 
+  - `--resume` ajoute au même fichier, sous le même identifiant de session (2.1.195) 
+  - le transcript d'un sous-agent vit à part, dans `<session>/subagents/agent-*.jsonl`, et le transcript
+    parent ne contient pas ses appels. Ses skills sont journalisés à part, en `subagent_skills` 
+  - un appel `Skill` refusé (classifieur, hook) compte quand même, puisque seule la demande est lue
+    (2 sur 409 observés). Le journal dit donc les skills demandés 
+  - un run qui lève une exception (dépassement du `timeout`) ne laisse pas d'événement `run`, seulement
+    l'`action_failed` du moteur.
+
+  Si Claude Code change ce format, le hook échoue fermé, donc bruyamment, mais le journal rendrait une
+  liste vide pour chaque run. Ces faits sont à remesurer à chaque montée de version.
 - ⚠ **`gh pr checks --json` n'existe pas en gh 2.46.** L'agrégat se lit par
   `gh pr view --json statusCheckRollup`, en gérant les **deux** types de nœuds : `CheckRun` pour
   Actions, `StatusContext` pour une *commit status* postée par autre chose — sinon un dépôt câblé à

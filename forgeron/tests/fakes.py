@@ -257,6 +257,9 @@ class FakeResult:
     session_id: str = "sid"
     turns: int = 1
     denials: tuple[str, ...] = ()
+    skills: tuple[str, ...] | None = None
+    subagent_skills: tuple[str, ...] | None = None
+    compactions: int | None = None
 
 
 class FakeAgent:
@@ -283,18 +286,25 @@ class FakeAgent:
         }
         self.wrap: dict[str, Any] = {"summary": "Delivered.", "followups": []}
         self.fail_next = False
+        self.skills: tuple[str, ...] | None = ("cycle-de-dev",)
+        self.subagent_skills: tuple[str, ...] = ()
 
     def run(self, *, cwd, session_id, prompt, schema, resume, read_only, contract="") -> FakeResult:
         self.calls.append({"prompt": prompt, "resume": resume, "read_only": read_only,
                            "session_id": session_id, "cwd": cwd, "contract": contract})
         if self.fail_next:
             self.fail_next = False
-            return FakeResult(False, {}, self.cost, "budget exhausted")
+            return FakeResult(False, {}, self.cost, "budget exhausted", **self._transcript_fields())
         if "branch_slug" in schema.get("properties", {}):
-            return FakeResult(True, dict(self.plan), self.cost, "ok")
+            return FakeResult(True, dict(self.plan), self.cost, "ok", **self._transcript_fields())
         if "followups" in schema.get("properties", {}):
-            return FakeResult(True, dict(self.wrap), self.cost, "ok")
-        return FakeResult(True, dict(self.work), self.cost, "ok")
+            return FakeResult(True, dict(self.wrap), self.cost, "ok", **self._transcript_fields())
+        return FakeResult(True, dict(self.work), self.cost, "ok", **self._transcript_fields())
+
+    def _transcript_fields(self) -> dict[str, Any]:
+        if self.skills is None:
+            return {"skills": None, "subagent_skills": None, "compactions": None}
+        return {"skills": self.skills, "subagent_skills": self.subagent_skills, "compactions": 0}
 
     @property
     def prompts(self) -> list[str]:

@@ -72,5 +72,56 @@ class TheDoctorCheck(unittest.TestCase):
         self.assertIn("no agent", detail)
 
 
+FAKE_CLAUDE = """#!/usr/bin/env python3
+import json, os, sys
+argv = sys.argv[1:]
+flag = "--resume" if "--resume" in argv else "--session-id"
+session = argv[argv.index(flag) + 1]
+skill = os.environ.get("FAKE_SKILL")
+if skill:
+    folder = os.path.join(os.environ["FAKE_PROJECTS"], "-worktrees-o-r-42")
+    os.makedirs(folder, exist_ok=True)
+    with open(os.path.join(folder, session + ".jsonl"), "a", encoding="utf-8") as handle:
+        handle.write(json.dumps({"type": "assistant", "uuid": "u-" + skill, "message": {"content": [
+            {"type": "tool_use", "id": "toolu-" + skill, "name": "Skill", "input": {"skill": skill}}]}}) + "\\n")
+print(json.dumps({"structured_output": {"verdict": "ready_for_review"}, "total_cost_usd": 0.1,
+                  "session_id": session, "num_turns": 3}))
+"""
+
+
+class TheSkillsOfARun(unittest.TestCase):
+    def setUp(self) -> None:
+        self.projects = tempfile.mkdtemp()
+        self.executable = os.path.join(tempfile.mkdtemp(), "claude")
+        with open(self.executable, "w", encoding="utf-8") as handle:
+            handle.write(FAKE_CLAUDE)
+        os.chmod(self.executable, 0o755)
+        self.addCleanup(os.environ.pop, "FAKE_SKILL", None)
+        self.addCleanup(os.environ.pop, "FAKE_PROJECTS", None)
+        os.environ["FAKE_PROJECTS"] = self.projects
+
+    def run_once(self, skill: str, resume: bool):
+        os.environ["FAKE_SKILL"] = skill
+        agent = ClaudeAgent(executable=self.executable, transcripts_dir=self.projects)
+        return agent.run(cwd=".", session_id="s-1", prompt="p", schema={}, resume=resume, read_only=False)
+
+    def test_the_skills_a_run_loaded_come_back_with_its_result(self) -> None:
+        result = self.run_once("cycle-de-dev", resume=False)
+        self.assertTrue(result.ok)
+        self.assertEqual(result.skills, ("cycle-de-dev",))
+        self.assertEqual(result.compactions, 0)
+
+    def test_a_resumed_run_brings_back_only_its_own_skills(self) -> None:
+        self.run_once("cadrer-et-planifier", resume=False)
+        result = self.run_once("tests-first", resume=True)
+        self.assertEqual(result.skills, ("tests-first",))
+
+    def test_a_run_whose_transcript_is_not_found_says_its_skills_were_not_read(self) -> None:
+        result = self.run_once("", resume=False)
+        self.assertTrue(result.ok)
+        self.assertIsNone(result.skills)
+        self.assertIsNone(result.compactions)
+
+
 if __name__ == "__main__":
     unittest.main()

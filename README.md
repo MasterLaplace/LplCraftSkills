@@ -122,7 +122,8 @@ Deux règles ne dépendent pas de sa bonne volonté, parce que ce sont des hooks
 ([`agents/hooks/artisan-gate.cjs`](agents/hooks/artisan-gate.cjs)) :
 
 - **aucune écriture avant la carte** : `Edit` et `Write` sont refusés tant que `cycle-de-dev` n'a pas
-  été chargé. Lire et explorer restent permis ;
+  été chargé depuis le début de la session ou depuis sa dernière compaction, qui n'en garde pas
+  toujours le contenu. Lire et explorer restent permis ;
 - **aucun arrêt sur une écriture non prouvée** : un fichier modifié après la dernière commande fait
   refuser le premier arrêt, une fois. Le hook sait qu'une commande a tourné, pas que c'était la bonne.
 

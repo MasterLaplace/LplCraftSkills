@@ -9,11 +9,15 @@ const { spawnSync } = require('node:child_process');
 
 const GATE = path.join(__dirname, 'artisan-gate.cjs');
 
+let entryCount = 0;
+const uuid = () => `00000000-0000-4000-8000-${String((entryCount += 1)).padStart(12, '0')}`;
 function toolUse(name, input) {
-  return { type: 'assistant', isSidechain: false,
+  return { type: 'assistant', isSidechain: false, uuid: uuid(),
            message: { role: 'assistant', content: [{ type: 'tool_use', id: 'x', name, input }] } };
 }
 const userText = (text) => ({ type: 'user', message: { role: 'user', content: text } });
+const compaction = () => ({ type: 'user', uuid: uuid(), isVisibleInTranscriptOnly: true, isCompactSummary: true,
+                            message: { role: 'user', content: 'This session is being continued from a previous conversation.' } });
 const loadMap = () => toolUse('Skill', { skill: 'cycle-de-dev' });
 const write = () => toolUse('Write', { file_path: 'a.txt', content: 'x' });
 const edit = () => toolUse('Edit', { file_path: 'a.txt', old_string: 'x', new_string: 'y' });
@@ -68,6 +72,30 @@ test('a skill from a plugin, prefixed by its namespace, counts too', () => {
 test('ANOTHER skill does not replace the map', () => {
   const file = transcript([toolUse('Skill', { skill: 'tests-first' })]);
   assert.equal(run('pre', { tool_name: 'Write', transcript_path: file }).code, 2);
+});
+
+test('after a compaction, the map loaded before it no longer counts', () => {
+  const file = transcript([loadMap(), compaction(), userText('go on')]);
+  const { code, stderr } = run('pre', { tool_name: 'Write', transcript_path: file });
+  assert.equal(code, 2);
+  assert.match(stderr, /compaction/);
+});
+
+test('after a compaction, loading the map again lets the write pass', () => {
+  const file = transcript([loadMap(), compaction(), loadMap()]);
+  assert.equal(run('pre', { tool_name: 'Write', transcript_path: file }).code, 0);
+});
+
+test('a map call replayed after the compaction is not a new load', () => {
+  const map = loadMap();
+  const file = transcript([map, compaction(), map]);
+  assert.equal(run('pre', { tool_name: 'Write', transcript_path: file }).code, 2);
+});
+
+test('a compaction replayed after the map was loaded again does not block again', () => {
+  const summary = compaction();
+  const file = transcript([loadMap(), summary, loadMap(), summary]);
+  assert.equal(run('pre', { tool_name: 'Write', transcript_path: file }).code, 0);
 });
 
 test('an unreadable line in the transcript is skipped, not fatal', () => {

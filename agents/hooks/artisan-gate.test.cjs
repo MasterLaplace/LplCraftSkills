@@ -33,10 +33,12 @@ function transcript(entries, { garbage = false } = {}) {
   return file;
 }
 
-function run(mode, input) {
-  const done = spawnSync(process.execPath, [GATE, mode], { input: JSON.stringify(input), encoding: 'utf8' });
+function runIn(environment, mode, input, ...options) {
+  const done = spawnSync(process.execPath, [GATE, mode, ...options],
+                         { input: JSON.stringify(input), encoding: 'utf8', env: { ...process.env, ...environment } });
   return { code: done.status, stderr: done.stderr };
 }
+const run = (mode, input, ...options) => runIn({}, mode, input, ...options);
 
 
 test('a write without the map loaded is blocked, and the message names the skill', () => {
@@ -96,6 +98,61 @@ test('a compaction replayed after the map was loaded again does not block again'
   const summary = compaction();
   const file = transcript([loadMap(), summary, loadMap(), summary]);
   assert.equal(run('pre', { tool_name: 'Write', transcript_path: file }).code, 0);
+});
+
+test('with the any option, any skill loaded since the last compaction lets the write pass', () => {
+  const file = transcript([compaction(), toolUse('Skill', { skill: 'tests-first' })]);
+  assert.equal(run('pre', { tool_name: 'Write', transcript_path: file }, 'any').code, 0);
+});
+
+test('with the any option, no skill since the last compaction blocks the write, and says so', () => {
+  const file = transcript([toolUse('Skill', { skill: 'tests-first' }), compaction()]);
+  const { code, stderr } = run('pre', { tool_name: 'Write', transcript_path: file }, 'any');
+  assert.equal(code, 2);
+  assert.match(stderr, /skill/);
+  assert.match(stderr, /compaction/);
+});
+
+test('an unknown option is a calling error, not a silent change of rule', () => {
+  const file = transcript([loadMap()]);
+  const { code, stderr } = run('pre', { tool_name: 'Write', transcript_path: file }, 'anyy');
+  assert.equal(code, 1);
+  assert.match(stderr, /anyy/);
+  assert.match(stderr, /any/);
+});
+
+test("Claude's own files and the temporary folder are written without the map", () => {
+  const file = transcript([userText('remember this')]);
+  for (const filePath of [path.join(os.homedir(), '.claude', 'projects', 'p', 'memory', 'note.md'),
+                          path.join(os.tmpdir(), 'scratchpad', 'probe.cjs')]) {
+    assert.equal(run('pre', { tool_name: 'Write', tool_input: { file_path: filePath }, transcript_path: file }).code, 0, filePath);
+  }
+});
+
+test('a notebook in the temporary folder is written without the map', () => {
+  const file = transcript([userText('try something')]);
+  const notebook = path.join(os.tmpdir(), 'scratchpad', 'probe.ipynb');
+  assert.equal(run('pre', { tool_name: 'NotebookEdit', tool_input: { notebook_path: notebook }, transcript_path: file }).code, 0);
+});
+
+test('a link under ~/.claude that leads into a repository still needs the map', () => {
+  const sandbox = fs.mkdtempSync(path.join(os.tmpdir(), 'artisan-gate-home-'));
+  const home = path.join(sandbox, 'home');
+  const temporary = path.join(sandbox, 'temp');
+  const repository = path.join(sandbox, 'repository');
+  for (const folder of [path.join(home, '.claude', 'skills'), temporary, repository]) fs.mkdirSync(folder, { recursive: true });
+  fs.symlinkSync(repository, path.join(home, '.claude', 'skills', 'linked'), 'junction');
+  const file = transcript([userText('edit the skill')]);
+  const environment = { HOME: home, USERPROFILE: home, TEMP: temporary, TMP: temporary, TMPDIR: temporary };
+  const filePath = path.join(home, '.claude', 'skills', 'linked', 'SKILL.md');
+  assert.equal(runIn(environment, 'pre', { tool_name: 'Write', tool_input: { file_path: filePath }, transcript_path: file }).code, 2);
+});
+
+test('a file of a repository still needs the map, even next to those folders', () => {
+  const file = transcript([userText('add X')]);
+  for (const filePath of [path.join(os.homedir(), 'repo', 'a.txt'), path.join(os.homedir(), '.claude-other', 'a.txt')]) {
+    assert.equal(run('pre', { tool_name: 'Write', tool_input: { file_path: filePath }, transcript_path: file }).code, 2, filePath);
+  }
 });
 
 test('an unreadable line in the transcript is skipped, not fatal', () => {

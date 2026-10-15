@@ -431,6 +431,21 @@ MUTATIONS = [
      "forgeron/gh_etabli.py",
      "        ids = self._field_ids(state, \"database_id\")",
      "        ids = self._field_ids(state, \"id\")"),
+
+    ("phases: a prompt no longer cites the cycle rows its phase owns",
+     "forgeron/prompts.py",
+     "    cited = \", \".join(f'\"{row}\"' for row in CYCLE_ROWS_BY_PHASE[phase])",
+     "    cited = \"\""),
+
+    ("phases: a phase cites a row the cycle table does not have",
+     "forgeron/prompts.py",
+     "\"comprendre l'existant\", \"un bug\", \"cadrer\",",
+     "\"comprendre l'existant\", \"un bug\", \"cadrage\","),
+
+    ("phases: the closing prompt cites the framing rows",
+     "forgeron/prompts.py",
+     "        _owned_cycle_rows(\"CLOSE\"),",
+     "        _owned_cycle_rows(\"FRAME\"),"),
 ]
 
 

@@ -45,6 +45,13 @@ Commits: Conventional Commits, in English, with no Co-Authored-By line and no
 mention of an AI tool. The repository's author is MasterLaplace.
 """
 
+CYCLE_ROWS_BY_PHASE: dict[str, tuple[str, ...]] = {
+    "FRAME": ("un cas qui s'ouvre", "backlog", "comprendre l'existant", "un bug", "cadrer", "branche", "PR"),
+    "IMPLEMENT": ("test", "code", "doc", "PR"),
+    "REVISE": ("revue reçue",),
+    "CLOSE": ("un cas qui s'ouvre",),
+}
+
 PLAN_SCHEMA: dict[str, Any] = {
     "type": "object",
     "properties": {
@@ -153,6 +160,8 @@ def plan_prompt(issue: IssueRef, answers: tuple[Feedback, ...] = ()) -> str:
         "Issue body:",
         _quote(issue.body or "(empty)"),
         "",
+        _owned_cycle_rows("FRAME"),
+        "",
         "Invoke the `cadrer-et-planifier` skill, explore the repository to ground yourself in the real code,",
         "and return the plan in the required format.",
         "",
@@ -195,6 +204,7 @@ def implement_prompt(issue: IssueRef, plan: dict[str, Any], pr_url: str) -> str:
         "",
         "Invoke `cycle-de-dev` and follow it: a red test first when the subject lends itself to it, code next,",
         "derived docs, and an exit gate proved by a command at every step.",
+        _owned_cycle_rows("IMPLEMENT"),
         "",
         "Finish with Conventional Commits commits and a `git push` on your branch.",
         "`pushed` must tell the truth: the orchestrator checks it against the state of git.",
@@ -211,6 +221,8 @@ def revise_prompt(issue: IssueRef, feedback: tuple[Feedback, ...], round_number:
         "",
         "For EACH remark, in order: either you handle it, or you explain why you do not.",
         "A remark skipped silently is the only forbidden answer.",
+        "",
+        _owned_cycle_rows("REVISE"),
         "",
         "Invoke `trouver-la-cause` if the remark reports a bug: no fix without a root cause,",
         "and a fix that masks the symptom will be sent back by the next review.",
@@ -312,7 +324,17 @@ def wrap_prompt(issue: IssueRef, pr: int) -> str:
         "- `summary`: what was delivered, in one paragraph, as it would be written in a changelog;",
         "- `followups`: what you saw go by and deserves ITS OWN issue. Nothing invented to",
         "  fill the list; an empty list is an answer.",
+        "",
+        _owned_cycle_rows("CLOSE"),
+        "Of that row, the closing half is yours: a lesson the next case must start from, and that deserves",
+        "its own issue, goes in `followups`.",
     ])
+
+
+def _owned_cycle_rows(phase: str) -> str:
+    cited = ", ".join(f'"{row}"' for row in CYCLE_ROWS_BY_PHASE[phase])
+    return (f"In `cycle-de-dev`, section \"Ce que chaque étape charge\", this phase owns the rows {cited}: "
+            "load the skill each row names, when its condition holds.")
 
 
 def _feedback_block(items: tuple[Feedback, ...]) -> str:

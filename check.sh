@@ -80,6 +80,18 @@ else
 fi
 
 echo
+echo "== forgeron's phases cite rows that the cycle-de-dev tables have =="
+if command -v python3 >/dev/null 2>&1; then
+    if (cd forgeron && PYTHONPATH=. python3 -m unittest tests.test_cycle_rows) > /dev/null 2>&1; then
+        report ok "forgeron tests.test_cycle_rows"
+    else
+        report MISSING "forgeron tests.test_cycle_rows fails (run it again for the detail)"
+    fi
+else
+    report SKIPPED "python3 not found, forgeron's cycle rows were not checked"
+fi
+
+echo
 echo "== the prose carries a non-breaking space before ; : ! ? =="
 normal_spaces="$(find . -name '*.md' -not -path './.git/*' -print0 | xargs -0 awk '
     FNR == 1 { front = 0; fence = 0 }

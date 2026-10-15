@@ -435,7 +435,9 @@ Quatre règles, chacune corrige un mode de panne mesuré :
 3. **Un chemin qui ne s'est jamais déclenché n'est pas du code mort.** Distinguer **injoignable**, sa
    condition ne *peut pas* être atteinte, plus aucun appelant, un champ que rien ne remplit ; c'est un
    défaut, on répare l'accessibilité, de **rare** : la condition est atteignable, le cas est peu
-   fréquent ; c'est un filet en bon état, on le garde, avec un test qui lui fabrique son cas. Et
+   fréquent ; c'est un filet en bon état, on le garde, avec un test qui lui fabrique son cas.
+   Compter ses déclenchements mesure la fréquence du défaut, pas l'utilité du filet :
+   celui qui sert une fois par an travaille aussi les autres jours. Et
    **avant de conclure quoi que ce soit d'un zéro, vérifier le compteur** : un zéro dit souvent que le
    lecteur ne voit pas la branche, pas qu'elle ne tire pas. Avant de retirer un chemin qu'on croit
    injoignable, trouver aussi **pourquoi il a été ajouté** : la PR d'origine décrit souvent l'incident

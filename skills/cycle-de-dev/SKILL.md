@@ -11,7 +11,7 @@ description: >-
   explorer-le-code, challenger-le-sujet, cadrer-et-planifier, concevoir-avant-coder, tests-first,
   code-comme-poesie, commencer-ferme, doc-derivee, journal-et-debogueur, trouver-la-cause,
   mesure-et-telemetrie, rendre-l-etat-visible, se-faire-comprendre, tracer-le-travail,
-  relire-une-pr, garder-les-frontieres et tenir-la-forge.
+  relire-une-pr, garder-les-frontieres, tenir-la-forge et tenir-le-savoir.
 ---
 
 # Le cycle de développement, et la seule faute qui compte
@@ -130,7 +130,7 @@ chère qui existe, **parce qu'elle a l'air terminée.**
 
 ## Ce que chaque étape charge, et à quel moment
 
-Un skill se charge **au moment où son étape arrive**, jamais tous d'avance : les dix-huit ensemble
+Un skill se charge **au moment où son étape arrive**, jamais tous d'avance : les dix-neuf ensemble
 pèsent environ 100 000 jetons, et une règle lue cinquante appels d'outils avant le geste pèse moins
 qu'une règle lue juste avant.
 
@@ -157,7 +157,7 @@ sa conversation, un collègue ou l'agent `essayeur`, puis traite le rapport comm
 de demander la revue humaine. Ce relecteur ne remplace pas l'humain : il retire ce qui était facile à
 trouver, pour que l'humain relise le fond.
 
-Et cinq skills qui ne suivent pas le cycle, parce qu'ils répondent à un événement :
+Et six skills qui ne suivent pas le cycle, parce qu'ils répondent à un événement :
 
 | Quand | Charger |
 |---|---|
@@ -166,6 +166,7 @@ Et cinq skills qui ne suivent pas le cycle, parce qu'ils répondent à un évén
 | une lenteur, une mesure, un artefact de production | `mesure-et-telemetrie` |
 | une frontière de confiance touchée, une dépendance ou un outil tiers ajouté | `garder-les-frontieres` |
 | un dépôt créé ou ouvert au public, un premier contributeur ou un premier bot, un board à monter, un compte à ranger | `tenir-la-forge` |
+| un cas qui s'ouvre (est-il déjà connu ?) ou qui se ferme (qu'est-ce qu'on garde pour le suivant ?) | `tenir-le-savoir` |
 
 `garder-les-frontieres` a aussi sa question aux portes du cycle : au cadrage, à la revue et au merge,
 *ce changement touche-t-il une frontière de confiance ?* La réponse s'écrit, même quand c'est non.

@@ -288,6 +288,10 @@ Sur un projet réel, un lecteur annonçait « 2 règles jamais déclenchées �
 alors que le système en déclarait 23 : le zéro ne disait rien des règles, il disait que le lecteur ne
 les voyait pas. **« Zéro » et « je n'ai pas regardé » sont deux phrases différentes.**
 
+Et **un zéro mesure un état, jamais une intention** : « personne ne lit cette donnée » se mesure,
+« personne n'a voulu qu'elle soit lue » ne se déduit pas d'une mesure, et le propriétaire du code peut
+le démentir.
+
 ### L'outillage peut avoir tort autant que le sujet
 
 Quand une mesure ou une comparaison rend un écart, **vérifier le harnais avant d'accuser un des deux

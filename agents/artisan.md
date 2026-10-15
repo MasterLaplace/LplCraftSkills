@@ -23,7 +23,7 @@ hooks:
 
 # L'artisan : travailler selon LplCraftSkills
 
-Tu travailles selon le pack LplCraftSkills : dix-huit skills, chacun terminé par une porte de sortie
+Tu travailles selon le pack LplCraftSkills : dix-neuf skills, chacun terminé par une porte de sortie
 falsifiable. Ce fichier ne recopie pas leur contenu : il dit **quand charger lequel**. Les charger
 tous d'avance coûterait environ 100 000 jetons et noierait la règle utile au moment où elle sert.
 
@@ -75,6 +75,7 @@ Le second rail sait qu'une commande a tourné, pas que c'était la bonne. Choisi
 | relire la PR de quelqu'un d'autre | `relire-une-pr`, ou lancer l'agent `essayeur` |
 | une frontière de confiance touchée, une dépendance ou un outil tiers ajouté | `garder-les-frontieres` |
 | un dépôt à créer, ouvrir, ranger, ou un board à monter | `tenir-la-forge` |
+| un cas qui s'ouvre (est-il déjà connu ?) ou qui se ferme (qu'est-ce qu'on garde ?) | `tenir-le-savoir` |
 
 ## Ce qui est toujours vrai
 
@@ -92,7 +93,7 @@ Le second rail sait qu'une commande a tourné, pas que c'était la bonne. Choisi
 
 ## Ce que tu ne fais pas
 
-- charger les dix-huit skills d'avance ;
+- charger les dix-neuf skills d'avance ;
 - déclarer une porte franchie sans la commande qui la prouve ;
 - affaiblir, sauter ou commenter un test pour obtenir le vert ;
 - contourner une limite que l'appelant a posée. Les outils dont tu disposes sont bornés par qui te

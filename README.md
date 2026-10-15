@@ -1,6 +1,6 @@
 # LplCraftSkills
 
-Dix-sept skills [Claude Code](https://claude.com/claude-code) indépendantes du langage, qui encodent une façon
+Dix-neuf skills [Claude Code](https://claude.com/claude-code) indépendantes du langage, qui encodent une façon
 de travailler : comprendre avant de décider, décider avant de coder, prouver avant de livrer, et faire
 porter par le code tout ce qui pourrait mentir ailleurs.
 
@@ -29,7 +29,7 @@ Les autres modes (`--copy`, `--uninstall`) et les codes de sortie : `./install.
 listés ici, parce qu'une liste d'options recopiée dans un README finit toujours par mentir, c'est
 précisément ce que dit le skill `doc-derivee`.
 
-## Les dix-huit skills
+## Les dix-neuf skills
 
 | Skill | En une phrase |
 |---|---|
@@ -51,6 +51,7 @@ précisément ce que dit le skill `doc-derivee`.
 | [`relire-une-pr`](skills/relire-une-pr/SKILL.md) | relire la PR d'un autre sans rien publier : la CI avant le diff, la description comme des affirmations, les états que le diff ne montre pas, une passe hostile |
 | [`garder-les-frontieres`](skills/garder-les-frontieres/SKILL.md) | la sécurité comme une question posée quand un changement touche une frontière de confiance, puis l'escalade vers l'équipe sécurité, jamais un feu vert auto-décerné |
 | [`tenir-la-forge`](skills/tenir-la-forge/SKILL.md) | un dépôt et son board tenus par un fichier déclaré et un outil qui montre son plan : des étiquettes fermées, une vue par question, les règles d'un mainteneur seul, la sécurité gratuite d'un dépôt public |
+| [`tenir-le-savoir`](skills/tenir-le-savoir/SKILL.md) | ce qu'on apprend en travaillant, écrit pour que le cas suivant parte de là : une carte par système, un journal des cas, un dossier par cas, un tri qui archive au lieu de supprimer |
 
 ## Le fil rouge, en trois idées
 
@@ -87,10 +88,11 @@ Deux skills sortent du code et se lisent dès qu'un rapport, un audit, un expos�
 quel que soit ton niveau : **`challenger-le-sujet`** et **`se-faire-comprendre`**. Elles vont par paire :
 on ne choisit bien l'essentiel à dire que parmi tout ce qu'on sait.
 
-Trois autres se lisent au premier événement qui les appelle : **`relire-une-pr`** la première fois qu'on
+Quatre autres se lisent au premier événement qui les appelle : **`relire-une-pr`** la première fois qu'on
 te demande de relire la PR de quelqu'un, **`garder-les-frontieres`** la première fois qu'un changement
-touche une entrée, un secret, une permission ou une dépendance, et **`tenir-la-forge`** la première
-fois que tu crées un dépôt, que tu l'ouvres au public ou que tu montes un board.
+touche une entrée, un secret, une permission ou une dépendance, **`tenir-la-forge`** la première
+fois que tu crées un dépôt, que tu l'ouvres au public ou que tu montes un board, et **`tenir-le-savoir`**
+la première fois qu'un problème revient alors que tu l'avais déjà résolu.
 
 Les cinq autres (`cadrer-et-planifier`, `commencer-ferme`, `doc-derivee`, `mesure-et-telemetrie`,
 `rendre-l-etat-visible`) répondent à des problèmes qu'il faut avoir rencontrés pour que la réponse ait du
@@ -113,7 +115,7 @@ claude --agent artisan
 
 L'agent ([`agents/artisan.md`](agents/artisan.md)) ne recopie aucun skill. Il dit quand charger lequel :
 `cycle-de-dev` d'abord, puis le skill de chaque étape au moment où elle arrive, et la porte de sortie de
-chacun prouvée par une commande avant de conclure. Charger les dix-huit d'avance coûterait environ
+chacun prouvée par une commande avant de conclure. Charger les dix-neuf d'avance coûterait environ
 100 000 jetons et noierait la règle utile au moment où elle sert.
 
 Deux règles ne dépendent pas de sa bonne volonté, parce que ce sont des hooks

@@ -221,6 +221,21 @@ vers l'abstrait, en passant par le schéma (*concreteness fading*, Fyfe et al., 
 montre autre chose que ce qu'on décrit, prouve au lecteur que l'auteur n'a pas regardé. Et une capture
 qui doit durer porte **la commande qui la régénère** (voir `rendre-l-etat-visible`).
 
+### Vulgariser un mécanisme : les acteurs, les couches, le comment
+
+Pour un lecteur qui ne connaît pas le système, trois gestes s'ajoutent à l'exemple réel :
+
+- **les acteurs dans une table, avec une colonne d'analogie** : l'acteur, ce qu'il fait dans le
+  système, son rôle dans l'analogie. Une seule image pour toute la table, et dite là où elle s'arrête :
+  changer d'analogie d'une ligne à l'autre fait croire à deux mécanismes, comme un synonyme ;
+- **l'explication en couches** : un « en bref » de quelques lignes qui se lit seul (le problème, la
+  cause, ce qui change, ce qu'on attend du lecteur), puis le détail. C'est la pyramide de la section 4
+  appliquée à une explication : l'expert s'arrête au premier étage, le débutant descend ;
+- **un schéma dont chaque étape dit COMMENT elle se fait.** « On lit l'identifiant » nomme une étape ;
+  « on lit l'identifiant dans le nom du fichier, jusqu'au premier tiret » l'explique, et se vérifie.
+  Sous le schéma, une ligne par étape : avec quoi, où. Une étape dont on ne sait pas écrire le comment
+  est une relation qu'on ne connaît pas (section 1).
+
 ## 7. Choisir le visuel : une question, un visuel
 
 Un visuel répond à **une** question. Le type de visuel se choisit par cette question, jamais par
@@ -455,7 +470,8 @@ Avant de livrer un texte, un rapport ou des slides, ces huit réponses doivent e
    titres sont ces phrases** ;
 3. le **premier écran** dit l'état, le problème et le prochain geste ;
 4. chaque mécanisme a son **artefact réel** à côté (exemple, sortie, avant/après), et chaque **visuel**
-   répond à une question, avec son sujet mis en avant, son contexte atténué, et un seul niveau de zoom ;
+   répond à une question, avec son sujet mis en avant, son contexte atténué, et un seul niveau de zoom,
+   et chaque étape d'un schéma de mécanisme dit comment elle se fait ;
 5. le **test de suppression** a été passé : plus rien ne se retire sans perdre un fait ;
 6. chaque **chiffre** porte son unité, son dénominateur et sa date, et chaque fait est **cliquable vers
    sa source** à l'endroit où il est affirmé ;

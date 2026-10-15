@@ -59,6 +59,11 @@ reponse a la premiere. Une a la fois, chacune informee par la precedente.
 Ce qu'il faut avoir compris avant d'arreter : **l'intention** (quel comportement observable change, et
 qui le constate), les **contraintes** (ce qui ne doit pas bouger), et **ce a quoi ressemble « fini »**.
 
+**Les questions destinees au relecteur partent avant le code**, pas dans la description de la PR : une
+intention a confirmer (« ce comportement etait-il voulu ? ») decide souvent de la taille du diff.
+L'accord d'un tiers, meme du demandeur, ne remplace pas la reponse de celui qui jugera : si la question
+est ecartee sans reponse, le risque s'ecrit dans le plan, avec ce qu'il couterait.
+
 ### Proposer deux ou trois approches, avec leurs compromis et une recommandation
 
 Pas une seule (elle sera acceptee par defaut, sans que personne ait choisi), pas huit (personne
@@ -92,14 +97,18 @@ d'etre **falsifiable** : on doit pouvoir dire ce qui, concretement, le rendrait
 pieges (le critere qui decrit l'implementation, le critere sans cas negatif) et leur passage en tests
 rouges sont dans `tests-first`.
 
-Trois exigences qui appartiennent a cette phase :
+Quatre exigences qui appartiennent a cette phase :
 
 - **chaque critere est rattachable a une tache du plan**, et une tache sans critere est un travail dont
   personne ne sait dire s'il est fini ;
 - **les cas negatifs sont ecrits ici**, pas decouverts pendant l'implementation. Ce qui doit echouer
   est la moitie oubliee, et c'est celle qui contient les regles d'acces ;
 - **ce qui n'est PAS couvert** est ecrit aussi. Un perimetre implicite est renegocie a la fin, au pire
-  moment.
+  moment ;
+- **les criteres sont ceux du juge**, celui qui acceptera le travail (un relecteur, un mainteneur),
+  ecrits avant le code et partages avec lui, avec un **budget** en clair : « reutilise l'existant »,
+  « moins de N lignes de code », « un seul module touche ». Un juge qui connait le critere avant juge
+  le resultat ; celui qui le decouvre dans la PR rejuge la conception.
 
 ## Partie 2 : planifier
 
@@ -169,7 +178,8 @@ contrainte soit respectee dans trois taches sur cinq.
 
 1. la conception a ete **approuvee section par section**, pas d'un bloc ;
 2. les **criteres d'acceptation** sont ecrits, falsifiables, avec leurs cas negatifs et ce qui n'est
-   pas couvert ;
+   pas couvert, partages avec le juge avec leur budget avant le code, et les questions destinees au
+   relecteur sont parties, ou leur risque est ecrit dans le plan ;
 3. la **carte des fichiers** existe, et chacun a une responsabilite nommable ;
 4. chaque **tache** finit sur un livrable testable seul, et deux taches ne sont separees que si un
    relecteur pourrait rejeter l'une en approuvant l'autre ;

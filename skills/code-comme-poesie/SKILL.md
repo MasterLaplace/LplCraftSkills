@@ -177,7 +177,10 @@ Un document qui dit où il peut mentir vaut infiniment mieux qu'un document qu'o
 - **ne jamais retourner une valeur neutre à la place d'une erreur** (`0`, `null`, une liste vide,
   `false`). C'est indiscernable d'un résultat légitime. **« Zéro » et « je n'ai pas pu regarder » sont
   deux réponses différentes**, et les confondre produit des chiffres faux qui ont l'air justes ;
-- **échouer tôt** : valider à la frontière, une fois, plutôt qu'à chaque usage.
+- **échouer tôt** : valider à la frontière, une fois, plutôt qu'à chaque usage ;
+- **une opération qui n'a rien trouvé à faire le dit.** Un remplacement de texte dont le motif est
+  absent rend un succès sans rien changer : un script de correctifs compte ses occurrences, et échoue
+  sur zéro comme sur plusieurs.
 
 ## 8. Ce qu'on regarde en relisant, dans cet ordre
 

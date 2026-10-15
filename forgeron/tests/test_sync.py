@@ -123,6 +123,8 @@ class Conflicts(Harnessed):
         self.assertEqual(self.harness.step(), Phase.IN_REVIEW.value)
         self.assertTrue(self.harness.forge.review_requests,
                         "nobody has reviewed a resolution, even on an approved PR")
+        self.assertEqual(len(self.harness.events("run")), len(self.harness.agent.calls),
+                         "one run event per agent call, the resolution included")
         said = "\n".join(self.harness.forge.bodies("pr"))
         self.assertIn("Nobody has reviewed this resolution", said)
 

@@ -19,8 +19,11 @@ from __future__ import annotations
 
 import dataclasses
 import json
+import os
 import subprocess
 from typing import Any
+
+from .transcript import TranscriptSnapshot, read_snapshot
 
 
 @dataclasses.dataclass(frozen=True, slots=True)
@@ -32,6 +35,9 @@ class Result:
     session_id: str = ""
     turns: int = 0
     denials: tuple[str, ...] = ()
+    skills: tuple[str, ...] | None = None
+    subagent_skills: tuple[str, ...] | None = None
+    compactions: int | None = None
 
 
 class ClaudeAgent:
@@ -44,6 +50,7 @@ class ClaudeAgent:
         contract: str = "",
         dry_run: bool = False,
         agent: str = "",
+        transcripts_dir: str = "",
     ) -> None:
         self._claude = executable
         self._model = model
@@ -52,6 +59,7 @@ class ClaudeAgent:
         self._contract = contract
         self._dry_run = dry_run
         self._agent = agent
+        self._transcripts_dir = transcripts_dir or _default_transcripts_dir()
 
     def run(
         self,
@@ -86,10 +94,24 @@ class ClaudeAgent:
         if self._dry_run:
             return Result(True, {"dry_run": True, "argv": argv[1:]}, 0.0, "dry-run", session_id)
 
+        before = read_snapshot(self._transcripts_dir, session_id)
         done = subprocess.run(
             argv, input=prompt, cwd=cwd, capture_output=True, text=True, timeout=self._timeout,
         )
-        return _parse(done, session_id)
+        return self._with_what_the_run_loaded(_parse(done, session_id), before)
+
+    def _with_what_the_run_loaded(self, result: Result, before: TranscriptSnapshot | None) -> Result:
+        after = read_snapshot(self._transcripts_dir, result.session_id)
+        if after is None:
+            return result
+        return dataclasses.replace(result, skills=after.skills_since(before),
+                                   subagent_skills=after.subagent_skills_since(before),
+                                   compactions=after.compactions_since(before))
+
+
+def _default_transcripts_dir() -> str:
+    home = os.environ.get("CLAUDE_CONFIG_DIR") or os.path.expanduser("~/.claude")
+    return os.path.join(home, "projects")
 
 
 def _parse(done: subprocess.CompletedProcess[str], session_id: str) -> Result:

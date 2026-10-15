@@ -25,7 +25,7 @@ from .gh_forge import GhForge
 from .git_workspace import GitWorkspace
 from .journal import Journal
 from .regenerator import ShellRegenerator
-from .model import Phase, Record
+from .model import Phase, Record, issue_key
 from .sources import IntervalTrigger
 from .store import Store
 
@@ -110,6 +110,12 @@ def _parser() -> argparse.ArgumentParser:
     forget.add_argument("repo")
     forget.add_argument("issue", type=int)
     forget.set_defaults(handler=_forget)
+
+    journey = sub.add_parser(
+        "journey", help="the agent runs of one issue, read back from the journal")
+    journey.add_argument("repo", help="owner/name")
+    journey.add_argument("issue", type=int)
+    journey.set_defaults(handler=_journey)
 
     etabli = sub.add_parser(
         "etabli",
@@ -368,6 +374,54 @@ def _forget(args: argparse.Namespace) -> int:
     os.remove(store.path_of(record))
     print(f"forgotten: {record.key} (worktree {record.worktree} kept)")
     return EXIT_OK
+
+
+def _journey(args: argparse.Namespace) -> int:
+    configuration = _load_or_die(args)
+    path = configuration.journal_path
+    if not os.path.exists(path):
+        print(f"no journal at {path}: nothing has run with this configuration", file=sys.stderr)
+        return EXIT_USAGE
+    runs = _runs_of(path, issue_key(args.repo, args.issue))
+    if args.json:
+        print(json.dumps(runs, ensure_ascii=False, indent=2))
+        return EXIT_OK
+    if not runs:
+        print(f"no agent run journaled for {args.repo}#{args.issue} in {path}")
+        return EXIT_OK
+    for run in runs:
+        print(_run_line(run))
+    total = sum(run.get("cost_usd", 0.0) for run in runs)
+    print(f"total {total:.2f} USD over {len(runs)} runs")
+    return EXIT_OK
+
+
+def _runs_of(path: str, key: str) -> list[dict]:
+    runs: list[dict] = []
+    unreadable = 0
+    with open(path, encoding="utf-8") as journal:
+        for line in journal:
+            try:
+                event = json.loads(line)
+            except json.JSONDecodeError:
+                unreadable += 1
+                continue
+            if event.get("event") == "run" and event.get("key") == key:
+                runs.append(event)
+    if unreadable:
+        print(f"{unreadable} unreadable line(s) skipped in {path}", file=sys.stderr)
+    return runs
+
+
+def _run_line(run: dict) -> str:
+    skills = run.get("skills")
+    listed = "skills not read" if skills is None else "skills " + (", ".join(skills) or "none")
+    subagents = f"  subagents {', '.join(run['subagent_skills'])}" if run.get("subagent_skills") else ""
+    compactions = run.get("compactions")
+    remarks = f"  remarks {run['remarks']}" if "remarks" in run else ""
+    failed = "" if run.get("ok", True) else f"  FAILED: {run.get('detail', '-')}"
+    return (f"{run.get('ts', '-')}  {run.get('phase', '-'):<14} {run.get('cost_usd', 0.0):>6.2f} USD  "
+            f"{listed}{subagents}  compactions {'-' if compactions is None else compactions}{remarks}{failed}")
 
 
 def _etabli(args: argparse.Namespace) -> int:

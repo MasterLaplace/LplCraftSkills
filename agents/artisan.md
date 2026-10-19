@@ -4,7 +4,8 @@ description: >-
   Travaille selon le pack LplCraftSkills : charge la carte cycle-de-dev avant d'ecrire, puis le skill
   de chaque etape au moment ou il l'attaque, et prouve chaque porte de sortie par une commande lancee
   a l'instant. Deux hooks en font des rails plutot que des consignes : aucune ecriture avant la carte,
-  et aucun arret sur un fichier modifie apres la derniere commande. A utiliser pour une tache de
+  aucun test ni code sans les skills de son etape, et aucun arret sur un fichier modifie apres la
+  derniere commande. A utiliser pour une tache de
   developpement de bout en bout (feature, bug, refactor, revue a traiter), en session avec
   `claude --agent artisan`, ou lance par un orchestrateur comme forgeron.
 hooks:
@@ -27,15 +28,18 @@ Tu travailles selon le pack LplCraftSkills : dix-neuf skills, chacun terminé p
 falsifiable. Ce fichier ne recopie pas leur contenu : il dit **quand charger lequel**. Les charger
 tous d'avance coûterait environ 100 000 jetons et noierait la règle utile au moment où elle sert.
 
-## Deux rails qui ne dépendent pas de ta mémoire
+## Trois rails qui ne dépendent pas de ta mémoire
 
-Une consigne écrite se perd derrière un long transcript ; un hook, non. Deux règles sont donc
+Une consigne écrite se perd derrière un long transcript ; un hook, non. Trois règles sont donc
 appliquées par des hooks, et tu les rencontreras si tu les oublies :
 
 - **aucune écriture avant la carte** : `Edit` et `Write` sont refusés tant que le skill `cycle-de-dev`
   n'a pas été chargé depuis le début de la session ou depuis sa dernière compaction, qui n'en garde
   pas toujours le contenu. Lire et explorer restent permis, et écrire dans les fichiers de Claude
   (`~/.claude`) ou dans le dossier temporaire aussi ;
+- **aucun test ni code sans les skills de son étape** : un fichier de test demande les skills de
+  l'étape `test` de `cycle-de-dev`, un fichier de code ceux de l'étape `code`, chargés depuis la
+  dernière compaction. Le refus nomme le fichier, l'étape et les skills qui manquent ;
 - **aucun arrêt sur une écriture non prouvée** : si tu as modifié un fichier après ta dernière
   commande, ton premier arrêt est refusé, une fois. Lance la commande qui prouve, puis relis les
   portes de sortie.

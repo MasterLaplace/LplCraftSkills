@@ -155,6 +155,63 @@ test('a file of a repository still needs the map, even next to those folders', (
   }
 });
 
+const loadSkill = (skill) => toolUse('Skill', { skill });
+const outsideTemporaryFolder = (...parts) => path.join(path.parse(process.cwd()).root, 'repo', ...parts);
+const writeOf = (filePath, file, extra = {}) => ({ tool_name: 'Write', tool_input: { file_path: filePath }, transcript_path: file, ...extra });
+
+test('a code file needs the skills of the code step, and the refusal names the file and the missing ones', () => {
+  const file = transcript([loadMap(), loadSkill('code-comme-poesie')]);
+  const { code, stderr } = run('pre', writeOf(outsideTemporaryFolder('src', 'Billing.cs'), file));
+  assert.equal(code, 2);
+  assert.match(stderr, /Billing\.cs/);
+  assert.match(stderr, /'code'/);
+  assert.match(stderr, /commencer-ferme/);
+  assert.doesNotMatch(stderr, /code-comme-poesie/);
+  assert.match(stderr, /in this session/);
+});
+
+test('a code file is written once the skills of the code step are loaded', () => {
+  const file = transcript([loadMap(), loadSkill('code-comme-poesie'), loadSkill('craft:commencer-ferme')]);
+  assert.equal(run('pre', writeOf(outsideTemporaryFolder('src', 'Billing.cs'), file)).code, 0);
+});
+
+test('a test file needs the skill of the test step, not those of the code step', () => {
+  const testFile = outsideTemporaryFolder('tests', 'BillingTests.cs');
+  const withCodeSkills = transcript([loadMap(), loadSkill('code-comme-poesie'), loadSkill('commencer-ferme')]);
+  const { code, stderr } = run('pre', writeOf(testFile, withCodeSkills));
+  assert.equal(code, 2);
+  assert.match(stderr, /tests-first/);
+  assert.equal(run('pre', writeOf(testFile, transcript([loadMap(), loadSkill('tests-first')]))).code, 0);
+});
+
+test('a file that is neither code nor test keeps the rule of the map alone', () => {
+  const file = transcript([loadMap()]);
+  for (const filePath of [outsideTemporaryFolder('README.md'), outsideTemporaryFolder('config', 'settings.json')]) {
+    assert.equal(run('pre', writeOf(filePath, file)).code, 0, filePath);
+  }
+});
+
+test('a skill of the step loaded before the last compaction no longer counts', () => {
+  const file = transcript([loadSkill('tests-first'), compaction(), loadMap()]);
+  const { code, stderr } = run('pre', writeOf(outsideTemporaryFolder('tests', 'test_billing.py'), file));
+  assert.equal(code, 2);
+  assert.match(stderr, /compaction/);
+});
+
+test('with the any option, a code file still needs the skills of the code step', () => {
+  const codeFile = outsideTemporaryFolder('src', 'billing.py');
+  assert.equal(run('pre', writeOf(codeFile, transcript([loadSkill('tests-first')])), 'any').code, 2);
+  const codeSkills = transcript([loadSkill('code-comme-poesie'), loadSkill('commencer-ferme')]);
+  assert.equal(run('pre', writeOf(codeFile, codeSkills), 'any').code, 0);
+});
+
+test('a subagent is not asked for the skills of the step: the hook only reads the main transcript', () => {
+  const mainTranscript = transcript([loadMap()]);
+  const codeFile = outsideTemporaryFolder('src', 'Billing.cs');
+  assert.equal(run('pre', writeOf(codeFile, mainTranscript, { agent_id: 'a537ef0972b0989d4' })).code, 0);
+  assert.equal(run('pre', writeOf(codeFile, mainTranscript)).code, 2);
+});
+
 test('an unreadable line in the transcript is skipped, not fatal', () => {
   const file = transcript([userText('x'), loadMap()], { garbage: true });
   assert.equal(run('pre', { tool_name: 'Write', transcript_path: file }).code, 0);

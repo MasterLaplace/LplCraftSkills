@@ -118,21 +118,29 @@ L'agent ([`agents/artisan.md`](agents/artisan.md)) ne recopie aucun skill. Il di
 chacun prouvée par une commande avant de conclure. Charger les dix-neuf d'avance coûterait environ
 100 000 jetons et noierait la règle utile au moment où elle sert.
 
-Deux règles ne dépendent pas de sa bonne volonté, parce que ce sont des hooks
+Trois règles ne dépendent pas de sa bonne volonté, parce que ce sont des hooks
 ([`agents/hooks/artisan-gate.cjs`](agents/hooks/artisan-gate.cjs)) :
 
 - **aucune écriture avant la carte** : `Edit` et `Write` sont refusés tant que `cycle-de-dev` n'a pas
   été chargé depuis le début de la session ou depuis sa dernière compaction, qui n'en garde pas
   toujours le contenu. Lire et explorer restent permis, comme écrire dans `~/.claude` ou dans le
   dossier temporaire ;
+- **aucun test ni code sans les skills de son étape** : un fichier de test demande les skills que la
+  table de `cycle-de-dev` nomme pour l'étape `test`, un fichier de code ceux de l'étape `code`, chargés
+  depuis la dernière compaction. Le hook reconnaît l'étape au chemin écrit (un dossier ou un nom de
+  test, une extension de code, le chemin lu depuis la racine du dépôt) ; une doc ou une configuration
+  garde la règle de la carte seule. Un test vérifie que le hook demande les skills que la table nomme.
+  Dans un sous-agent, le hook ne lit que le transcript de la session principale : cette règle n'y est
+  pas vérifiée ;
 - **aucun arrêt sur une écriture non prouvée** : un fichier modifié après la dernière commande fait
   refuser le premier arrêt, une fois. Le hook sait qu'une commande a tourné, pas que c'était la bonne.
 
-Le premier rail sert aussi hors de l'agent, déclaré dans `~/.claude/settings.json` sur `PreToolUse`
+Les deux premiers rails servent aussi hors de l'agent, déclarés dans `~/.claude/settings.json` sur `PreToolUse`
 (matcher `Edit|Write|NotebookEdit|MultiEdit`) : `node <craft-skills>/agents/hooks/artisan-gate.cjs pre any`
 y accepte n'importe quel skill à la place de la carte, pour une session qui n'est pas un cycle de
-développement complet. Sous Windows, `<craft-skills>` s'écrit `C:/...`, comme dans le chemin
-qu'`install.sh` pose dans `~/.claude/agents/artisan.md`.
+développement complet ; un fichier de test ou de code y demande toujours les skills de son étape. Sous
+Windows, `<craft-skills>` s'écrit `C:/...`, comme dans le chemin qu'`install.sh` pose dans
+`~/.claude/agents/artisan.md`.
 
 Les hooks demandent `node`. Et l'agent doit vivre au niveau utilisateur, là où `install.sh` le pose :
 dans le `.claude/agents/` d'un projet, ses hooks ne se déclenchent pas. C'est mesuré, comme le reste

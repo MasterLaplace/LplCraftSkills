@@ -75,9 +75,11 @@ qu'un jeton sait trancher.
 Chaque run part en `claude -p --agent artisan`. L'agent
 ([`../agents/artisan.md`](../agents/artisan.md)) porte la **méthode** : charger `cycle-de-dev`, puis le
 skill de chaque étape, et prouver chaque porte de sortie. Deux hooks en font des rails : aucune écriture
-avant la carte, aucun arrêt sur un fichier modifié après la dernière commande. Le pilote garde ce qui
-ne se délègue pas : la branche, le push, les outils de chaque phase, et tout ce qu'il vérifie contre le
-monde.
+avant la carte, aucun arrêt sur un fichier modifié après la dernière commande. Chacune des quatre
+phases (FRAME, IMPLEMENT, REVISE, CLOSE) nomme les lignes des tables de `cycle-de-dev` qu'elle porte,
+dans `CYCLE_ROWS_BY_PHASE` de [`forgeron/prompts.py`](forgeron/prompts.py), et un test refuse une
+ligne que les tables n'ont pas. Le pilote garde ce qui ne se délègue pas : la branche, le push, les
+outils de chaque phase, et tout ce qu'il vérifie contre le monde.
 
 L'agent doit être installé **au niveau utilisateur** par `../install.sh` : posé dans le `.claude/agents/`
 d'un projet, il perd ses hooks. `doctor` le vérifie avant la première dépense. Pour s'en passer :
@@ -144,8 +146,8 @@ Pour reprendre la main sans rien casser : étiquette `forgeron:hold`. Pour tout
 
 ## Ce qui est vérifié, et ce qui ne l'est pas
 
-Vérifié hors ligne, à chaque `./tests/run.sh` : **335 tests** dont le trajet complet issue → fusion
-avec un build rouge et un tour de revue au milieu, plus **77 sondes de mutation** qui cassent une
+Vérifié hors ligne, à chaque `./tests/run.sh` : **342 tests** dont le trajet complet issue → fusion
+avec un build rouge et un tour de revue au milieu, plus **80 sondes de mutation** qui cassent une
 règle chacune et vérifient que la suite s'en aperçoit. Une suite verte au premier coup ne prouve
 rien ; c'est la sonde qui prouve qu'elle *pouvait* échouer.
 

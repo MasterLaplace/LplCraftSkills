@@ -12,6 +12,7 @@ from __future__ import annotations
 import datetime
 import subprocess
 import uuid
+from typing import Any
 
 from . import attribution, prompts
 from .board import option_for
@@ -19,6 +20,7 @@ from .config import Config, RepoConfig
 from .journal import Journal
 from .model import (Action, CheckState, Decision, Feedback, IssueRef, MergeState,
                     Observation, Phase, PullRequestView, Record, Visual)
+from .ports import AgentResult
 from .states import Limits, decide, phase_after_plan, sync_method
 from .store import Store
 
@@ -229,6 +231,24 @@ class Engine:
 
     # -- actions ------------------------------------------------------------
 
+    def _run_agent(self, record: Record, *, phase: str, cwd: str, session_id: str, prompt: str,
+                   schema: dict[str, Any], resume: bool, read_only: bool, contract: str,
+                   remarks: int | None = None) -> AgentResult:
+        result = self._agent.run(cwd=cwd, session_id=session_id, prompt=prompt, schema=schema,
+                                 resume=resume, read_only=read_only, contract=contract)
+        fields: dict[str, Any] = {
+            "phase": phase, "session": session_id, "ok": result.ok, "cost_usd": round(result.cost_usd, 4),
+            "skills": _listed_or_unread(result.skills),
+            "subagent_skills": _listed_or_unread(result.subagent_skills),
+            "compactions": result.compactions,
+        }
+        if not result.ok:
+            fields["detail"] = result.detail
+        if remarks is not None:
+            fields["remarks"] = remarks
+        self._journal.emit("run", key=record.key, **fields)
+        return result
+
     def _do_plan(self, record: Record, repo: RepoConfig, obs: Observation,
                  decision: Decision) -> Record:
         issue = self._forge.get_issue(record.repo, record.issue)
@@ -244,7 +264,8 @@ class Engine:
         self._save(record)
 
         answers = obs.new_feedback
-        result = self._agent.run(
+        result = self._run_agent(
+            record, phase=Phase.PLANNING.value,
             cwd=record.worktree,
             session_id=record.session_id,
             prompt=prompts.plan_prompt(issue, answers),
@@ -323,7 +344,8 @@ class Engine:
         self._save(record)
 
         pr_url = obs.pr.url if obs.pr else ""
-        result = self._agent.run(
+        result = self._run_agent(
+            record, phase=Phase.IMPLEMENTING.value,
             cwd=record.worktree,
             session_id=record.session_id,
             prompt=prompts.implement_prompt(issue, record.plan, pr_url),
@@ -358,7 +380,8 @@ class Engine:
         )
         self._save(record)
 
-        result = self._agent.run(
+        result = self._run_agent(
+            record, phase=Phase.REVISING.value, remarks=len(feedback),
             cwd=record.worktree,
             session_id=record.session_id,
             prompt=prompts.revise_prompt(issue, feedback, record.rounds),
@@ -403,7 +426,8 @@ class Engine:
                            jobs=",".join(run.name for run in failing),
                            log_bytes=len(logs))
 
-        result = self._agent.run(
+        result = self._run_agent(
+            record, phase=Phase.FIXING_CHECKS.value,
             cwd=record.worktree,
             session_id=record.session_id,
             prompt=prompts.fix_checks_prompt(issue, failing, logs, attempt,
@@ -473,7 +497,8 @@ class Engine:
 
         landed = tuple(self._forge.base_commits_since(
             record.repo, repo.base, obs.pr.head_sha if obs.pr else ""))
-        result = self._agent.run(
+        result = self._run_agent(
+            record, phase=Phase.RESOLVING.value,
             cwd=record.worktree,
             session_id=record.session_id,
             prompt=prompts.resolve_conflict_prompt(
@@ -557,7 +582,8 @@ class Engine:
     def _do_wrap_up(self, record: Record, repo: RepoConfig, obs: Observation,
                     decision: Decision) -> Record:
         issue = self._forge.get_issue(record.repo, record.issue)
-        result = self._agent.run(
+        result = self._run_agent(
+            record, phase="closing",
             cwd=record.worktree,
             session_id=record.session_id,
             prompt=prompts.wrap_prompt(issue, record.pr),
@@ -902,6 +928,10 @@ def _failure_note(phase: str, result) -> str:
         "",
         f"Spent on this run: {result.cost_usd:.2f} USD. Nothing was pushed by this attempt.",
     ])
+
+
+def _listed_or_unread(skills: tuple[str, ...] | None) -> list[str] | None:
+    return None if skills is None else list(skills)
 
 
 def _now_iso() -> str:

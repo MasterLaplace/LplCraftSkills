@@ -246,7 +246,7 @@ class Record:
 
     @property
     def key(self) -> str:
-        return f"{self.repo.replace('/', '__')}__{self.issue}"
+        return issue_key(self.repo, self.issue)
 
     def with_(self, **changes: Any) -> "Record":
         return dataclasses.replace(self, **changes)
@@ -257,3 +257,7 @@ class Decision:
     action: Action
     phase: Phase          # phase to persist once the action succeeds
     reason: str           # why, in one line - this goes straight to the journal
+
+
+def issue_key(repo: str, issue: int) -> str:
+    return f"{repo.replace('/', '__')}__{issue}"

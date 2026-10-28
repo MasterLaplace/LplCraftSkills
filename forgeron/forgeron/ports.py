@@ -133,3 +133,6 @@ class AgentResult(Protocol):
     verdict: dict[str, Any]
     cost_usd: float
     detail: str
+    skills: tuple[str, ...] | None
+    subagent_skills: tuple[str, ...] | None
+    compactions: int | None

@@ -55,6 +55,7 @@ class Harness:
     def step(self) -> str:
         """One pass. Returns the phase afterwards, which is what tests read."""
         self.engine.pass_once()
+        assert len(self.events("run")) == len(self.agent.calls), "one run event per agent call"
         record = self.store.load("o/r", 42)
         return record.phase.value if record else "-"
 
@@ -64,6 +65,49 @@ class Harness:
 
     def events(self, name: str) -> list[dict]:
         return [event for event in self.journal.events if event["event"] == name]
+
+
+class TheJournalOfEachRun(unittest.TestCase):
+    def step_until(self, harness: Harness, phase: Phase) -> None:
+        for _ in range(6):
+            if harness.step() == phase.value:
+                return
+        self.fail(f"never reached {phase.value}")
+
+    def test_each_agent_run_is_journaled_with_its_phase_cost_and_skills(self) -> None:
+        harness = Harness()
+        harness.agent.skills = ("cycle-de-dev", "tests-first")
+        self.step_until(harness, Phase.IMPLEMENTED)
+        runs = harness.events("run")
+        self.assertEqual([run["phase"] for run in runs], ["planning", "implementing"])
+        self.assertEqual([run["cost_usd"] for run in runs], [0.5, 0.5])
+        self.assertEqual(runs[1]["skills"], ["cycle-de-dev", "tests-first"])
+        self.assertEqual(runs[1]["compactions"], 0)
+
+    def test_a_revising_run_counts_the_remarks_it_answers(self) -> None:
+        harness = Harness()
+        harness.forge.ci_green()
+        self.step_until(harness, Phase.IN_REVIEW)
+        harness.forge.human_says("Rename this.")
+        harness.forge.human_says("And split that.")
+        self.step_until(harness, Phase.REVISED)
+        revising = [run for run in harness.events("run") if run["phase"] == "revising"]
+        self.assertEqual([run["remarks"] for run in revising], [2])
+
+    def test_a_failed_run_is_journaled_as_failed_with_its_detail(self) -> None:
+        harness = Harness()
+        harness.agent.fail_next = True
+        harness.step()
+        run = harness.events("run")[0]
+        self.assertFalse(run["ok"])
+        self.assertEqual(run["detail"], "budget exhausted")
+
+    def test_a_run_whose_skills_were_not_read_says_so_rather_than_none_loaded(self) -> None:
+        harness = Harness()
+        harness.agent.skills = None
+        harness.step()
+        self.assertIsNone(harness.events("run")[0]["skills"])
+        self.assertIn("skills", harness.events("run")[0])
 
 
 class FullJourney(unittest.TestCase):
@@ -144,6 +188,9 @@ class FullJourney(unittest.TestCase):
         self.assertEqual(workspace.discarded, [harness.record.worktree])
         self.assertIn("session closed", forge.bodies("issue")[-1])
         self.assertTrue(agent.calls[-1]["read_only"], "closing must not be able to modify anything")
+
+        self.assertEqual([run["phase"] for run in harness.events("run")],
+                         ["planning", "implementing", "fixing_checks", "revising", "closing"])
 
         # 9. done means done: further passes cost nothing
         calls_before = len(agent.calls)

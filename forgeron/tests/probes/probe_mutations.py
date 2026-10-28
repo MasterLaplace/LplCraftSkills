@@ -446,6 +446,76 @@ MUTATIONS = [
      "forgeron/prompts.py",
      "        _owned_cycle_rows(\"CLOSE\"),",
      "        _owned_cycle_rows(\"FRAME\"),"),
+
+    ("journal: a line replayed after a compaction is counted twice",
+     "forgeron/transcript.py",
+     "            calls_by_id.setdefault(call.tool_use_id, call)",
+     "            calls_by_id[f\"{call.tool_use_id}-{len(calls_by_id)}\"] = call"),
+
+    ("journal: the skills of subagents are never read",
+     "forgeron/transcript.py",
+     "\"subagents\", \"agent-*.jsonl\"))",
+     "\"subagents\", \"none-*.jsonl\"))"),
+
+    ("journal: a malformed transcript entry stops the reading",
+     "forgeron/transcript.py",
+     "    return tool_input.get(\"skill\", \"\") if isinstance(tool_input, dict) else \"\"",
+     "    return tool_input.get(\"skill\", \"\")"),
+
+    ("journal: a resumed run is credited with the compactions of the runs before it",
+     "forgeron/transcript.py",
+     "        return len(self.compaction_ids - (earlier.compaction_ids if earlier else frozenset()))",
+     "        return len(self.compaction_ids)"),
+
+    ("journal: one of two transcripts of a session is picked at random",
+     "forgeron/transcript.py",
+     "    if len(candidates) != 1:",
+     "    if not candidates:"),
+
+    ("journal: a resumed run is credited with the skills of the runs before it",
+     "forgeron/transcript.py",
+     "    return tuple(call.skill for call in calls if call.tool_use_id not in earlier_ids)",
+     "    return tuple(call.skill for call in calls)"),
+
+    ("journal: the skills of a run are never read",
+     "forgeron/claude_agent.py",
+     "        if after is None:\n            return result",
+     "        if True:\n            return result"),
+
+    ("journal: skills not read are journaled as none loaded",
+     "forgeron/engine.py",
+     "    return None if skills is None else list(skills)",
+     "    return list(skills or ())"),
+
+    ("journal: a failed run does not say why",
+     "forgeron/engine.py",
+     "        if not result.ok:\n            fields[\"detail\"] = result.detail",
+     "        if False:\n            fields[\"detail\"] = result.detail"),
+
+    ("journal: the conflict resolution is not journaled",
+     "forgeron/engine.py",
+     "        result = self._run_agent(\n            record, phase=Phase.RESOLVING.value,",
+     "        result = self._agent.run("),
+
+    ("journal: closing the session is not journaled",
+     "forgeron/engine.py",
+     "        result = self._run_agent(\n            record, phase=\"closing\",",
+     "        result = self._agent.run("),
+
+    ("journal: a revising run does not say how many remarks it answers",
+     "forgeron/engine.py",
+     "phase=Phase.REVISING.value, remarks=len(feedback),",
+     "phase=Phase.REVISING.value,"),
+
+    ("journey: a failed run is printed as a success",
+     "forgeron/cli.py",
+     "    failed = \"\" if run.get(\"ok\", True) else",
+     "    failed = \"\" if True else"),
+
+    ("journey: skills not read are printed as none",
+     "forgeron/cli.py",
+     "    listed = \"skills not read\" if skills is None else",
+     "    listed = \"skills none\" if skills is None else"),
 ]
 
 

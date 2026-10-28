@@ -2,13 +2,12 @@
 'use strict';
 
 const fs = require('node:fs');
-const os = require('node:os');
 const path = require('node:path');
+const { WRITE_TOOLS, missingStepSkills, isSkillNamed, isClaudeOwnOrTemporaryFile } = require('./write-rules.cjs');
 
 const MAP_SKILL = 'cycle-de-dev';
 const ANY_SKILL = 'any';
 const COMPACTION = 'compaction';
-const WRITE_TOOLS = new Set(['Edit', 'Write', 'NotebookEdit', 'MultiEdit']);
 const COMMAND_TOOLS = new Set(['Bash', 'PowerShell']);
 
 const ALLOW = 0;
@@ -50,53 +49,51 @@ function decide(mode, skillRequirement, input) {
       + `The '${mode}' rail was not checked for this call.\n`);
     return NOT_CHECKED;
   }
-  return mode === 'pre' ? skillLoadedBeforeWriting(timeline, skillRequirement) : provedAfterLastWrite(timeline);
+  return mode === 'pre'
+    ? skillLoadedBeforeWriting(timeline, skillRequirement, writtenPath(input.tool_input), Boolean(input.agent_id))
+    : provedAfterLastWrite(timeline);
 }
 
-function skillLoadedBeforeWriting(timeline, skillRequirement) {
+function skillLoadedBeforeWriting(timeline, skillRequirement, filePath, writtenBySubagent) {
   const lastCompaction = findLastIndex(timeline, (use) => use.name === COMPACTION);
-  const accepts = skillRequirement === ANY_SKILL ? () => true : isMapSkill;
-  const loaded = timeline.slice(lastCompaction + 1).some((use) => use.name === 'Skill' && accepts(use.input && use.input.skill));
-  if (loaded) return ALLOW;
-  const sinceCompaction = lastCompaction < 0 ? '' : ' since the last compaction, which may have dropped it';
-  if (skillRequirement === ANY_SKILL) {
-    process.stderr.write(`Before writing any file, load the skill of the step you are at (Skill tool): none was `
-      + `loaded${sinceCompaction}. The map '${MAP_SKILL}' says which one. Reading and exploring stay allowed without it.\n`);
-  } else {
-    process.stderr.write(`Before writing any file, load the map: Skill tool, skill '${MAP_SKILL}', not loaded`
-      + `${sinceCompaction}. It says which skill to load at each step of the work. Reading and exploring stay allowed `
-      + `without it.\n`);
+  const loadedSkills = skillsLoadedAfter(timeline, lastCompaction);
+  const generalRuleMet = skillRequirement === ANY_SKILL
+    ? loadedSkills.length > 0
+    : loadedSkills.some((name) => isSkillNamed(name, MAP_SKILL));
+  if (!generalRuleMet) {
+    const sinceCompaction = lastCompaction < 0 ? '' : ' since the last compaction, which may have dropped it';
+    if (skillRequirement === ANY_SKILL) {
+      process.stderr.write(`Before writing any file, load the skill of the step you are at (Skill tool): none was `
+        + `loaded${sinceCompaction}. The map '${MAP_SKILL}' says which one. Reading and exploring stay allowed without it.\n`);
+    } else {
+      process.stderr.write(`Before writing any file, load the map: Skill tool, skill '${MAP_SKILL}', not loaded`
+        + `${sinceCompaction}. It says which skill to load at each step of the work. Reading and exploring stay allowed `
+        + `without it.\n`);
+    }
+    return BLOCK;
   }
+
+  if (writtenBySubagent) return ALLOW;
+  const stepOfWrite = missingStepSkills(filePath, loadedSkills);
+  if (stepOfWrite === null || stepOfWrite.missingSkills.length === 0) return ALLOW;
+  const { step, missingSkills } = stepOfWrite;
+  const notLoaded = lastCompaction < 0
+    ? 'not loaded in this session'
+    : `not loaded since the last compaction, which may have dropped ${missingSkills.length > 1 ? 'them' : 'it'}`;
+  process.stderr.write(`Before writing ${path.basename(filePath)}, a file of the '${step}' step of '${MAP_SKILL}', load `
+    + `what that step names (Skill tool): ${missingSkills.join(', ')}, ${notLoaded}. Reading and exploring stay allowed `
+    + `without ${missingSkills.length > 1 ? 'them' : 'it'}.\n`);
   return BLOCK;
 }
 
-function isMapSkill(name) {
-  return typeof name === 'string' && (name === MAP_SKILL || name.endsWith(`:${MAP_SKILL}`));
+function skillsLoadedAfter(timeline, index) {
+  return timeline.slice(index + 1)
+    .filter((use) => use.name === 'Skill' && use.input && typeof use.input.skill === 'string')
+    .map((use) => use.input.skill);
 }
 
 function writtenPath(toolInput) {
   return toolInput && (toolInput.file_path || toolInput.notebook_path);
-}
-
-function isClaudeOwnOrTemporaryFile(filePath) {
-  if (typeof filePath !== 'string') return false;
-  const target = comparable(filePath);
-  return [path.join(os.homedir(), '.claude'), os.tmpdir()]
-    .some((folder) => target.startsWith(comparable(folder) + path.sep));
-}
-
-function comparable(somePath) {
-  const resolved = realPath(path.resolve(somePath));
-  return process.platform === 'win32' ? resolved.toLowerCase() : resolved;
-}
-
-function realPath(somePath) {
-  try {
-    return fs.realpathSync.native(somePath);
-  } catch {
-    const parent = path.dirname(somePath);
-    return parent === somePath ? somePath : path.join(realPath(parent), path.basename(somePath));
-  }
 }
 
 function provedAfterLastWrite(timeline) {

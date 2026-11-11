@@ -9,6 +9,11 @@ const MAP_SKILL = 'cycle-de-dev';
 const ANY_SKILL = 'any';
 const COMPACTION = 'compaction';
 const COMMAND_TOOLS = new Set(['Bash', 'PowerShell']);
+const CHUNK_BYTES = 4 * 1024 * 1024;
+const LONGEST_LINE_BYTES = 64 * 1024 * 1024;
+const NEWLINE = 0x0a;
+const TOOL_USE_MARK = Buffer.from('"tool_use"');
+const COMPACTION_MARK = Buffer.from('"isCompactSummary"');
 
 const ALLOW = 0;
 const NOT_CHECKED = 1;
@@ -108,35 +113,77 @@ function provedAfterLastWrite(timeline) {
 }
 
 function readTimeline(transcriptPath) {
-  let text;
+  let descriptor;
   try {
-    text = fs.readFileSync(transcriptPath, 'utf8');
+    descriptor = fs.openSync(transcriptPath, 'r');
   } catch {
     return null;
   }
   const timeline = [];
   const seenEntries = new Set();
-  for (const line of text.split('\n')) {
-    if (!line.includes('"tool_use"') && !line.includes('"isCompactSummary"')) continue;
-    let entry;
-    try {
-      entry = JSON.parse(line);
-    } catch {
-      continue;
-    }
-    if (!entry || seenEntries.has(entry.uuid)) continue;
-    if (entry.uuid) seenEntries.add(entry.uuid);
-    if (entry.isCompactSummary) {
-      timeline.push({ name: COMPACTION });
-      continue;
-    }
-    const content = entry.message && entry.message.content;
-    if (!Array.isArray(content)) continue;
-    for (const block of content) {
-      if (block && block.type === 'tool_use') timeline.push({ name: block.name, input: block.input });
-    }
+  try {
+    forEachLine(descriptor, (line) => addToTimeline(timeline, seenEntries, line));
+  } catch {
+    return null;
+  } finally {
+    fs.closeSync(descriptor);
   }
   return timeline;
+}
+
+function forEachLine(descriptor, onLine) {
+  const chunk = Buffer.alloc(CHUNK_BYTES);
+  let pieces = [];
+  let piecesBytes = 0;
+  let insideOversizedLine = false;
+  for (let read = fs.readSync(descriptor, chunk, 0, CHUNK_BYTES, null); read > 0;
+    read = fs.readSync(descriptor, chunk, 0, CHUNK_BYTES, null)) {
+    const data = chunk.subarray(0, read);
+    let lineStart = 0;
+    for (let newline = data.indexOf(NEWLINE); newline >= 0; newline = data.indexOf(NEWLINE, lineStart)) {
+      if (!insideOversizedLine) onLine(Buffer.concat([...pieces, data.subarray(lineStart, newline)]));
+      pieces = [];
+      piecesBytes = 0;
+      insideOversizedLine = false;
+      lineStart = newline + 1;
+    }
+    const rest = data.subarray(lineStart);
+    insideOversizedLine = insideOversizedLine || piecesBytes + rest.length > LONGEST_LINE_BYTES;
+    if (insideOversizedLine) {
+      pieces = [];
+      piecesBytes = 0;
+    } else {
+      pieces.push(Buffer.from(rest));
+      piecesBytes += rest.length;
+    }
+  }
+  if (!insideOversizedLine && piecesBytes > 0) onLine(Buffer.concat(pieces));
+}
+
+function addToTimeline(timeline, seenEntries, line) {
+  if (!line.includes(TOOL_USE_MARK) && !line.includes(COMPACTION_MARK)) return;
+  let entry;
+  try {
+    entry = JSON.parse(line.toString('utf8'));
+  } catch {
+    return;
+  }
+  if (!entry || seenEntries.has(entry.uuid)) return;
+  if (entry.uuid) seenEntries.add(entry.uuid);
+  if (entry.isCompactSummary) {
+    timeline.push({ name: COMPACTION });
+    return;
+  }
+  const content = entry.message && entry.message.content;
+  if (!Array.isArray(content)) return;
+  for (const block of content) {
+    if (block && block.type === 'tool_use') timeline.push(timelineEntryOf(block));
+  }
+}
+
+function timelineEntryOf(toolUse) {
+  if (toolUse.name !== 'Skill') return { name: toolUse.name };
+  return { name: toolUse.name, input: { skill: toolUse.input && toolUse.input.skill } };
 }
 
 function findLastIndex(items, predicate) {

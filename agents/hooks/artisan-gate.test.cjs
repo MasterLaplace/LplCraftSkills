@@ -225,6 +225,56 @@ test('a transcript that cannot be found gives a LOUD, non-blocking error', () =>
 });
 
 
+const STRING_LIMIT_BYTES = 600 * 1024 * 1024;
+const sparseFilesAreCheap = process.platform !== 'win32';
+
+function transcriptLongerThanAString(entries) {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'artisan-gate-'));
+  const file = path.join(dir, 'session.jsonl');
+  fs.writeFileSync(file, '');
+  fs.truncateSync(file, STRING_LIMIT_BYTES);
+  fs.appendFileSync(file, '\n' + entries.map((entry) => JSON.stringify(entry)).join('\n') + '\n');
+  return file;
+}
+
+test('a transcript longer than a string can hold is still read: the map loaded after the compaction lets the write pass',
+  { skip: !sparseFilesAreCheap && 'a sparse file of 600 MB is not cheap here' }, () => {
+    const file = transcriptLongerThanAString([compaction(), loadMap()]);
+    try {
+      assert.equal(run('pre', { tool_name: 'Write', transcript_path: file }).code, 0);
+    } finally {
+      fs.rmSync(path.dirname(file), { recursive: true, force: true });
+    }
+  });
+
+test('a transcript longer than a string can hold, without the map since the compaction, blocks the write',
+  { skip: !sparseFilesAreCheap && 'a sparse file of 600 MB is not cheap here' }, () => {
+    const file = transcriptLongerThanAString([loadMap(), compaction(), bash()]);
+    try {
+      const { code, stderr } = run('pre', { tool_name: 'Write', transcript_path: file });
+      assert.equal(code, 2);
+      assert.match(stderr, /cycle-de-dev/);
+    } finally {
+      fs.rmSync(path.dirname(file), { recursive: true, force: true });
+    }
+  });
+
+test('a line that straddles two reads of the transcript is read whole', () => {
+  const readSize = 4 * 1024 * 1024;
+  const bytesBeforeTheBoundary = 100;
+  const emptyPadding = JSON.stringify(userText('')).length;
+  const padding = userText('x'.repeat(readSize - bytesBeforeTheBoundary - 1 - emptyPadding));
+  const secondRead = userText('y'.repeat(readSize));
+  const file = transcript([padding, loadMap(), secondRead, bash()]);
+  assert.equal(run('pre', { tool_name: 'Write', transcript_path: file }).code, 0);
+});
+
+test('the last line is read even without a final newline', () => {
+  const file = transcript([userText('x'), bash()]);
+  fs.appendFileSync(file, JSON.stringify(loadMap()));
+  assert.equal(run('pre', { tool_name: 'Write', transcript_path: file }).code, 0);
+});
+
 test('modifying a file after the last command blocks the stop', () => {
   const file = transcript([loadMap(), bash(), edit()]);
   const { code, stderr } = run('stop', { stop_hook_active: false, transcript_path: file });

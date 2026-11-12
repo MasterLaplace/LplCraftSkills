@@ -8,7 +8,8 @@ description: >-
   par ce que le compilateur peut prouver, verifie, partiellement diagnostique ([[noreturn]],
   noexcept sur un throw direct), ou cru en silence (restrict, noexcept sur un appel indirect), et
   n'autorise le defaut maximal que sur les premiers. Couvre aussi les avertissements et sanitizers
-  a monter au maximum. A utiliser en ecrivant une declaration, une signature, une classe, une API
+  a monter au maximum, et la largeur et l'ordre des champs d'une struct (troncature, padding,
+  pahole). A utiliser en ecrivant une declaration, une signature, une classe, une struct, une API
   publique, ou en relisant du code trop permissif.
 ---
 
@@ -192,6 +193,55 @@ En C# : `readonly record struct`, types marqueurs, `required`. En TypeScript :
 que `string`. En Rust : le type enveloppe est le mécanisme natif et l'immutabilité est le défaut, le
 langage applique déjà ce skill.
 
+## La largeur et l'ordre des champs, ce qu'une struct coûte en mémoire
+
+Écrire une `struct` tranche deux choses qu'on ne voit pas toujours, et elles n'ont pas le même statut :
+la largeur d'un champ est une contrainte, son rang n'en est pas une.
+
+**La largeur est une contrainte, si le compilateur la vérifie.** Le type le plus étroit qui tient le
+domaine (`uint8_t` pour un état à trois valeurs) est le cran « domaine de valeurs » du tableau plus
+haut. Mais en C et en C++, une affectation qui ne tient pas dans le champ **tronque en silence** : sous
+`-Wall -Wextra`, GCC et Clang ne disent rien, et seul `-Wconversion`, du paquet de départ, l'attrape.
+Sans lui, un champ étroit est du niveau 3.
+
+Le domaine se lit dans ce qui **peut arriver**, pas dans ce que la source promet. ACPI déclare la
+latence d'un C-state sur 16 bits, mais un firmware peut en rendre davantage, et Linux la garde sur
+32 bits. Une valeur venue de l'extérieur entre dans un champ assez large pour la tenir telle quelle,
+puis se garde à l'entrée : tronquée d'abord, la valeur fausse aurait disparu avant la garde.
+
+**L'ordre n'est pas une contrainte, c'est une disposition, et elle est gratuite.** C et C++ rangent
+les champs dans l'ordre déclaré et alignent chacun en bouchant les vides par des octets inutiles, le
+*padding* (C11 §6.7.2.1, ¶14 à ¶17). Ces vides prennent deux formes, et une seule dépend de l'ordre :
+
+```c
+struct Sample {      // offset  taille
+    uint8_t  kind;   //    0      1
+                     //    1      3    trou
+    uint32_t value;  //    4      4
+    uint8_t  flags;  //    8      1
+                     //    9      3    bourrage final
+};                   // 12 octets pour 6 octets de données
+```
+
+- **les trous entre les champs** disparaissent quand on range du plus aligné au moins aligné :
+  `value, kind, flags` fait 8 octets au lieu de 12, un tiers de moins sur chaque élément d'un tableau ;
+- **le bourrage final** arrondit la taille au multiple de l'alignement le plus fort, pour que chaque
+  élément d'un tableau reste aligné. Aucun ordre ne le retire : 15 octets de données dont un
+  `uint32_t` font 16 octets, dans n'importe quel ordre.
+
+La représentation par défaut de Rust ne promet pas l'ordre déclaré, et laisse le compilateur ranger ;
+C et C++ n'ont pas ce droit, l'ordre revient à celui qui écrit. L'ordre compact ne cède que devant trois
+raisons : une disposition fixée par le matériel ou par un format (une table ACPI, un en-tête réseau,
+un fichier) ; des offsets que lit de l'assembleur ; des champs chauds regroupés sur une même ligne de
+cache, mesurés comme tels.
+
+**Et l'ordre se vérifie par un outil, pas par la mémoire.** `pahole --packable <binaire>` (paquet
+`dwarves`, sur un binaire compilé avec `-g`) liste les structures qu'un autre ordre rétrécirait, avec
+leur taille avant et après ; `pahole -C <Nom>` montre chaque trou. `-Wpadded` avertit sur tout padding,
+bourrage final compris : la version compacte de `Sample` le déclenche encore. Il sert donc à lire un
+fichier, pas à tenir une porte sous `-Werror`. Une porte tient avec `pahole --packable` en intégration
+continue et une liste des exceptions, chacune avec sa raison.
+
 ## Gratuit contre coûteux, la ligne qui protège le perfectionnisme
 
 « Précis », « perfectionniste » et « optimisé » désignent **deux choses**, et les confondre coûte
@@ -243,12 +293,15 @@ cache le mieux, parce que tout y a l'air typé.
 
 ## La porte de sortie
 
-Sur chaque déclaration écrite, ces trois réponses doivent exister :
+Sur chaque déclaration écrite, ces quatre réponses doivent exister :
 
 1. **chaque relâchement se justifie en une phrase** (« protected parce que `CsvExporter` en hérite et
    en a besoin ») ;
 2. **aucun qualifieur de niveau 2 ou 3 n'a été posé par défaut** : chacun est dérivé du corps, ou
    calculé par le langage ;
-3. **aucun qualifieur ne survit aux deux tests du garde-fou** sans y répondre.
+3. **aucun qualifieur ne survit aux deux tests du garde-fou** sans y répondre ;
+4. **aucune `struct` ne garde un trou qu'un autre ordre supprimerait**, hors des trois raisons, et
+   **aucun champ étroit ne tronque en silence** : `-Wconversion` est actif, ou la valeur est gardée à
+   l'entrée.
 
 Et la règle qui vaut pour tout ce skill : **relâcher est un événement, jamais un défaut.**
